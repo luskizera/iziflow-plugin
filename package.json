@@ -10,5 +10,8 @@
     "devDependencies": {
         "@figma/plugin-typings": "^1.57.0",
         "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "systemjs": "^6.15.1"
     }
 }

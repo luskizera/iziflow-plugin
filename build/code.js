@@ -7,9 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-System.register("nodes/decisionNode", [], function (exports_1, context_1) {
+define("nodes/decisionNode", ["require", "exports"], function (require, exports) {
     "use strict";
-    var __moduleName = context_1 && context_1.id;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createDecisionNode = createDecisionNode;
     function createDecisionNode(dataOrNode) {
         const name = "name" in dataOrNode ? dataOrNode.name : dataOrNode.name;
         const frame = figma.createFrame();
@@ -34,52 +35,60 @@ System.register("nodes/decisionNode", [], function (exports_1, context_1) {
         frame.appendChild(text);
         return frame;
     }
-    exports_1("createDecisionNode", createDecisionNode);
     function hexToRgb(hex) {
         const r = parseInt(hex.slice(1, 3), 16) / 255;
         const g = parseInt(hex.slice(3, 5), 16) / 255;
         const b = parseInt(hex.slice(5, 7), 16) / 255;
         return { r, g, b };
     }
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
 });
-System.register("nodes/endNode", [], function (exports_2, context_2) {
+define("nodes/endNode", ["require", "exports"], function (require, exports) {
     "use strict";
-    var __moduleName = context_2 && context_2.id;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createEndNode = createEndNode;
+    /**
+     * Cria o End Node no Figma com formato circular
+     * Exibe o texto "END" centralizado
+     * @param nodeData Dados do nó
+     * @returns FrameNode estilizado
+     */
     function createEndNode(nodeData) {
+        // Cria o frame principal do End Node
         const endNode = figma.createFrame();
         endNode.name = nodeData.name || "END";
-        endNode.resize(140, 140);
-        endNode.cornerRadius = 400;
+        endNode.resize(140, 140); // Mantém tamanho fixo de 140x140px
+        endNode.cornerRadius = 400; // Para deixar o nó totalmente circular
         endNode.layoutMode = "VERTICAL";
         endNode.counterAxisSizingMode = "AUTO";
         endNode.primaryAxisAlignItems = "CENTER";
         endNode.primaryAxisSizingMode = "AUTO";
-        endNode.paddingTop = 55.5;
+        endNode.paddingTop = 55.5; // Ajuste para centralizar o texto
         endNode.paddingBottom = 55.5;
-        endNode.paddingLeft = 30;
+        endNode.paddingLeft = 30; // Ajuste para centralizar o texto
         endNode.paddingRight = 30;
+        // Define o preenchimento do nó (cor de fundo): #18181B (preto)
         endNode.fills = [{
                 type: 'SOLID',
                 color: hexToRGB('#18181B')
             }];
+        // Cria o texto "END"
         const textNode = figma.createText();
         figma.loadFontAsync({ family: "Inter", style: "Bold" }).then(() => {
             textNode.characters = "END";
-            textNode.fontSize = 24;
+            textNode.fontSize = 24; // Mantém a fonte original
             textNode.fontName = { family: "Inter", style: "Bold" };
             textNode.textAlignHorizontal = "CENTER";
             textNode.textAlignVertical = "CENTER";
-            textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }];
+            textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }]; // Texto branco
             endNode.appendChild(textNode);
         });
         return endNode;
     }
-    exports_2("createEndNode", createEndNode);
+    /**
+     * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma
+     * @param hex - Código hexadecimal da cor (ex.: #18181B)
+     * @returns RGBColor
+     */
     function hexToRGB(hex) {
         const sanitizedHex = hex.replace('#', '');
         const bigint = parseInt(sanitizedHex, 16);
@@ -89,15 +98,15 @@ System.register("nodes/endNode", [], function (exports_2, context_2) {
             b: (bigint & 255) / 255
         };
     }
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
 });
-System.register("nodes/chipNode", [], function (exports_3, context_3) {
+define("nodes/chipNode", ["require", "exports"], function (require, exports) {
     "use strict";
-    var __moduleName = context_3 && context_3.id;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createChipNode = createChipNode;
+    /**
+     * @param type - O tipo do nó (STEP, ENTRYPOINT, etc.)
+     * @returns FrameNode estilizado
+     */
     function createChipNode(type) {
         const chip = figma.createFrame();
         chip.layoutMode = 'HORIZONTAL';
@@ -109,19 +118,26 @@ System.register("nodes/chipNode", [], function (exports_3, context_3) {
         chip.paddingBottom = 2;
         chip.cornerRadius = 8;
         chip.strokeWeight = 0;
+        // Define cor fixa do chip: #18181B (preto)
         chip.fills = [{
                 type: 'SOLID',
                 color: hexToRGB('#18181B')
             }];
+        // Cria o texto dentro do chip
         const textNode = figma.createText();
-        textNode.characters = type.toUpperCase();
+        textNode.characters = type.toUpperCase(); // Mostra o tipo (ex.: STEP, ENTRY POINT)
         textNode.fontSize = 12;
         textNode.fontName = { family: "Inter", style: "Bold" };
-        textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }];
+        textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }]; // Branco
+        // Adiciona o texto ao chip
         chip.appendChild(textNode);
         return chip;
     }
-    exports_3("createChipNode", createChipNode);
+    /**
+     * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma
+     * @param hex - Código hexadecimal da cor (ex.: #18181B)
+     * @returns RGB
+     */
     function hexToRGB(hex) {
         const sanitizedHex = hex.replace('#', '');
         const bigint = parseInt(sanitizedHex, 16);
@@ -131,39 +147,41 @@ System.register("nodes/chipNode", [], function (exports_3, context_3) {
             b: (bigint & 255) / 255
         };
     }
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
 });
-System.register("nodes/entrypointNode", ["nodes/chipNode"], function (exports_4, context_4) {
+define("nodes/entrypointNode", ["require", "exports", "nodes/chipNode"], function (require, exports, chipNode_1) {
     "use strict";
-    var chipNode_1;
-    var __moduleName = context_4 && context_4.id;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createEntryPointNode = createEntryPointNode;
+    /**
+     * Cria um EntryPoint Node no Figma
+     * @param nodeData Dados do nó do tipo NodeData
+     * @returns FrameNode criado
+     */
     function createEntryPointNode(nodeData) {
         const entryNode = figma.createFrame();
         entryNode.name = nodeData.name || "ENTRYPOINT";
         entryNode.layoutMode = "VERTICAL";
         entryNode.primaryAxisAlignItems = "MIN";
-        entryNode.counterAxisSizingMode = "FIXED";
-        entryNode.primaryAxisSizingMode = "AUTO";
-        entryNode.resize(400, 0);
+        entryNode.counterAxisSizingMode = "FIXED"; // Largura fixa
+        entryNode.primaryAxisSizingMode = "AUTO"; // Altura variável
+        entryNode.resize(400, 0); // Define largura fixa de 400px, altura ajustada automaticamente
         entryNode.paddingTop = 24;
         entryNode.paddingBottom = 24;
         entryNode.paddingLeft = 24;
         entryNode.paddingRight = 24;
         entryNode.cornerRadius = 24;
         entryNode.strokeWeight = 2;
-        entryNode.fills = [{ type: 'SOLID', color: hexToRGB('#F4F4F5') }];
+        entryNode.fills = [{ type: 'SOLID', color: hexToRGB('#F4F4F5') }]; // Fundo cinza claro
         entryNode.strokes = [{
                 type: "SOLID",
                 color: hexToRGB("#A1A1AA")
             }];
         entryNode.dashPattern = [4, 4];
-        entryNode.itemSpacing = 8;
-        const chip = chipNode_1.createChipNode("ENTRYPOINT");
+        entryNode.itemSpacing = 8; // Espaço entre o chip e o texto
+        // Chip com o tipo do nó (usando createChipNode para "ENTRYPOINT")
+        const chip = (0, chipNode_1.createChipNode)("ENTRYPOINT");
         entryNode.appendChild(chip);
+        // Texto do nome do nó
         const nameText = figma.createText();
         figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }).then(() => {
             nameText.characters = nodeData.name;
@@ -171,14 +189,18 @@ System.register("nodes/entrypointNode", ["nodes/chipNode"], function (exports_4,
             nameText.fontName = { family: "Inter", style: "Semi Bold" };
             nameText.textAlignHorizontal = "LEFT";
             nameText.textAlignVertical = "TOP";
-            nameText.fills = [{ type: 'SOLID', color: hexToRGB('#09090B') }];
-            nameText.resizeWithoutConstraints(352, nameText.height);
+            nameText.fills = [{ type: 'SOLID', color: hexToRGB('#09090B') }]; // Texto preto
+            nameText.resizeWithoutConstraints(352, nameText.height); // Limita a largura interna, mas permite altura variável
             nameText.textAutoResize = "HEIGHT";
             entryNode.appendChild(nameText);
         });
         return entryNode;
     }
-    exports_4("createEntryPointNode", createEntryPointNode);
+    /**
+     * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma
+     * @param hex Cor no formato HEX
+     * @returns RGBColor
+     */
     function hexToRGB(hex) {
         const sanitizedHex = hex.replace('#', '');
         const bigint = parseInt(sanitizedHex, 16);
@@ -188,49 +210,53 @@ System.register("nodes/entrypointNode", ["nodes/chipNode"], function (exports_4,
             b: (bigint & 255) / 255
         };
     }
-    return {
-        setters: [
-            function (chipNode_1_1) {
-                chipNode_1 = chipNode_1_1;
-            }
-        ],
-        execute: function () {
-        }
-    };
 });
-System.register("nodes/startNode", [], function (exports_5, context_5) {
+define("nodes/startNode", ["require", "exports"], function (require, exports) {
     "use strict";
-    var __moduleName = context_5 && context_5.id;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createStartNode = createStartNode;
+    /**
+     * Cria o Start Node no Figma com formato circular
+     * Exibe o texto "START" centralizado
+     * @param nodeData Dados do nó
+     * @returns FrameNode estilizado
+     */
     function createStartNode(nodeData) {
         const startNode = figma.createFrame();
         startNode.name = nodeData.name || "START";
-        startNode.resize(140, 140);
-        startNode.cornerRadius = 400;
+        startNode.resize(140, 140); // Mantém tamanho fixo de 140x140px
+        startNode.cornerRadius = 400; // Para deixar o nó totalmente circular
         startNode.layoutMode = "VERTICAL";
         startNode.counterAxisSizingMode = "AUTO";
         startNode.primaryAxisAlignItems = "CENTER";
         startNode.primaryAxisSizingMode = "AUTO";
-        startNode.paddingTop = 55.5;
+        startNode.paddingTop = 55.5; // Ajuste para centralizar o texto
         startNode.paddingBottom = 55.5;
-        startNode.paddingLeft = 30;
+        startNode.paddingLeft = 30; // Ajuste para centralizar o texto
         startNode.paddingRight = 30;
+        // Define o preenchimento do nó (cor de fundo): #18181B (preto)
         startNode.fills = [{
                 type: 'SOLID',
                 color: hexToRGB('#18181B')
             }];
+        // Cria o texto "START"
         const textNode = figma.createText();
         figma.loadFontAsync({ family: "Inter", style: "Bold" }).then(() => {
             textNode.characters = "START";
-            textNode.fontSize = 24;
+            textNode.fontSize = 24; // Mantém a fonte original
             textNode.fontName = { family: "Inter", style: "Bold" };
             textNode.textAlignHorizontal = "CENTER";
             textNode.textAlignVertical = "CENTER";
-            textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }];
+            textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }]; // Texto branco
             startNode.appendChild(textNode);
         });
         return startNode;
     }
-    exports_5("createStartNode", createStartNode);
+    /**
+     * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma
+     * @param hex - Código hexadecimal da cor (ex.: #18181B)
+     * @returns RGBColor
+     */
     function hexToRGB(hex) {
         const sanitizedHex = hex.replace('#', '');
         const bigint = parseInt(sanitizedHex, 16);
@@ -240,23 +266,18 @@ System.register("nodes/startNode", [], function (exports_5, context_5) {
             b: (bigint & 255) / 255
         };
     }
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
 });
-System.register("nodes/stepNode", ["nodes/chipNode"], function (exports_6, context_6) {
+define("nodes/stepNode", ["require", "exports", "nodes/chipNode"], function (require, exports, chipNode_2) {
     "use strict";
-    var chipNode_2;
-    var __moduleName = context_6 && context_6.id;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createStepNode = createStepNode;
     function createStepNode(nodeData) {
         const stepNode = figma.createFrame();
         stepNode.name = nodeData.name;
         stepNode.layoutMode = "VERTICAL";
         stepNode.counterAxisSizingMode = "FIXED";
         stepNode.primaryAxisSizingMode = "AUTO";
-        stepNode.resize(400, 0);
+        stepNode.resize(400, 0); // Largura fixa
         stepNode.paddingTop = 16;
         stepNode.paddingBottom = 16;
         stepNode.paddingLeft = 16;
@@ -266,14 +287,17 @@ System.register("nodes/stepNode", ["nodes/chipNode"], function (exports_6, conte
         stepNode.strokes = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.7 } }];
         stepNode.strokeWeight = 2;
         stepNode.itemSpacing = 16;
-        const chip = chipNode_2.createChipNode("STEP");
+        // Adiciona o chip STEP
+        const chip = (0, chipNode_2.createChipNode)("STEP");
         stepNode.appendChild(chip);
+        // Título do Nó
         const title = figma.createText();
         title.characters = nodeData.name;
         title.fontSize = 24;
         title.fontName = { family: "Inter", style: "Bold" };
         title.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
         stepNode.appendChild(title);
+        // ✅ Função para adicionar seções de descrição
         const addSection = (label, content) => {
             const section = figma.createFrame();
             section.layoutMode = "VERTICAL";
@@ -299,6 +323,7 @@ System.register("nodes/stepNode", ["nodes/chipNode"], function (exports_6, conte
             });
             stepNode.appendChild(section);
         };
+        // ✅ Verifica e adiciona as descrições
         if (nodeData.description) {
             console.log("🟢 Descrição encontrada para:", nodeData.name, nodeData.description);
             if (nodeData.description.action)
@@ -315,20 +340,16 @@ System.register("nodes/stepNode", ["nodes/chipNode"], function (exports_6, conte
         }
         return stepNode;
     }
-    exports_6("createStepNode", createStepNode);
-    return {
-        setters: [
-            function (chipNode_2_1) {
-                chipNode_2 = chipNode_2_1;
-            }
-        ],
-        execute: function () {
-        }
-    };
 });
-System.register("core/layout", [], function (exports_7, context_7) {
+define("core/layout", ["require", "exports"], function (require, exports) {
     "use strict";
-    var __moduleName = context_7 && context_7.id;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.buildGraph = buildGraph;
+    exports.getSortedLevels = getSortedLevels;
+    exports.layoutNodes = layoutNodes;
+    /**
+     * Constrói o grafo com a lista de adjacências e grau de entrada.
+     */
     function buildGraph(nodes, connections) {
         const adjacencyList = {};
         const inDegree = {};
@@ -342,11 +363,16 @@ System.register("core/layout", [], function (exports_7, context_7) {
         });
         return { adjacencyList, inDegree };
     }
-    exports_7("buildGraph", buildGraph);
+    /**
+     * Retorna os níveis ordenados do grafo (simplificado para layout horizontal).
+     */
     function getSortedLevels(_, connections) {
+        // Para um layout horizontal simples, retornamos apenas [0] para indicar um único nível
         return [0];
     }
-    exports_7("getSortedLevels", getSortedLevels);
+    /**
+     * Posiciona os nós no layout em uma linha horizontal uniforme.
+     */
     function layoutNodes(nodes, connections, spacing = 300) {
         let x = 0;
         const startNode = Array.from(nodes.entries()).find(([_, node]) => node.name === 'Start');
@@ -371,8 +397,9 @@ System.register("core/layout", [], function (exports_7, context_7) {
                 if (!positionedNodes.has(targetId)) {
                     const targetNode = nodes.get(targetId);
                     if (targetNode) {
+                        // Ajusta o X com base na largura do nó atual mais o espaçamento
                         targetNode.x = x + currentNode.width + spacing;
-                        targetNode.y = 0;
+                        targetNode.y = 0; // Alinhamento horizontal fixo
                         maxHeight = Math.max(maxHeight, targetNode.height);
                         x = targetNode.x + targetNode.width;
                         positionedNodes.add(targetId);
@@ -381,25 +408,26 @@ System.register("core/layout", [], function (exports_7, context_7) {
                 }
             });
         }
-        for (const node of [...nodes.values()]) {
+        // Centraliza verticalmente todos os nós com base na altura máxima
+        for (const node of [...nodes.values()]) { // Usamos spread operator para evitar o erro
             node.y = (maxHeight - node.height) / 2;
         }
     }
-    exports_7("layoutNodes", layoutNodes);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
 });
-System.register("core/parser", ["nodes/decisionNode", "nodes/endNode", "nodes/entrypointNode", "nodes/startNode", "nodes/stepNode", "core/layout"], function (exports_8, context_8) {
+define("core/parser", ["require", "exports", "nodes/decisionNode", "nodes/endNode", "nodes/entrypointNode", "nodes/startNode", "nodes/stepNode", "core/layout"], function (require, exports, decisionNode_1, endNode_1, entrypointNode_1, startNode_1, stepNode_1, layout_1) {
     "use strict";
-    var decisionNode_1, endNode_1, entrypointNode_1, startNode_1, stepNode_1, layout_1;
-    var __moduleName = context_8 && context_8.id;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.parseJSON = parseJSON;
+    /**
+     * Função principal que interpreta o JSON e cria os nós no Figma.
+     * @param json O JSON com o fluxo de usuário.
+     * @returns Um mapa contendo os nós criados com seus tipos.
+     */
     function parseJSON(json) {
         return __awaiter(this, void 0, void 0, function* () {
             const nodes = new Map();
             const connections = json.connections || [];
+            // ✅ Verifica se há nós no JSON
             if (!json.nodes || json.nodes.length === 0) {
                 console.error("Nenhum nó encontrado no JSON.");
                 return nodes;
@@ -411,19 +439,19 @@ System.register("core/parser", ["nodes/decisionNode", "nodes/endNode", "nodes/en
                     console.log("🔵 Descrição do nó:", nodeData.description);
                     switch (nodeData.type) {
                         case 'START':
-                            figmaNode = yield startNode_1.createStartNode(nodeData);
+                            figmaNode = yield (0, startNode_1.createStartNode)(nodeData);
                             break;
                         case 'ENTRYPOINT':
-                            figmaNode = yield entrypointNode_1.createEntryPointNode(nodeData);
+                            figmaNode = yield (0, entrypointNode_1.createEntryPointNode)(nodeData);
                             break;
                         case 'STEP':
-                            figmaNode = yield stepNode_1.createStepNode(nodeData);
+                            figmaNode = yield (0, stepNode_1.createStepNode)(nodeData);
                             break;
                         case 'DECISION':
-                            figmaNode = yield decisionNode_1.createDecisionNode(nodeData);
+                            figmaNode = yield (0, decisionNode_1.createDecisionNode)(nodeData);
                             break;
                         case 'END':
-                            figmaNode = yield endNode_1.createEndNode(nodeData);
+                            figmaNode = yield (0, endNode_1.createEndNode)(nodeData);
                             break;
                         default:
                             console.error(`❌ Tipo de nó desconhecido: ${nodeData.type}`);
@@ -440,39 +468,17 @@ System.register("core/parser", ["nodes/decisionNode", "nodes/endNode", "nodes/en
                     console.error(`🔥 Erro ao criar nó ${nodeData.id}:`, error);
                 }
             }
-            layout_1.layoutNodes(new Map([...nodes].map(([id, data]) => [id, data.node])), connections, 300);
+            // 📐 Layout dos nós no Figma
+            (0, layout_1.layoutNodes)(new Map([...nodes].map(([id, data]) => [id, data.node])), connections, 300 // Espaçamento entre nós
+            );
             return nodes;
         });
     }
-    exports_8("parseJSON", parseJSON);
-    return {
-        setters: [
-            function (decisionNode_1_1) {
-                decisionNode_1 = decisionNode_1_1;
-            },
-            function (endNode_1_1) {
-                endNode_1 = endNode_1_1;
-            },
-            function (entrypointNode_1_1) {
-                entrypointNode_1 = entrypointNode_1_1;
-            },
-            function (startNode_1_1) {
-                startNode_1 = startNode_1_1;
-            },
-            function (stepNode_1_1) {
-                stepNode_1 = stepNode_1_1;
-            },
-            function (layout_1_1) {
-                layout_1 = layout_1_1;
-            }
-        ],
-        execute: function () {
-        }
-    };
 });
-System.register("core/connectors", [], function (exports_9, context_9) {
+define("core/connectors", ["require", "exports"], function (require, exports) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createConnectors = createConnectors;
     function createConnectors(connections, nodes) {
         for (const conn of connections) {
             const fromNodeData = nodes.get(conn.from);
@@ -481,86 +487,70 @@ System.register("core/connectors", [], function (exports_9, context_9) {
                 const fromNode = fromNodeData.node;
                 const toNode = toNodeData.node;
                 const isDecisionNode = fromNodeData.type === "DECISION";
+                // Usa ConnectorNode para todas as conexões
                 const connector = figma.createConnector();
                 connector.connectorStart = { endpointNodeId: fromNode.id, magnet: 'AUTO' };
                 connector.connectorEnd = { endpointNodeId: toNode.id, magnet: 'AUTO' };
                 if (isDecisionNode) {
+                    // Conector ELBOWED para decisionNodes
                     connector.connectorLineType = 'ELBOWED';
                 }
                 else {
+                    // Conector STRAIGHT para outros nós
                     connector.connectorLineType = 'STRAIGHT';
                 }
                 connector.connectorEndStrokeCap = 'ARROW_LINES';
                 connector.strokeWeight = 2;
                 connector.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+                // Aplica estilo baseado no conditionType (somente para decisionNodes)
                 if (isDecisionNode) {
                     if (conn.conditionType === "negative") {
-                        connector.dashPattern = [4, 4];
+                        connector.dashPattern = [4, 4]; // Linha tracejada para negativa
                     }
                     else {
-                        connector.dashPattern = [];
+                        connector.dashPattern = []; // Linha normal para positiva
                     }
                 }
                 figma.currentPage.appendChild(connector);
+                // Adiciona o rótulo se houver conditionLabel (trata string | undefined)
                 if (conn.conditionLabel) {
                     figma.loadFontAsync({ family: "Inter", style: "Bold" }).then(() => {
                         var _a;
                         const label = figma.createText();
-                        label.characters = (_a = conn.conditionLabel) !== null && _a !== void 0 ? _a : "";
+                        label.characters = (_a = conn.conditionLabel) !== null && _a !== void 0 ? _a : ""; // TypeScript agora aceita, pois verificamos com if
                         label.fontSize = 12;
-                        label.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+                        label.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }]; // Preto
+                        // Posiciona o rótulo acima da conexão, ajustado para evitar sobreposição
                         label.x = (fromNode.x + fromNode.width + toNode.x) / 2 - (label.width / 2);
-                        label.y = Math.min(fromNode.y, toNode.y) - 20;
+                        label.y = Math.min(fromNode.y, toNode.y) - 20; // Acima da linha, ajustado manualmente
                         figma.currentPage.appendChild(label);
                     });
                 }
             }
         }
     }
-    exports_9("createConnectors", createConnectors);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
 });
-System.register("code", ["core/connectors", "core/layout", "core/parser"], function (exports_10, context_10) {
+define("code", ["require", "exports", "core/connectors", "core/layout", "core/parser", "systemjs"], function (require, exports, connectors_1, layout_2, parser_1) {
     "use strict";
-    var connectors_1, layout_2, parser_1;
-    var __moduleName = context_10 && context_10.id;
-    return {
-        setters: [
-            function (connectors_1_1) {
-                connectors_1 = connectors_1_1;
-            },
-            function (layout_2_1) {
-                layout_2 = layout_2_1;
-            },
-            function (parser_1_1) {
-                parser_1 = parser_1_1;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    figma.showUI(__html__, { width: 400, height: 300 });
+    figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log("Mensagem recebida do UI:", msg); // Log para verificar a mensagem recebida
+        if (msg.type === "generate-flow") {
+            try {
+                const flowData = JSON.parse(msg.json);
+                console.log("JSON recebido:", flowData); // Loga o JSON para validação
+                const nodeMap = yield (0, parser_1.parseJSON)(flowData); // Função que cria os nós
+                (0, layout_2.layoutNodes)(new Map([...nodeMap].map(([id, data]) => [id, data.node])), flowData.connections, 300);
+                (0, connectors_1.createConnectors)(flowData.connections, nodeMap);
+                figma.notify("Fluxo criado com sucesso!");
+                figma.closePlugin();
             }
-        ],
-        execute: function () {
-            figma.showUI(__html__, { width: 400, height: 300 });
-            figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
-                console.log("Mensagem recebida do UI:", msg);
-                if (msg.type === "generate-flow") {
-                    try {
-                        const flowData = JSON.parse(msg.json);
-                        console.log("JSON recebido:", flowData);
-                        const nodeMap = yield parser_1.parseJSON(flowData);
-                        layout_2.layoutNodes(new Map([...nodeMap].map(([id, data]) => [id, data.node])), flowData.connections, 300);
-                        connectors_1.createConnectors(flowData.connections, nodeMap);
-                        figma.notify("Fluxo criado com sucesso!");
-                        figma.closePlugin();
-                    }
-                    catch (error) {
-                        console.error("Erro ao gerar o fluxo:", error);
-                        figma.notify(`Erro: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
-                        figma.closePlugin();
-                    }
-                }
-            });
+            catch (error) {
+                console.error("Erro ao gerar o fluxo:", error); // Captura e exibe erros
+                figma.notify(`Erro: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+                figma.closePlugin();
+            }
         }
-    };
+    });
 });

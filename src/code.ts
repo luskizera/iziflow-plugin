@@ -1,6 +1,8 @@
 import { createConnectors } from "./core/connectors";
 import { layoutNodes } from "./core/layout";
 import { FlowJSON, parseJSON } from "./core/parser";
+import 'systemjs';
+
 
 figma.showUI(__html__, { width: 400, height: 300 });
 

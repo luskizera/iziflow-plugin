@@ -1,0 +1,9 @@
+{
+  "name": "IziFlow ",
+  "id": "com.luskizeras.my-figma-plugin",
+  "api": "1.0.0",
+  "main": "build/code.js",
+  "ui": "build/ui/ui.html",
+  "enableProposedApi": false,
+  "editorType": ["figjam"]
+}

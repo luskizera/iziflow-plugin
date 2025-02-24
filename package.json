@@ -1,0 +1,14 @@
+{
+    "name": "iziflow-plugin",
+    "version": "1.0.0",
+    "description": "Plugin Figma - IziFlow",
+    "main": "build/code.js",
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc -w"
+    },
+    "devDependencies": {
+        "@figma/plugin-typings": "^1.57.0",
+        "typescript": "^5.0.0"
+    }
+}

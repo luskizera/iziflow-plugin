@@ -1,1 +1,0 @@
-document.getElementById("generateButton").onclick=()=>{const e=document.getElementById("jsonInput");if(e instanceof HTMLTextAreaElement)try{const t=JSON.parse(e.value);parent.postMessage({pluginMessage:{type:"generate-flow",json:JSON.stringify(t)}},"*")}catch(e){alert("JSON inválido! Verifique o formato.")}},console.log("UI carregada com sucesso!");

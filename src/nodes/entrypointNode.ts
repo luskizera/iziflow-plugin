@@ -1,5 +1,6 @@
-import { createChipNode } from './chipNode';
-import { NodeData } from '../core/parser'; // Import corrigido
+namespace EntrypointNode {
+
+ // Import corrigido
 
 interface RGBColor {
   r: number;
@@ -12,7 +13,7 @@ interface RGBColor {
  * @param nodeData Dados do nó do tipo NodeData
  * @returns FrameNode criado
  */
-export function createEntryPointNode(nodeData: NodeData): FrameNode {
+export function createEntryPointNode(nodeData: Parser.NodeData): FrameNode {
   const entryNode = figma.createFrame();
   entryNode.name = nodeData.name || "ENTRYPOINT";
   entryNode.layoutMode = "VERTICAL";
@@ -36,7 +37,7 @@ export function createEntryPointNode(nodeData: NodeData): FrameNode {
   entryNode.itemSpacing = 8; // Espaço entre o chip e o texto
 
   // Chip com o tipo do nó (usando createChipNode para "ENTRYPOINT")
-  const chip = createChipNode("ENTRYPOINT");
+  const chip = ChipNode.createChipNode("ENTRYPOINT");
   entryNode.appendChild(chip);
 
   // Texto do nome do nó
@@ -61,7 +62,7 @@ export function createEntryPointNode(nodeData: NodeData): FrameNode {
  * @param hex Cor no formato HEX
  * @returns RGBColor
  */
-function hexToRGB(hex: string): RGBColor {
+export function hexToRGB(hex: string): RGBColor {
   const sanitizedHex = hex.replace('#', '');
   const bigint = parseInt(sanitizedHex, 16);
   return {
@@ -69,4 +70,5 @@ function hexToRGB(hex: string): RGBColor {
     g: ((bigint >> 8) & 255) / 255,
     b: (bigint & 255) / 255
   };
+}
 }

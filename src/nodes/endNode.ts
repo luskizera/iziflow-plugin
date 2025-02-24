@@ -1,3 +1,4 @@
+namespace EndNode {
 interface RGBColor {
     r: number;
     g: number;
@@ -51,7 +52,7 @@ interface RGBColor {
    * @param hex - Código hexadecimal da cor (ex.: #18181B)
    * @returns RGBColor
    */
-  function hexToRGB(hex: string): RGBColor {
+  export function hexToRGB(hex: string): RGBColor {
     const sanitizedHex = hex.replace('#', '');
     const bigint = parseInt(sanitizedHex, 16);
     return {
@@ -60,3 +61,4 @@ interface RGBColor {
       b: (bigint & 255) / 255
     };
   }
+}

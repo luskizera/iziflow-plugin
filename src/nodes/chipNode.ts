@@ -1,3 +1,4 @@
+namespace ChipNode {
 /**
  * @param type - O tipo do nó (STEP, ENTRYPOINT, etc.)
  * @returns FrameNode estilizado
@@ -38,7 +39,7 @@ export function createChipNode(type: string): FrameNode {
    * @param hex - Código hexadecimal da cor (ex.: #18181B)
    * @returns RGB
    */
-  function hexToRGB(hex: string): RGB {
+  export function hexToRGB(hex: string): RGB {
     const sanitizedHex = hex.replace('#', '');
     const bigint = parseInt(sanitizedHex, 16);
     return {
@@ -47,3 +48,4 @@ export function createChipNode(type: string): FrameNode {
       b: (bigint & 255) / 255
     };
   }
+}

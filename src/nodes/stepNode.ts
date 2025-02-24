@@ -1,4 +1,5 @@
-import { createChipNode } from "./chipNode";
+namespace StepNode {
+
 
 export function createStepNode(nodeData: any): FrameNode {
     const stepNode = figma.createFrame();
@@ -18,7 +19,7 @@ export function createStepNode(nodeData: any): FrameNode {
     stepNode.itemSpacing = 16;
 
     // Adiciona o chip STEP
-    const chip = createChipNode("STEP");
+    const chip = ChipNode.createChipNode("STEP");
     stepNode.appendChild(chip);
 
     // Título do Nó
@@ -71,4 +72,6 @@ export function createStepNode(nodeData: any): FrameNode {
     }
 
     return stepNode;
+}
+
 }

@@ -1,9 +1,10 @@
-import { NodeData } from "../core/parser";
+namespace DecisionNode {
+
 
 // Sobrecarga de tipo para aceitar { name?: string } ou NodeData
 export function createDecisionNode(data: { name?: string }): SceneNode;
-export function createDecisionNode(nodeData: NodeData): SceneNode;
-export function createDecisionNode(dataOrNode: { name?: string } | NodeData): SceneNode {
+export function createDecisionNode(nodeData: Parser.NodeData): SceneNode;
+export function createDecisionNode(dataOrNode: { name?: string } | Parser.NodeData): SceneNode {
   const name = "name" in dataOrNode ? dataOrNode.name : dataOrNode.name;
   const frame = figma.createFrame();
   frame.name = name || "DECISION";
@@ -31,9 +32,10 @@ export function createDecisionNode(dataOrNode: { name?: string } | NodeData): Sc
   return frame;
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
   return { r, g, b };
+}
 }

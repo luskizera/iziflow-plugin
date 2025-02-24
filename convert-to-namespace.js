@@ -3,7 +3,7 @@ const path = require('path');
 
 const dirPath = './src'; 
 
-function convertToNamespace(filePath) {
+export function convertToNamespace(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const fileName = path.basename(filePath, '.ts');
   const namespace = fileName.charAt(0).toUpperCase() + fileName.slice(1);
@@ -17,7 +17,7 @@ function convertToNamespace(filePath) {
   fs.writeFileSync(filePath, newContent);
 }
 
-function processDirectory(dir) {
+export function processDirectory(dir) {
   fs.readdirSync(dir).forEach(file => {
     const fullPath = path.join(dir, file);
     if (fs.lstatSync(fullPath).isDirectory()) {

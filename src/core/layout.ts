@@ -1,9 +1,10 @@
-import { ConnectionData } from './parser';
+namespace Layout {
+
 
 /**
  * Constrói o grafo com a lista de adjacências e grau de entrada.
  */
-export function buildGraph(nodes: any[], connections: ConnectionData[]): { adjacencyList: { [id: string]: string[] }, inDegree: { [id: string]: number } } {
+export function buildGraph(nodes: any[], connections: Parser.ConnectionData[]): { adjacencyList: { [id: string]: string[] }, inDegree: { [id: string]: number } } {
   const adjacencyList: { [id: string]: string[] } = {};
   const inDegree: { [id: string]: number } = {};
 
@@ -23,7 +24,7 @@ export function buildGraph(nodes: any[], connections: ConnectionData[]): { adjac
 /**
  * Retorna os níveis ordenados do grafo (simplificado para layout horizontal).
  */
-export function getSortedLevels(_: Map<string, SceneNode>, connections: ConnectionData[]): number[] {
+export function getSortedLevels(_: Map<string, SceneNode>, connections: Parser.ConnectionData[]): number[] {
   // Para um layout horizontal simples, retornamos apenas [0] para indicar um único nível
   return [0];
 }
@@ -31,7 +32,7 @@ export function getSortedLevels(_: Map<string, SceneNode>, connections: Connecti
 /**
  * Posiciona os nós no layout em uma linha horizontal uniforme.
  */
-export function layoutNodes(nodes: Map<string, SceneNode>, connections: ConnectionData[], spacing: number = 300): void {
+export function layoutNodes(nodes: Map<string, SceneNode>, connections: Parser.ConnectionData[], spacing: number = 300): void {
   let x = 0;
   const startNode = Array.from(nodes.entries()).find(([_, node]) => node.name === 'Start');
   if (!startNode) {
@@ -74,4 +75,5 @@ export function layoutNodes(nodes: Map<string, SceneNode>, connections: Connecti
   for (const node of [...nodes.values()]) { // Usamos spread operator para evitar o erro
     node.y = (maxHeight - node.height) / 2;
   }
+}
 }

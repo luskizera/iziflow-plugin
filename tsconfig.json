@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
-    "outDir": "./build",
-    "module": "CommonJS",
-    "target": "es2015",
-    "lib": ["es2015"], // Remove "dom" para evitar conflitos com @figma/plugin-typings
-    "strict": true,
-    "moduleResolution": "node",
-    "sourceMap": false,
-    "removeComments": true,
-    "esModuleInterop": true,
-    "types": ["@figma/plugin-typings"]
+    "outFile": "./build/code.js",          // Gera um único arquivo
+    "module": "system",                    // Usa SystemJS (requerido pelo Figma)
+    "target": "es2015",                    // Compatível com Figma
+    "lib": ["es2015"],                     // Usa apenas recursos do ES2015
+    "strict": true,                        // Verificações estritas
+    "moduleResolution": "node",            // Resolve módulos estilo Node.js
+    "sourceMap": false,                    // Desativa source maps
+    "removeComments": true,                // Remove comentários do build final
+    "esModuleInterop": true,               // Compatibilidade com CommonJS
+    "types": ["@figma/plugin-typings"]     // Tipos específicos para plugins Figma
   },
-  "include": ["src/**/*"], // Inclui todos os arquivos .ts em src/
-  "exclude": ["node_modules", "**/*.spec.ts", "src/ui/**/*"] // Exclui os arquivos da UI (HTML, CSS, JS)
+  "include": ["src/**/*"],                 // Inclui todos os arquivos TypeScript na pasta src
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }

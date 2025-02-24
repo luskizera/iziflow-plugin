@@ -11,7 +11,7 @@ body {
   width: 600px;
   height: 400px;
   background: #FFFFFF;
-  font-family: 'Inter', Arial, sans-serif; /* Usa Inter nativa com fallback */
+  font-family: 'Inter', Arial, sans-serif; /* Usa Inter nativa do Figma com fallback */
 }
 
 .container {

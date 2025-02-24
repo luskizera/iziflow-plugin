@@ -44,8 +44,6 @@ function createConnectors(connections: { from: string; to: string }[], nodeMap: 
 }
 
 // Código principal do plugin
-figma.showUI(__html__);
-
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "generate-flow") {
     try {

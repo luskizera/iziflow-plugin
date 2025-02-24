@@ -1,0 +1,9 @@
+# Node modules
+node_modules/
+
+# Logs
+*.log
+
+# Configurações específicas do editor
+.vscode/
+.idea/

@@ -240,6 +240,12 @@ var Parser;
 })(Parser || (Parser = {}));
 var ChipNode;
 (function (ChipNode) {
+    /**
+     * Cria um chip padrão com texto indicando o tipo do nó (ex.: "STEP", "ENTRYPOINT").
+     * Características: fundo #18181B, texto #FAFAFA, fonte 14px "Inter Bold", padding 16px/4px.
+     * @param type - O tipo do chip (ex.: "STEP", "ENTRYPOINT")
+     * @returns FrameNode estilizado com largura e altura ajustadas ao conteúdo
+     */
     function createChipNode(type) {
         return __awaiter(this, void 0, void 0, function* () {
             const chip = figma.createFrame();
@@ -253,7 +259,8 @@ var ChipNode;
             chip.cornerRadius = 8;
             chip.strokeWeight = 0;
             chip.fills = [{ type: "SOLID", color: hexToRGB("#18181B") }];
-            // Fonte já carregada no nível superior, mas mantemos a criação do texto
+            // Carrega a fonte "Inter Bold" (assumindo que o nó chamante pode carregar, mas aqui garantimos)
+            yield figma.loadFontAsync({ family: "Inter", style: "Bold" });
             const textNode = figma.createText();
             textNode.characters = type.toUpperCase();
             textNode.fontSize = 14;
@@ -265,6 +272,43 @@ var ChipNode;
         });
     }
     ChipNode.createChipNode = createChipNode;
+    /**
+     * Cria um chip de descrição (ex.: "ACTION", "INPUTS") com estilo específico para o StepNode.
+     * Características: fundo #F4F4F5, texto #3F3F46, fonte 12px "Inter Bold", padding lateral 12px, padding vertical 2px.
+     * @param label - O label do chip (ex.: "Action", "Inputs")
+     * @returns FrameNode estilizado com largura e altura ajustadas ao conteúdo
+     */
+    function createDescriptionChip(label) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const chip = figma.createFrame();
+            chip.layoutMode = "HORIZONTAL";
+            chip.primaryAxisSizingMode = "AUTO";
+            chip.counterAxisSizingMode = "AUTO";
+            chip.paddingLeft = 12; // Padding lateral de 12px
+            chip.paddingRight = 12;
+            chip.paddingTop = 2; // Padding vertical de 2px
+            chip.paddingBottom = 2;
+            chip.cornerRadius = 8;
+            chip.strokeWeight = 0;
+            chip.fills = [{ type: "SOLID", color: hexToRGB("#F4F4F5") }];
+            // Carrega a fonte "Inter Bold" (assumindo compatibilidade com o nó chamante)
+            yield figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            const textNode = figma.createText();
+            textNode.characters = label.toUpperCase(); // Mantém em maiúsculas por padrão
+            textNode.fontSize = 12;
+            textNode.fontName = { family: "Inter", style: "Bold" };
+            textNode.fills = [{ type: "SOLID", color: hexToRGB("#3F3F46") }];
+            textNode.textAutoResize = "WIDTH_AND_HEIGHT";
+            chip.appendChild(textNode);
+            return chip;
+        });
+    }
+    ChipNode.createDescriptionChip = createDescriptionChip;
+    /**
+     * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma.
+     * @param hex - Código hexadecimal da cor (ex.: "#18181B")
+     * @returns RGB
+     */
     function hexToRGB(hex) {
         const sanitizedHex = hex.replace("#", "");
         const bigint = parseInt(sanitizedHex, 16);
@@ -399,45 +443,51 @@ var DecisionNode;
     DecisionNode.hexToRgb = hexToRgb;
 })(DecisionNode || (DecisionNode = {}));
 var EndNode;
-(function (EndNode_1) {
+(function (EndNode) {
     /**
      * Cria o End Node no Figma com formato circular
-     * Exibe o texto "End" centralizado
+     * Exibe o texto "End" centralizado manualmente em um frame de 140x140px
      * @param nodeData Dados do nó
      * @returns FrameNode estilizado
      */
     function createEndNode(nodeData) {
-        const EndNode = figma.createFrame();
-        EndNode.name = nodeData.name || "End";
-        EndNode.resize(140, 140); // Mantém tamanho fixo de 140x140px
-        EndNode.cornerRadius = 400; // Para deixar o nó totalmente circular
-        EndNode.layoutMode = "VERTICAL";
-        EndNode.counterAxisSizingMode = "AUTO";
-        EndNode.primaryAxisAlignItems = "CENTER";
-        EndNode.primaryAxisSizingMode = "AUTO";
-        EndNode.paddingTop = 55.5; // Ajuste para centralizar o texto
-        EndNode.paddingBottom = 55.5;
-        EndNode.paddingLeft = 30; // Ajuste para centralizar o texto
-        EndNode.paddingRight = 30;
-        // Define o preenchimento do nó (cor de fundo): #18181B (preto)
-        EndNode.fills = [{
-                type: 'SOLID',
-                color: hexToRGB('#18181B')
-            }];
-        // Cria o texto "End"
-        const textNode = figma.createText();
-        figma.loadFontAsync({ family: "Inter", style: "Bold" }).then(() => {
+        return __awaiter(this, void 0, void 0, function* () {
+            const endNode = figma.createFrame();
+            endNode.name = nodeData.name || "End";
+            endNode.resize(140, 140); // Mantém tamanho fixo de 140x140px
+            endNode.cornerRadius = 400; // Para deixar o nó totalmente circular
+            endNode.layoutMode = "NONE"; // Remove Auto Layout, posicionamento manual
+            endNode.fills = [{
+                    type: 'SOLID',
+                    color: hexToRGB('#18181B')
+                }];
+            // Carrega a fonte e cria o texto
+            yield figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            const textNode = figma.createText();
             textNode.characters = "End";
             textNode.fontSize = 24; // Mantém a fonte original
             textNode.fontName = { family: "Inter", style: "Bold" };
             textNode.textAlignHorizontal = "CENTER";
             textNode.textAlignVertical = "CENTER";
             textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }]; // Texto branco
-            EndNode.appendChild(textNode);
+            textNode.textAutoResize = "WIDTH_AND_HEIGHT"; // Ajusta automaticamente ao conteúdo
+            // Ajusta o tamanho do texto para garantir centralização
+            const textWidth = Math.min(80, textNode.width); // Limita a largura para caber no círculo
+            const textHeight = textNode.height;
+            textNode.resize(textWidth, textHeight);
+            // Centraliza o texto manualmente no frame de 140x140px
+            textNode.x = (endNode.width - textWidth) / 2; // Centraliza horizontalmente (30px)
+            textNode.y = (endNode.height - textHeight) / 2; // Centraliza verticalmente (~58px)
+            // Adiciona o texto ao frame
+            endNode.appendChild(textNode);
+            // Força a renderização completa e adiciona à página
+            figma.currentPage.appendChild(endNode);
+            // Força um pequeno atraso para garantir que o Figma processe o layout
+            yield new Promise((resolve) => setTimeout(resolve, 0));
+            return endNode;
         });
-        return EndNode;
     }
-    EndNode_1.createEndNode = createEndNode;
+    EndNode.createEndNode = createEndNode;
     /**
      * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma
      * @param hex - Código hexadecimal da cor (ex.: #18181B)
@@ -452,7 +502,7 @@ var EndNode;
             b: (bigint & 255) / 255
         };
     }
-    EndNode_1.hexToRGB = hexToRGB;
+    EndNode.hexToRGB = hexToRGB;
 })(EndNode || (EndNode = {}));
 var EntrypointNode;
 (function (EntrypointNode) {
@@ -519,40 +569,46 @@ var StartNode;
 (function (StartNode) {
     /**
      * Cria o Start Node no Figma com formato circular
-     * Exibe o texto "START" centralizado
+     * Exibe o texto "START" centralizado manualmente em um frame de 140x140px
      * @param nodeData Dados do nó
      * @returns FrameNode estilizado
      */
     function createStartNode(nodeData) {
-        const startNode = figma.createFrame();
-        startNode.name = nodeData.name || "START";
-        startNode.resize(140, 140); // Mantém tamanho fixo de 140x140px
-        startNode.cornerRadius = 400; // Para deixar o nó totalmente circular
-        startNode.layoutMode = "VERTICAL";
-        startNode.counterAxisSizingMode = "AUTO";
-        startNode.primaryAxisAlignItems = "CENTER";
-        startNode.primaryAxisSizingMode = "AUTO";
-        startNode.paddingTop = 55.5; // Ajuste para centralizar o texto
-        startNode.paddingBottom = 55.5;
-        startNode.paddingLeft = 30; // Ajuste para centralizar o texto
-        startNode.paddingRight = 30;
-        // Define o preenchimento do nó (cor de fundo): #18181B (preto)
-        startNode.fills = [{
-                type: 'SOLID',
-                color: hexToRGB('#18181B')
-            }];
-        // Cria o texto "START"
-        const textNode = figma.createText();
-        figma.loadFontAsync({ family: "Inter", style: "Bold" }).then(() => {
+        return __awaiter(this, void 0, void 0, function* () {
+            const startNode = figma.createFrame();
+            startNode.name = nodeData.name || "START";
+            startNode.resize(140, 140); // Mantém tamanho fixo de 140x140px
+            startNode.cornerRadius = 400; // Para deixar o nó totalmente circular
+            startNode.layoutMode = "NONE"; // Remove Auto Layout, posicionamento manual
+            startNode.fills = [{
+                    type: 'SOLID',
+                    color: hexToRGB('#18181B')
+                }];
+            // Carrega a fonte e cria o texto
+            yield figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            const textNode = figma.createText();
             textNode.characters = "START";
             textNode.fontSize = 24; // Mantém a fonte original
             textNode.fontName = { family: "Inter", style: "Bold" };
             textNode.textAlignHorizontal = "CENTER";
             textNode.textAlignVertical = "CENTER";
             textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }]; // Texto branco
+            textNode.textAutoResize = "WIDTH_AND_HEIGHT"; // Ajusta automaticamente ao conteúdo
+            // Ajusta o tamanho do texto para garantir centralização
+            const textWidth = Math.min(100, textNode.width); // Limita a largura para caber no círculo (START é mais largo que End)
+            const textHeight = textNode.height;
+            textNode.resize(textWidth, textHeight);
+            // Centraliza o texto manualmente no frame de 140x140px
+            textNode.x = (startNode.width - textWidth) / 2; // Centraliza horizontalmente (~20px)
+            textNode.y = (startNode.height - textHeight) / 2; // Centraliza verticalmente (~58px)
+            // Adiciona o texto ao frame
             startNode.appendChild(textNode);
+            // Força a renderização completa e adiciona à página
+            figma.currentPage.appendChild(startNode);
+            // Força um pequeno atraso para garantir que o Figma processe o layout
+            yield new Promise((resolve) => setTimeout(resolve, 0));
+            return startNode;
         });
-        return startNode;
     }
     StartNode.createStartNode = createStartNode;
     /**
@@ -574,50 +630,74 @@ var StartNode;
 var StepNode;
 (function (StepNode) {
     /**
-     * Cria um nó STEP no Figma com Auto Layout, contendo um chip, título e seções de descrição.
-     * @param nodeData Dados do nó, incluindo `name` e opcionalmente `description` com ações, entradas, saídas e erros
-     * @returns FrameNode configurado com largura fixa de 400px e altura dinâmica
+     * Cria um nó STEP no Figma com Auto Layout, separando título e descrição em dois blocos.
+     * @param nodeData Dados do nó, incluindo `name` e opcionalmente `description` com ações, entradas, saídas e erros.
+     * @returns FrameNode configurado corretamente.
      */
     function createStepNode(nodeData) {
         return __awaiter(this, void 0, void 0, function* () {
             const stepNode = figma.createFrame();
             stepNode.name = nodeData.name || "Unnamed Step";
-            stepNode.layoutMode = "VERTICAL"; // Empilha chip, título e seções verticalmente
-            stepNode.counterAxisSizingMode = "FIXED"; // Largura fixa em 400px
-            stepNode.primaryAxisSizingMode = "AUTO"; // Altura ajustada ao conteúdo
-            stepNode.resize(400, 1); // Largura fixa, altura inicial mínima
-            stepNode.paddingTop = 16;
-            stepNode.paddingBottom = 16;
-            stepNode.paddingLeft = 16;
-            stepNode.paddingRight = 16;
-            stepNode.primaryAxisAlignItems = "MIN"; // Alinha itens ao topo
-            stepNode.fills = [{ type: "SOLID", color: { r: 0.96, g: 0.96, b: 0.96 } }]; // Fundo cinza claro
-            stepNode.strokes = [{ type: "SOLID", color: { r: 0.7, g: 0.7, b: 0.7 } }]; // Borda cinza
+            stepNode.layoutMode = "VERTICAL";
+            stepNode.counterAxisSizingMode = "FIXED";
+            stepNode.primaryAxisSizingMode = "AUTO";
+            stepNode.resize(400, 1);
+            stepNode.primaryAxisAlignItems = "MIN";
+            stepNode.fills = [];
+            stepNode.strokes = [];
             stepNode.strokeWeight = 2;
-            stepNode.itemSpacing = 16; // Espaço entre chip, título e seções
+            stepNode.itemSpacing = 16;
             // Carrega fontes necessárias
             yield Promise.all([
-                figma.loadFontAsync({ family: "Inter", style: "Bold" }), // Para chip e título
-                figma.loadFontAsync({ family: "Inter", style: "Regular" }), // Para seções
+                figma.loadFontAsync({ family: "Inter", style: "Bold" }),
+                figma.loadFontAsync({ family: "Inter", style: "Regular" }),
             ]);
-            // Adiciona o chip STEP
+            // Bloco do título
+            const titleBlock = figma.createFrame();
+            titleBlock.layoutMode = "VERTICAL";
+            titleBlock.counterAxisSizingMode = "FIXED";
+            titleBlock.primaryAxisSizingMode = "AUTO";
+            titleBlock.resize(400, 1);
+            titleBlock.paddingTop = 24;
+            titleBlock.paddingBottom = 24;
+            titleBlock.paddingLeft = 24;
+            titleBlock.paddingRight = 24;
+            titleBlock.cornerRadius = 24;
+            titleBlock.fills = [{ type: "SOLID", color: hexToRGB("#F4F4F5") }];
+            titleBlock.itemSpacing = 8;
+            titleBlock.strokes = [{ type: "SOLID", color: hexToRGB("#A1A1AA") }];
+            titleBlock.strokeWeight = 2;
             const chip = yield ChipNode.createChipNode("STEP");
-            stepNode.appendChild(chip);
-            // Título do Nó
+            titleBlock.appendChild(chip);
             const title = figma.createText();
-            title.characters = nodeData.name || "Unnamed Step"; // Nome ou fallback
+            title.characters = nodeData.name || "Unnamed Step";
             title.fontSize = 24;
             title.fontName = { family: "Inter", style: "Bold" };
-            title.fills = [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }]; // Preto
-            title.textAutoResize = "HEIGHT"; // Altura ajustada ao conteúdo
-            title.resize(368, title.height); // Largura fixa (400 - 16*2 padding)
-            stepNode.appendChild(title);
-            // Função para adicionar seções de descrição
+            title.fills = [{ type: "SOLID", color: hexToRGB("#09090B") }];
+            title.textAutoResize = "HEIGHT";
+            title.resize(368, title.height);
+            titleBlock.appendChild(title);
+            stepNode.appendChild(titleBlock);
+            // Bloco da descrição
+            const descBlock = figma.createFrame();
+            descBlock.layoutMode = "VERTICAL";
+            descBlock.counterAxisSizingMode = "FIXED";
+            descBlock.primaryAxisSizingMode = "AUTO";
+            descBlock.resize(400, 1);
+            descBlock.paddingTop = 24;
+            descBlock.paddingBottom = 24;
+            descBlock.paddingLeft = 24;
+            descBlock.paddingRight = 24;
+            descBlock.cornerRadius = 24;
+            descBlock.fills = [{ type: "SOLID", color: hexToRGB("#FFFFFF") }];
+            descBlock.itemSpacing = 8;
+            descBlock.strokes = [{ type: "SOLID", color: hexToRGB("#E4E4E7") }];
+            descBlock.strokeWeight = 2;
             const addSection = (label, content) => {
                 const section = figma.createFrame();
                 section.layoutMode = "VERTICAL";
-                section.counterAxisSizingMode = "AUTO"; // Largura ajustada ao conteúdo
-                section.primaryAxisSizingMode = "AUTO"; // Altura ajustada ao conteúdo
+                section.counterAxisSizingMode = "AUTO";
+                section.primaryAxisSizingMode = "AUTO";
                 section.paddingTop = 8;
                 section.paddingBottom = 8;
                 section.itemSpacing = 4;
@@ -625,7 +705,7 @@ var StepNode;
                 labelText.characters = label.toUpperCase();
                 labelText.fontSize = 12;
                 labelText.fontName = { family: "Inter", style: "Bold" };
-                labelText.fills = [{ type: "SOLID", color: { r: 0.4, g: 0.4, b: 0.4 } }]; // Cinza escuro
+                labelText.fills = [{ type: "SOLID", color: hexToRGB("#3F3F46") }];
                 section.appendChild(labelText);
                 const contentArray = Array.isArray(content) ? content : [content];
                 contentArray.forEach((item) => {
@@ -633,14 +713,12 @@ var StepNode;
                     itemText.characters = item;
                     itemText.fontSize = 14;
                     itemText.fontName = { family: "Inter", style: "Regular" };
-                    itemText.fills = [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }]; // Preto
+                    itemText.fills = [{ type: "SOLID", color: hexToRGB("#09090B") }];
                     section.appendChild(itemText);
                 });
-                stepNode.appendChild(section);
+                descBlock.appendChild(section);
             };
-            // Verifica e adiciona as descrições
             if (nodeData.description) {
-                console.log("🟢 Descrição encontrada para:", nodeData.name, nodeData.description);
                 if (nodeData.description.action)
                     addSection("Action", nodeData.description.action);
                 if (nodeData.description.inputs)
@@ -650,13 +728,23 @@ var StepNode;
                 if (nodeData.description.errors)
                     addSection("Errors", nodeData.description.errors);
             }
-            else {
-                console.warn(`⚠️ Nenhuma descrição encontrada para STEP Node: ${nodeData.name}`);
-            }
-            // Força recálculo da altura após adicionar todos os filhos
-            stepNode.resize(400, stepNode.height);
+            stepNode.appendChild(descBlock);
             return stepNode;
         });
     }
     StepNode.createStepNode = createStepNode;
+    /**
+     * Converte uma cor HEX para RGB normalizado usado pelo Figma
+     * @param hex Cor no formato HEX
+     * @returns RGBColor
+     */
+    function hexToRGB(hex) {
+        const sanitizedHex = hex.replace("#", "");
+        const bigint = parseInt(sanitizedHex, 16);
+        return {
+            r: ((bigint >> 16) & 255) / 255,
+            g: ((bigint >> 8) & 255) / 255,
+            b: (bigint & 255) / 255,
+        };
+    }
 })(StepNode || (StepNode = {}));

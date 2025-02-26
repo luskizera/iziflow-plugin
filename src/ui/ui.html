@@ -74,7 +74,25 @@
   <button id="generateButton">Generate Flow</button>
 
   <script>
-    // JavaScript embutido
+    // Foca automaticamente o textarea quando a UI é carregada
+    document.addEventListener('DOMContentLoaded', () => {
+      const textarea = document.getElementById('jsonInput');
+      if (textarea) {
+        textarea.focus(); // Foca automaticamente o textarea ao carregar
+      }
+    });
+
+    // Escuta mensagens do código principal para focar o textarea, se necessário
+    onmessage = (event) => {
+      if (event.data.pluginMessage && event.data.type === 'focusTextarea') {
+        const textarea = document.getElementById('jsonInput');
+        if (textarea) {
+          textarea.focus(); // Foca o textarea quando receber a mensagem
+        }
+      }
+    };
+
+    // Botão de geração (manter a funcionalidade existente)
     document.getElementById("generateButton").onclick = () => {
       const jsonInput = document.getElementById("jsonInput").value;
 

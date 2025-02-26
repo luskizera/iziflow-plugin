@@ -1,8 +1,21 @@
+async function loadFonts() {
+  try {
+    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+    await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+    await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+    await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
+    console.log("✔️ Fontes carregadas com sucesso.");
+  } catch (error) {
+    console.error("❌ Erro ao carregar as fontes:", error);
+  }
+}
+
 figma.showUI(__html__, { width: 624, height: 400 });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "generate-flow") {
     try {
+      await loadFonts();
       const flowData: Parser.FlowJSON = JSON.parse(msg.json);
       const nodeMap = await Parser.parseJSON(flowData);
 
@@ -23,8 +36,6 @@ figma.ui.onmessage = async (msg) => {
         console.error("Erro desconhecido", error);
         figma.notify("Ocorreu um erro desconhecido.");
       }
-    } finally {
-      figma.closePlugin();
     }
   }
 };

@@ -13,10 +13,6 @@ export function createDecisionNode(dataOrNode: { name?: string } | Parser.NodeDa
   frame.counterAxisSizingMode = "AUTO";
   frame.primaryAxisAlignItems = "CENTER";
   frame.primaryAxisSizingMode = "AUTO";
-  frame.paddingTop = 16;
-  frame.paddingBottom = 16;
-  frame.paddingLeft = 16;
-  frame.paddingRight = 16;
 
   const polygon = figma.createPolygon();
   polygon.pointCount = 4;

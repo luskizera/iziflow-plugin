@@ -8,10 +8,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+function loadFonts() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield figma.loadFontAsync({ family: "Inter", style: "Regular" });
+            yield figma.loadFontAsync({ family: "Inter", style: "Medium" });
+            yield figma.loadFontAsync({ family: "Inter", style: "Bold" });
+            yield figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
+            console.log("✔️ Fontes carregadas com sucesso.");
+        }
+        catch (error) {
+            console.error("❌ Erro ao carregar as fontes:", error);
+        }
+    });
+}
 figma.showUI(__html__, { width: 624, height: 400 });
 figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
     if (msg.type === "generate-flow") {
         try {
+            yield loadFonts();
             const flowData = JSON.parse(msg.json);
             const nodeMap = yield Parser.parseJSON(flowData);
             const sceneNodeMap = new Map([...nodeMap].map(([id, data]) => [id, data.node]));
@@ -29,9 +44,6 @@ figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
                 console.error("Erro desconhecido", error);
                 figma.notify("Ocorreu um erro desconhecido.");
             }
-        }
-        finally {
-            figma.closePlugin();
         }
     }
 });
@@ -91,12 +103,10 @@ var Connectors;
 })(Connectors || (Connectors = {}));
 var Layout;
 (function (Layout) {
-    /**
-     * Constrói o grafo com a lista de adjacências e grau de entrada.
-     */
     function buildGraph(nodes, connections) {
         const adjacencyList = {};
         const inDegree = {};
+        console.log("📊 Construindo grafo de conexões...");
         nodes.forEach(node => {
             adjacencyList[node.id] = [];
             inDegree[node.id] = 0;
@@ -105,31 +115,29 @@ var Layout;
             adjacencyList[conn.from].push(conn.to);
             inDegree[conn.to] = (inDegree[conn.to] || 0) + 1;
         });
+        console.log("🔗 Lista de adjacências:", adjacencyList);
+        console.log("📊 Grau de entrada:", inDegree);
         return { adjacencyList, inDegree };
     }
     Layout.buildGraph = buildGraph;
-    /**
-     * Retorna os níveis ordenados do grafo (simplificado para layout horizontal).
-     */
     function getSortedLevels(_, connections) {
-        // Para um layout horizontal simples, retornamos apenas [0] para indicar um único nível
-        return [0];
+        console.log("📐 Definindo níveis do layout...");
+        return [0]; // Simples layout horizontal
     }
     Layout.getSortedLevels = getSortedLevels;
-    /**
-     * Posiciona os nós no layout em uma linha horizontal uniforme.
-     */
     function layoutNodes(nodes, connections, spacing = 300) {
+        console.log("🔄 Iniciando layout dos nós...");
         let x = 0;
         const startNode = Array.from(nodes.entries()).find(([_, node]) => node.name === 'Start');
         if (!startNode) {
-            console.error("No START node found.");
+            console.error("🚨 No START node found.");
             return;
         }
         const [startId, startNodeObj] = startNode;
         startNodeObj.x = 0;
         startNodeObj.y = 0;
         let maxHeight = startNodeObj.height;
+        console.log(`📍 START node posicionado em (${startNodeObj.x}, ${startNodeObj.y})`);
         const positionedNodes = new Set([startId]);
         const queue = [startId];
         while (queue.length > 0) {
@@ -137,27 +145,32 @@ var Layout;
             const currentNode = nodes.get(currentId);
             if (!currentNode)
                 continue;
+            console.log(`🔀 Processando conexões a partir de: ${currentNode.name}`);
             const outgoingConnections = connections.filter(conn => conn.from === currentId);
             outgoingConnections.forEach(conn => {
                 const targetId = conn.to;
                 if (!positionedNodes.has(targetId)) {
                     const targetNode = nodes.get(targetId);
                     if (targetNode) {
-                        // Ajusta o X com base na largura do nó atual mais o espaçamento
                         targetNode.x = x + currentNode.width + spacing;
-                        targetNode.y = 0; // Alinhamento horizontal fixo
+                        targetNode.y = 0;
+                        console.log(`➡️ Posicionando ${targetNode.name} em (${targetNode.x}, ${targetNode.y})`);
                         maxHeight = Math.max(maxHeight, targetNode.height);
                         x = targetNode.x + targetNode.width;
                         positionedNodes.add(targetId);
                         queue.push(targetId);
                     }
+                    else {
+                        console.warn(`⚠️ Nó de destino não encontrado: ${targetId}`);
+                    }
                 }
             });
         }
-        // Centraliza verticalmente todos os nós com base na altura máxima
-        for (const node of [...nodes.values()]) { // Usamos spread operator para evitar o erro
+        for (const node of [...nodes.values()]) {
             node.y = (maxHeight - node.height) / 2;
+            console.log(`🎯 Centralizando ${node.name} em Y: ${node.y}`);
         }
+        console.log("✅ Layout finalizado.");
     }
     Layout.layoutNodes = layoutNodes;
 })(Layout || (Layout = {}));
@@ -172,8 +185,12 @@ var Parser;
         return __awaiter(this, void 0, void 0, function* () {
             const nodes = new Map();
             const connections = json.connections || [];
+            console.log("📊 Iniciando parse do JSON");
+            console.log("🌐 Nome do fluxo:", json.flowName);
+            console.log("🔄 Total de nós:", json.nodes.length);
+            console.log("🔗 Total de conexões:", connections.length);
             if (!json.nodes || json.nodes.length === 0) {
-                console.error("Nenhum nó encontrado no JSON.");
+                console.error("🚨 Nenhum nó encontrado no JSON.");
                 return nodes;
             }
             for (const nodeData of json.nodes) {
@@ -212,7 +229,10 @@ var Parser;
                     console.error(`🔥 Erro ao criar nó ${nodeData.id}:`, error);
                 }
             }
-            Layout.layoutNodes(new Map([...nodes].map(([id, data]) => [id, data.node])), connections, 300);
+            console.log("📐 Realizando layout dos nós...");
+            Layout.layoutNodes(new Map([...nodes].map(([id, data]) => [id, data.node])), connections, 300 // Espaçamento
+            );
+            console.log("✅ Todos os nós criados e posicionados.");
             return nodes;
         });
     }
@@ -220,49 +240,38 @@ var Parser;
 })(Parser || (Parser = {}));
 var ChipNode;
 (function (ChipNode) {
-    /**
-     * @param type - O tipo do nó (STEP, ENTRYPOINT, etc.)
-     * @returns FrameNode estilizado
-     */
     function createChipNode(type) {
-        const chip = figma.createFrame();
-        chip.layoutMode = 'HORIZONTAL';
-        chip.counterAxisSizingMode = 'AUTO';
-        chip.primaryAxisSizingMode = 'AUTO';
-        chip.paddingLeft = 16;
-        chip.paddingRight = 16;
-        chip.paddingTop = 2;
-        chip.paddingBottom = 2;
-        chip.cornerRadius = 8;
-        chip.strokeWeight = 0;
-        // Define cor fixa do chip: #18181B (preto)
-        chip.fills = [{
-                type: 'SOLID',
-                color: hexToRGB('#18181B')
-            }];
-        // Cria o texto dentro do chip
-        const textNode = figma.createText();
-        textNode.characters = type.toUpperCase(); // Mostra o tipo (ex.: STEP, ENTRY POINT)
-        textNode.fontSize = 12;
-        textNode.fontName = { family: "Inter", style: "Bold" };
-        textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }]; // Branco
-        // Adiciona o texto ao chip
-        chip.appendChild(textNode);
-        return chip;
+        return __awaiter(this, void 0, void 0, function* () {
+            const chip = figma.createFrame();
+            chip.layoutMode = "HORIZONTAL";
+            chip.primaryAxisSizingMode = "AUTO";
+            chip.counterAxisSizingMode = "AUTO";
+            chip.paddingLeft = 16;
+            chip.paddingRight = 16;
+            chip.paddingTop = 4;
+            chip.paddingBottom = 4;
+            chip.cornerRadius = 8;
+            chip.strokeWeight = 0;
+            chip.fills = [{ type: "SOLID", color: hexToRGB("#18181B") }];
+            // Fonte já carregada no nível superior, mas mantemos a criação do texto
+            const textNode = figma.createText();
+            textNode.characters = type.toUpperCase();
+            textNode.fontSize = 14;
+            textNode.fontName = { family: "Inter", style: "Bold" };
+            textNode.fills = [{ type: "SOLID", color: hexToRGB("#FAFAFA") }];
+            textNode.textAutoResize = "WIDTH_AND_HEIGHT";
+            chip.appendChild(textNode);
+            return chip;
+        });
     }
     ChipNode.createChipNode = createChipNode;
-    /**
-     * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma
-     * @param hex - Código hexadecimal da cor (ex.: #18181B)
-     * @returns RGB
-     */
     function hexToRGB(hex) {
-        const sanitizedHex = hex.replace('#', '');
+        const sanitizedHex = hex.replace("#", "");
         const bigint = parseInt(sanitizedHex, 16);
         return {
             r: ((bigint >> 16) & 255) / 255,
             g: ((bigint >> 8) & 255) / 255,
-            b: (bigint & 255) / 255
+            b: (bigint & 255) / 255,
         };
     }
     ChipNode.hexToRGB = hexToRGB;
@@ -278,10 +287,6 @@ var DecisionNode;
         frame.counterAxisSizingMode = "AUTO";
         frame.primaryAxisAlignItems = "CENTER";
         frame.primaryAxisSizingMode = "AUTO";
-        frame.paddingTop = 16;
-        frame.paddingBottom = 16;
-        frame.paddingLeft = 16;
-        frame.paddingRight = 16;
         const polygon = figma.createPolygon();
         polygon.pointCount = 4;
         polygon.resize(200, 300);
@@ -361,67 +366,64 @@ var EndNode;
 })(EndNode || (EndNode = {}));
 var EntrypointNode;
 (function (EntrypointNode) {
-    // Import corrigido
     /**
-     * Cria um EntryPoint Node no Figma
-     * @param nodeData Dados do nó do tipo NodeData
-     * @returns FrameNode criado
+     * Cria um frame no Figma representando um nó de entrada (EntryPoint) com Auto Layout,
+     * contendo um chip e um texto com o nome do nó.
+     * @param nodeData Objeto com dados do nó, incluindo o nome (propriedade `name`)
+     * @returns O FrameNode configurado com largura fixa de 400px e altura dinâmica
      */
     function createEntryPointNode(nodeData) {
-        const entryNode = figma.createFrame();
-        entryNode.name = nodeData.name || "ENTRYPOINT";
-        entryNode.layoutMode = "VERTICAL";
-        entryNode.primaryAxisAlignItems = "MIN";
-        entryNode.counterAxisSizingMode = "FIXED"; // Largura fixa
-        entryNode.primaryAxisSizingMode = "AUTO"; // Altura variável
-        entryNode.resize(400, 0); // Define largura fixa de 400px, altura ajustada automaticamente
-        entryNode.paddingTop = 24;
-        entryNode.paddingBottom = 24;
-        entryNode.paddingLeft = 24;
-        entryNode.paddingRight = 24;
-        entryNode.cornerRadius = 24;
-        entryNode.strokeWeight = 2;
-        entryNode.fills = [{ type: 'SOLID', color: hexToRGB('#F4F4F5') }]; // Fundo cinza claro
-        entryNode.strokes = [{
-                type: "SOLID",
-                color: hexToRGB("#A1A1AA")
-            }];
-        entryNode.dashPattern = [4, 4];
-        entryNode.itemSpacing = 8; // Espaço entre o chip e o texto
-        // Chip com o tipo do nó (usando createChipNode para "ENTRYPOINT")
-        const chip = ChipNode.createChipNode("ENTRYPOINT");
-        entryNode.appendChild(chip);
-        // Texto do nome do nó
-        const nameText = figma.createText();
-        figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }).then(() => {
-            nameText.characters = nodeData.name;
+        return __awaiter(this, void 0, void 0, function* () {
+            const entryNode = figma.createFrame();
+            entryNode.name = nodeData.name || "ENTRYPOINT";
+            // Configuração do Auto Layout para largura fixa e altura dinâmica
+            entryNode.layoutMode = "VERTICAL";
+            entryNode.primaryAxisSizingMode = "AUTO"; // Deve ajustar altura ao conteúdo
+            entryNode.counterAxisSizingMode = "FIXED"; // Largura fixa em 400px
+            entryNode.resize(400, 1); // Altura inicial mínima
+            entryNode.paddingTop = 24;
+            entryNode.paddingBottom = 24;
+            entryNode.paddingLeft = 24;
+            entryNode.paddingRight = 24;
+            entryNode.cornerRadius = 24;
+            entryNode.strokeWeight = 2;
+            entryNode.itemSpacing = 8;
+            entryNode.fills = [{ type: "SOLID", color: ChipNode.hexToRGB("#F4F4F5") }];
+            entryNode.strokes = [{ type: "SOLID", color: ChipNode.hexToRGB("#A1A1AA") }];
+            entryNode.dashPattern = [4, 4];
+            // Carrega todas as fontes necessárias de uma vez
+            yield Promise.all([
+                figma.loadFontAsync({ family: "Inter", style: "Bold" }), // Para o chip
+                figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }), // Para o texto
+            ]);
+            // Adiciona o chip
+            const chip = yield ChipNode.createChipNode("ENTRYPOINT");
+            entryNode.appendChild(chip);
+            console.log("Altura do chip após adicionar:", chip.height);
+            // Adiciona o texto
+            const nameText = figma.createText();
+            nameText.characters = nodeData.name || "ENTRYPOINT";
             nameText.fontSize = 24;
             nameText.fontName = { family: "Inter", style: "Semi Bold" };
             nameText.textAlignHorizontal = "LEFT";
             nameText.textAlignVertical = "TOP";
-            nameText.fills = [{ type: 'SOLID', color: hexToRGB('#09090B') }]; // Texto preto
-            nameText.resizeWithoutConstraints(352, nameText.height); // Limita a largura interna, mas permite altura variável
+            nameText.fills = [{ type: "SOLID", color: ChipNode.hexToRGB("#09090B") }];
             nameText.textAutoResize = "HEIGHT";
+            nameText.resize(352, nameText.height); // 400 - 24*2 padding
             entryNode.appendChild(nameText);
+            console.log("Altura do texto após adicionar:", nameText.height);
+            console.log("Altura do entryNode antes de ajuste:", entryNode.height);
+            // Calcula a altura total manualmente como fallback
+            const totalHeight = chip.height + nameText.height + entryNode.itemSpacing + entryNode.paddingTop + entryNode.paddingBottom;
+            entryNode.resize(400, totalHeight);
+            console.log("Altura ajustada manualmente:", totalHeight);
+            // Adiciona um pequeno atraso pra garantir que o Figma processe o layout
+            yield new Promise((resolve) => setTimeout(resolve, 0));
+            console.log("Altura final do entryNode após tick:", entryNode.height);
+            return entryNode;
         });
-        return entryNode;
     }
     EntrypointNode.createEntryPointNode = createEntryPointNode;
-    /**
-     * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma
-     * @param hex Cor no formato HEX
-     * @returns RGBColor
-     */
-    function hexToRGB(hex) {
-        const sanitizedHex = hex.replace('#', '');
-        const bigint = parseInt(sanitizedHex, 16);
-        return {
-            r: ((bigint >> 16) & 255) / 255,
-            g: ((bigint >> 8) & 255) / 255,
-            b: (bigint & 255) / 255
-        };
-    }
-    EntrypointNode.hexToRGB = hexToRGB;
 })(EntrypointNode || (EntrypointNode = {}));
 var StartNode;
 (function (StartNode) {
@@ -481,74 +483,90 @@ var StartNode;
 })(StartNode || (StartNode = {}));
 var StepNode;
 (function (StepNode) {
+    /**
+     * Cria um nó STEP no Figma com Auto Layout, contendo um chip, título e seções de descrição.
+     * @param nodeData Dados do nó, incluindo `name` e opcionalmente `description` com ações, entradas, saídas e erros
+     * @returns FrameNode configurado com largura fixa de 400px e altura dinâmica
+     */
     function createStepNode(nodeData) {
-        const stepNode = figma.createFrame();
-        stepNode.name = nodeData.name;
-        stepNode.layoutMode = "VERTICAL";
-        stepNode.counterAxisSizingMode = "FIXED";
-        stepNode.primaryAxisSizingMode = "AUTO";
-        stepNode.resize(400, 0); // Largura fixa
-        stepNode.paddingTop = 16;
-        stepNode.paddingBottom = 16;
-        stepNode.paddingLeft = 16;
-        stepNode.paddingRight = 16;
-        stepNode.primaryAxisAlignItems = "MIN";
-        stepNode.fills = [{ type: 'SOLID', color: { r: 0.96, g: 0.96, b: 0.96 } }];
-        stepNode.strokes = [{ type: 'SOLID', color: { r: 0.7, g: 0.7, b: 0.7 } }];
-        stepNode.strokeWeight = 2;
-        stepNode.itemSpacing = 16;
-        // Adiciona o chip STEP
-        const chip = ChipNode.createChipNode("STEP");
-        stepNode.appendChild(chip);
-        // Título do Nó
-        const title = figma.createText();
-        title.characters = nodeData.name;
-        title.fontSize = 24;
-        title.fontName = { family: "Inter", style: "Bold" };
-        title.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
-        stepNode.appendChild(title);
-        // ✅ Função para adicionar seções de descrição
-        const addSection = (label, content) => {
-            const section = figma.createFrame();
-            section.layoutMode = "VERTICAL";
-            section.counterAxisSizingMode = "AUTO";
-            section.primaryAxisSizingMode = "AUTO";
-            section.paddingTop = 8;
-            section.paddingBottom = 8;
-            section.itemSpacing = 4;
-            const labelText = figma.createText();
-            labelText.characters = label.toUpperCase();
-            labelText.fontSize = 12;
-            labelText.fontName = { family: "Inter", style: "Bold" };
-            labelText.fills = [{ type: 'SOLID', color: { r: 0.4, g: 0.4, b: 0.4 } }];
-            section.appendChild(labelText);
-            const contentArray = Array.isArray(content) ? content : [content];
-            contentArray.forEach(item => {
-                const itemText = figma.createText();
-                itemText.characters = item;
-                itemText.fontSize = 14;
-                itemText.fontName = { family: "Inter", style: "Regular" };
-                itemText.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
-                section.appendChild(itemText);
-            });
-            stepNode.appendChild(section);
-        };
-        // ✅ Verifica e adiciona as descrições
-        if (nodeData.description) {
-            console.log("🟢 Descrição encontrada para:", nodeData.name, nodeData.description);
-            if (nodeData.description.action)
-                addSection("Action", nodeData.description.action);
-            if (nodeData.description.inputs)
-                addSection("Inputs", nodeData.description.inputs);
-            if (nodeData.description.outputs)
-                addSection("Outputs", nodeData.description.outputs);
-            if (nodeData.description.errors)
-                addSection("Errors", nodeData.description.errors);
-        }
-        else {
-            console.warn(`⚠️ Nenhuma descrição encontrada para STEP Node: ${nodeData.name}`);
-        }
-        return stepNode;
+        return __awaiter(this, void 0, void 0, function* () {
+            const stepNode = figma.createFrame();
+            stepNode.name = nodeData.name || "Unnamed Step";
+            stepNode.layoutMode = "VERTICAL"; // Empilha chip, título e seções verticalmente
+            stepNode.counterAxisSizingMode = "FIXED"; // Largura fixa em 400px
+            stepNode.primaryAxisSizingMode = "AUTO"; // Altura ajustada ao conteúdo
+            stepNode.resize(400, 1); // Largura fixa, altura inicial mínima
+            stepNode.paddingTop = 16;
+            stepNode.paddingBottom = 16;
+            stepNode.paddingLeft = 16;
+            stepNode.paddingRight = 16;
+            stepNode.primaryAxisAlignItems = "MIN"; // Alinha itens ao topo
+            stepNode.fills = [{ type: "SOLID", color: { r: 0.96, g: 0.96, b: 0.96 } }]; // Fundo cinza claro
+            stepNode.strokes = [{ type: "SOLID", color: { r: 0.7, g: 0.7, b: 0.7 } }]; // Borda cinza
+            stepNode.strokeWeight = 2;
+            stepNode.itemSpacing = 16; // Espaço entre chip, título e seções
+            // Carrega fontes necessárias
+            yield Promise.all([
+                figma.loadFontAsync({ family: "Inter", style: "Bold" }), // Para chip e título
+                figma.loadFontAsync({ family: "Inter", style: "Regular" }), // Para seções
+            ]);
+            // Adiciona o chip STEP
+            const chip = yield ChipNode.createChipNode("STEP");
+            stepNode.appendChild(chip);
+            // Título do Nó
+            const title = figma.createText();
+            title.characters = nodeData.name || "Unnamed Step"; // Nome ou fallback
+            title.fontSize = 24;
+            title.fontName = { family: "Inter", style: "Bold" };
+            title.fills = [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }]; // Preto
+            title.textAutoResize = "HEIGHT"; // Altura ajustada ao conteúdo
+            title.resize(368, title.height); // Largura fixa (400 - 16*2 padding)
+            stepNode.appendChild(title);
+            // Função para adicionar seções de descrição
+            const addSection = (label, content) => {
+                const section = figma.createFrame();
+                section.layoutMode = "VERTICAL";
+                section.counterAxisSizingMode = "AUTO"; // Largura ajustada ao conteúdo
+                section.primaryAxisSizingMode = "AUTO"; // Altura ajustada ao conteúdo
+                section.paddingTop = 8;
+                section.paddingBottom = 8;
+                section.itemSpacing = 4;
+                const labelText = figma.createText();
+                labelText.characters = label.toUpperCase();
+                labelText.fontSize = 12;
+                labelText.fontName = { family: "Inter", style: "Bold" };
+                labelText.fills = [{ type: "SOLID", color: { r: 0.4, g: 0.4, b: 0.4 } }]; // Cinza escuro
+                section.appendChild(labelText);
+                const contentArray = Array.isArray(content) ? content : [content];
+                contentArray.forEach((item) => {
+                    const itemText = figma.createText();
+                    itemText.characters = item;
+                    itemText.fontSize = 14;
+                    itemText.fontName = { family: "Inter", style: "Regular" };
+                    itemText.fills = [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }]; // Preto
+                    section.appendChild(itemText);
+                });
+                stepNode.appendChild(section);
+            };
+            // Verifica e adiciona as descrições
+            if (nodeData.description) {
+                console.log("🟢 Descrição encontrada para:", nodeData.name, nodeData.description);
+                if (nodeData.description.action)
+                    addSection("Action", nodeData.description.action);
+                if (nodeData.description.inputs)
+                    addSection("Inputs", nodeData.description.inputs);
+                if (nodeData.description.outputs)
+                    addSection("Outputs", nodeData.description.outputs);
+                if (nodeData.description.errors)
+                    addSection("Errors", nodeData.description.errors);
+            }
+            else {
+                console.warn(`⚠️ Nenhuma descrição encontrada para STEP Node: ${nodeData.name}`);
+            }
+            // Força recálculo da altura após adicionar todos os filhos
+            stepNode.resize(400, stepNode.height);
+            return stepNode;
+        });
     }
     StepNode.createStepNode = createStepNode;
 })(StepNode || (StepNode = {}));

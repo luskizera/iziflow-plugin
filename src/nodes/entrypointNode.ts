@@ -1,74 +1,70 @@
 namespace EntrypointNode {
+  interface RGBColor {
+    r: number;
+    g: number;
+    b: number;
+  }
 
- // Import corrigido
+  /**
+   * Cria um frame no Figma representando um nó de entrada (EntryPoint) com Auto Layout,
+   * contendo um chip e um texto com o nome do nó.
+   * @param nodeData Objeto com dados do nó, incluindo o nome (propriedade `name`)
+   * @returns O FrameNode configurado com largura fixa de 400px e altura dinâmica
+   */
+  export async function createEntryPointNode(nodeData: Parser.NodeData): Promise<FrameNode> {
+    const entryNode = figma.createFrame();
+    entryNode.name = nodeData.name || "ENTRYPOINT";
 
-interface RGBColor {
-  r: number;
-  g: number;
-  b: number;
-}
+    // Configuração do Auto Layout para largura fixa e altura dinâmica
+    entryNode.layoutMode = "VERTICAL";
+    entryNode.primaryAxisSizingMode = "AUTO"; // Deve ajustar altura ao conteúdo
+    entryNode.counterAxisSizingMode = "FIXED"; // Largura fixa em 400px
+    entryNode.resize(400, 1); // Altura inicial mínima
+    entryNode.paddingTop = 24;
+    entryNode.paddingBottom = 24;
+    entryNode.paddingLeft = 24;
+    entryNode.paddingRight = 24;
+    entryNode.cornerRadius = 24;
+    entryNode.strokeWeight = 2;
+    entryNode.itemSpacing = 8;
+    entryNode.fills = [{ type: "SOLID", color: ChipNode.hexToRGB("#F4F4F5") }];
+    entryNode.strokes = [{ type: "SOLID", color: ChipNode.hexToRGB("#A1A1AA") }];
+    entryNode.dashPattern = [4, 4];
 
-/**
- * Cria um EntryPoint Node no Figma
- * @param nodeData Dados do nó do tipo NodeData
- * @returns FrameNode criado
- */
-export function createEntryPointNode(nodeData: Parser.NodeData): FrameNode {
-  const entryNode = figma.createFrame();
-  entryNode.name = nodeData.name || "ENTRYPOINT";
-  entryNode.layoutMode = "VERTICAL";
-  entryNode.primaryAxisAlignItems = "MIN";
-  entryNode.counterAxisSizingMode = "FIXED"; // Largura fixa
-  entryNode.primaryAxisSizingMode = "AUTO"; // Altura variável
-  entryNode.resize(400, 0); // Define largura fixa de 400px, altura ajustada automaticamente
-  entryNode.paddingTop = 24;
-  entryNode.paddingBottom = 24;
-  entryNode.paddingLeft = 24;
-  entryNode.paddingRight = 24;
-  entryNode.cornerRadius = 24;
-  entryNode.strokeWeight = 2;
+    // Carrega todas as fontes necessárias de uma vez
+    await Promise.all([
+      figma.loadFontAsync({ family: "Inter", style: "Bold" }), // Para o chip
+      figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }), // Para o texto
+    ]);
 
-  entryNode.fills = [{ type: 'SOLID', color: hexToRGB('#F4F4F5') }]; // Fundo cinza claro
-  entryNode.strokes = [{
-    type: "SOLID",
-    color: hexToRGB("#A1A1AA")
-  }];
-  entryNode.dashPattern = [4,4];
-  entryNode.itemSpacing = 8; // Espaço entre o chip e o texto
+    // Adiciona o chip
+    const chip = await ChipNode.createChipNode("ENTRYPOINT");
+    entryNode.appendChild(chip);
+    console.log("Altura do chip após adicionar:", chip.height);
 
-  // Chip com o tipo do nó (usando createChipNode para "ENTRYPOINT")
-  const chip = ChipNode.createChipNode("ENTRYPOINT");
-  entryNode.appendChild(chip);
-
-  // Texto do nome do nó
-  const nameText = figma.createText();
-  figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }).then(() => {
-    nameText.characters = nodeData.name;
+    // Adiciona o texto
+    const nameText = figma.createText();
+    nameText.characters = nodeData.name || "ENTRYPOINT";
     nameText.fontSize = 24;
     nameText.fontName = { family: "Inter", style: "Semi Bold" };
     nameText.textAlignHorizontal = "LEFT";
     nameText.textAlignVertical = "TOP";
-    nameText.fills = [{ type: 'SOLID', color: hexToRGB('#09090B') }]; // Texto preto
-    nameText.resizeWithoutConstraints(352, nameText.height); // Limita a largura interna, mas permite altura variável
+    nameText.fills = [{ type: "SOLID", color: ChipNode.hexToRGB("#09090B") }];
     nameText.textAutoResize = "HEIGHT";
+    nameText.resize(352, nameText.height); // 400 - 24*2 padding
     entryNode.appendChild(nameText);
-  });
+    console.log("Altura do texto após adicionar:", nameText.height);
+    console.log("Altura do entryNode antes de ajuste:", entryNode.height);
 
-  return entryNode;
-}
+    // Calcula a altura total manualmente como fallback
+    const totalHeight = chip.height + nameText.height + entryNode.itemSpacing + entryNode.paddingTop + entryNode.paddingBottom;
+    entryNode.resize(400, totalHeight);
+    console.log("Altura ajustada manualmente:", totalHeight);
 
-/**
- * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma
- * @param hex Cor no formato HEX
- * @returns RGBColor
- */
-export function hexToRGB(hex: string): RGBColor {
-  const sanitizedHex = hex.replace('#', '');
-  const bigint = parseInt(sanitizedHex, 16);
-  return {
-    r: ((bigint >> 16) & 255) / 255,
-    g: ((bigint >> 8) & 255) / 255,
-    b: (bigint & 255) / 255
-  };
-}
+    // Adiciona um pequeno atraso pra garantir que o Figma processe o layout
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    console.log("Altura final do entryNode após tick:", entryNode.height);
+
+    return entryNode;
+  }
 }

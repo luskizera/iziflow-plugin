@@ -1,4 +1,5 @@
 namespace Parser {
+
   export interface FlowJSON {
     flowName: string;
     nodes: NodeData[];
@@ -40,8 +41,13 @@ namespace Parser {
     const nodes = new Map<string, NodeWithType>();
     const connections = json.connections || [];
 
+    console.log("📊 Iniciando parse do JSON");
+    console.log("🌐 Nome do fluxo:", json.flowName);
+    console.log("🔄 Total de nós:", json.nodes.length);
+    console.log("🔗 Total de conexões:", connections.length);
+
     if (!json.nodes || json.nodes.length === 0) {
-      console.error("Nenhum nó encontrado no JSON.");
+      console.error("🚨 Nenhum nó encontrado no JSON.");
       return nodes;
     }
 
@@ -84,12 +90,14 @@ namespace Parser {
       }
     }
 
+    console.log("📐 Realizando layout dos nós...");
     Layout.layoutNodes(
       new Map<string, SceneNode>([...nodes].map(([id, data]) => [id, data.node])),
       connections,
-      300
+      300 // Espaçamento
     );
 
+    console.log("✅ Todos os nós criados e posicionados.");
     return nodes;
   }
 }

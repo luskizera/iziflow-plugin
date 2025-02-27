@@ -35,8 +35,8 @@ namespace StepNode {
         titleBlock.layoutMode = "VERTICAL"; // Auto Layout vertical
         titleBlock.primaryAxisSizingMode = "AUTO"; // Equivalente a HUG
         titleBlock.counterAxisSizingMode = "FIXED"; // Largura fixa
-        titleBlock.fills = [{ type: "SOLID", color: { r: 0.95686274766922, g: 0.95686274766922, b: 0.9607843160629272 } }];
-        titleBlock.strokes = [{ type: "SOLID", color: { r: 0.6313725709915161, g: 0.6313725709915161, b: 0.6666666865348816 } }];
+        titleBlock.fills = [{ type: "SOLID", color: hexToRgb("#F4F4F5") }];
+        titleBlock.strokes = [{ type: "SOLID", color: hexToRgb("#A1A1AA") }];
         titleBlock.strokeWeight = 2;
         titleBlock.cornerRadius = 24;
         titleBlock.paddingTop = 24;
@@ -56,7 +56,7 @@ namespace StepNode {
         titleText.characters = nodeData.name || "Untitled Step";
         titleText.fontSize = 24;
         titleText.fontName = { family: "Inter", style: "Semi Bold" };
-        titleText.fills = [{ type: "SOLID", color: { r: 0.03529411926865578, g: 0.03529411926865578, b: 0.04313725605607033 } }];
+        titleText.fills = [{ type: "SOLID", color: hexToRgb("#09090B") }];
         titleText.textAutoResize = "HEIGHT"; // Ajustado conforme o JSON
         titleText.layoutAlign = "STRETCH"; // Garante que o texto influencie a altura
         titleBlock.appendChild(titleText);
@@ -70,8 +70,8 @@ namespace StepNode {
         descBlock.layoutMode = "VERTICAL"; // Auto Layout vertical
         descBlock.primaryAxisSizingMode = "AUTO"; // Equivalente a HUG
         descBlock.counterAxisSizingMode = "FIXED"; // Largura fixa
-        descBlock.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
-        descBlock.strokes = [{ type: "SOLID", color: { r: 0.8941176533699036, g: 0.8941176533699036, b: 0.9058823585510254 } }];
+        descBlock.fills = [{ type: "SOLID", color: hexToRgb("#EFFFFFF") }];
+        descBlock.strokes = [{ type: "SOLID", color: hexToRgb("#E4E4E7") }];
         descBlock.strokeWeight = 2;
         descBlock.cornerRadius = 24;
         descBlock.paddingTop = 24;
@@ -103,7 +103,7 @@ namespace StepNode {
             itemText.characters = item || "Sem conteúdo";
             itemText.fontSize = 18;
             itemText.fontName = { family: "Inter", style: "Regular" };
-            itemText.fills = [{ type: "SOLID", color: { r: 0.11764705926179886, g: 0.11764705926179886, b: 0.11764705926179886 } }];
+            itemText.fills = [{ type: "SOLID", color: hexToRgb("#1E1E1E") }];
             itemText.textAutoResize = "HEIGHT"; // Ajustado conforme o JSON
             itemText.layoutAlign = "STRETCH"; // Garante que o texto influencie a altura
             sectionFrame.appendChild(itemText);
@@ -151,26 +151,3 @@ namespace StepNode {
       return { r, g, b };
     }
   }
-  
-  // Função main ajustada para usar o nodeData
-  async function main() {
-    await loadFonts();
-  
-    // Define o nodeData baseado no JSON
-    const nodeData = {
-      name: "User Registration Form",
-      description: [
-        { label: "ACTION", content: "User fills out the registration form." },
-        { label: "INPUTS", content: ["Full Name, Email, Phone Number, Password, Address (Auto-suggestion), Referral Code (Optional)."] },
-        { label: "OUTPUTS", content: "Account creation request sent." },
-        { label: "ERRORS", content: ["Invalid email format, Weak password, Phone number already registered, Address not recognized."] }
-      ]
-    };
-  
-    // Cria o nó STEP usando a função adaptada
-    const stepNode = await StepNode.createStepNode(nodeData);
-  
-
-
-  // Executa a função main
-  main();}

@@ -7,3 +7,4 @@ node_modules/
 # Configurações específicas do editor
 .vscode/
 .idea/
+eslint.config.mjs

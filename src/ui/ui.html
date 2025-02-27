@@ -93,7 +93,8 @@
     };
 
     // Botão de geração (manter a funcionalidade existente)
-    document.getElementById("generateButton").onclick = () => {
+    const generateButton = document.getElementById("generateButton");
+    generateButton.onclick = () => {
       const jsonInput = document.getElementById("jsonInput").value;
 
       try {
@@ -113,6 +114,15 @@
         alert("JSON inválido! Corrija o erro e tente novamente.");
       }
     };
+
+    // Evento para a tecla Enter
+    const jsonInput = document.getElementById('jsonInput');
+    jsonInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) { // Enter sem Shift para evitar novas linhas
+        event.preventDefault(); // Impede que o Enter adicione uma nova linha
+        generateButton.click(); // Simula o clique no botão
+      }
+    });
   </script>
 </body>
 </html>

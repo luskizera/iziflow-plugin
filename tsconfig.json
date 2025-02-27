@@ -2,8 +2,8 @@
   "compilerOptions": {
     "outFile": "./build/code.js",    // Um único arquivo compilado
     "module": "none",                // Não usa módulos
-    "target": "es2015",
-    "lib": ["es2015"],
+    "target": "es2017",
+    "lib": ["es2017"],
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,

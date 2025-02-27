@@ -61,7 +61,7 @@ namespace ChipNode {
     const textNode = figma.createText();
     textNode.characters = label.toUpperCase(); // Mantém em maiúsculas por padrão
     textNode.fontSize = 12;
-    textNode.fontName = { family: "Inter", style: "Bold" };
+    textNode.fontName = { family: "Inter", style: "Semi Bold" };
     textNode.fills = [{ type: "SOLID", color: hexToRGB("#3F3F46") }];
     textNode.textAutoResize = "WIDTH_AND_HEIGHT";
 

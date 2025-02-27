@@ -1,5 +1,4 @@
 namespace Parser {
-
   export interface FlowJSON {
     flowName: string;
     nodes: NodeData[];
@@ -16,7 +15,7 @@ namespace Parser {
       inputs?: string[];
       outputs?: string[];
       errors?: string[];
-    };
+    } | { label: string; content: string | string[] }[];
   }
 
   export interface ConnectionData {
@@ -30,6 +29,22 @@ namespace Parser {
   export interface NodeWithType {
     node: SceneNode;
     type: string;
+  }
+
+  /**
+   * Transforma a descrição de um nó em um formato compatível com o createStepNode.
+   * @param description Objeto bruto de descrição (ex.: { action: string, inputs: string[] })
+   * @returns Array de objetos { label: string, content: string|string[] }
+   */
+  function transformDescription(description?: NodeData["description"]): { label: string; content: string | string[] }[] {
+    if (!description || typeof description !== "object" || Array.isArray(description)) return [];
+    const transformed: { label: string; content: string | string[] }[] = [];
+    for (const [key, value] of Object.entries(description as Record<string, any>)) {
+      if (value !== undefined && value !== null) {
+        transformed.push({ label: key, content: value });
+      }
+    }
+    return transformed;
   }
 
   /**
@@ -56,22 +71,29 @@ namespace Parser {
 
       try {
         console.log(`🟡 Criando nó: ${nodeData.name} (${nodeData.type})`);
-        console.log("🔵 Descrição do nó:", nodeData.description);
+        console.log("🔵 Descrição original do nó:", nodeData.description);
+
+        // Transforma a descrição apenas para o nó STEP e passa diretamente
+        let transformedDescription: { label: string; content: string | string[] }[] | undefined = undefined;
+        if (nodeData.type === "STEP" && nodeData.description) {
+          transformedDescription = transformDescription(nodeData.description);
+          console.log("🔵 Descrição transformada para STEP:", transformedDescription);
+        }
 
         switch (nodeData.type) {
-          case 'START':
+          case "START":
             figmaNode = await StartNode.createStartNode(nodeData);
             break;
-          case 'ENTRYPOINT':
+          case "ENTRYPOINT":
             figmaNode = await EntrypointNode.createEntryPointNode(nodeData);
             break;
-          case 'STEP':
-            figmaNode = await StepNode.createStepNode(nodeData);
+          case "STEP":
+            figmaNode = await StepNode.createStepNode({ ...nodeData, description: transformedDescription });
             break;
-          case 'DECISION':
+          case "DECISION":
             figmaNode = await DecisionNode.createDecisionNode(nodeData);
             break;
-          case 'END':
+          case "END":
             figmaNode = await EndNode.createEndNode(nodeData);
             break;
           default:
@@ -84,7 +106,6 @@ namespace Parser {
         } else {
           console.warn(`⚠️ Nó não criado para: ${nodeData.name}`);
         }
-
       } catch (error) {
         console.error(`🔥 Erro ao criar nó ${nodeData.id}:`, error);
       }

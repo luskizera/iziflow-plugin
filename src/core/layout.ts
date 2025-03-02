@@ -1,6 +1,8 @@
-namespace Layout {
+import { Parser } from './parser';
 
-  export function buildGraph(nodes: any[], connections: Parser.ConnectionData[]): { adjacencyList: { [id: string]: string[] }, inDegree: { [id: string]: number } } {
+export interface Layout { buildGraph(nodes: any[], connections: Parser.ConnectionData[]): { adjacencyList: { [id: string]: string[] }, inDegree: { [id: string]: number } }; getSortedLevels(_: Map<string, SceneNode>, connections: Parser.ConnectionData[]): number[]; layoutNodes(nodes: Map<string, SceneNode>, connections: Parser.ConnectionData[], spacing?: number): void; }
+
+export function buildGraph(nodes: any[], connections: Parser.ConnectionData[]): { adjacencyList: { [id: string]: string[] }, inDegree: { [id: string]: number } } {
     const adjacencyList: { [id: string]: string[] } = {};
     const inDegree: { [id: string]: number } = {};
 
@@ -21,13 +23,11 @@ namespace Layout {
 
     return { adjacencyList, inDegree };
   }
-
-  export function getSortedLevels(_: Map<string, SceneNode>, connections: Parser.ConnectionData[]): number[] {
+export function getSortedLevels(_: Map<string, SceneNode>, connections: Parser.ConnectionData[]): number[] {
     console.log("📐 Definindo níveis do layout...");
     return [0]; // Simples layout horizontal
   }
-
-  export function layoutNodes(nodes: Map<string, SceneNode>, connections: Parser.ConnectionData[], spacing: number = 300): void {
+export function layoutNodes(nodes: Map<string, SceneNode>, connections: Parser.ConnectionData[], spacing: number = 300): void {
     console.log("🔄 Iniciando layout dos nós...");
 
     let x = 0;
@@ -83,4 +83,3 @@ namespace Layout {
 
     console.log("✅ Layout finalizado.");
   }
-}

@@ -14,17 +14,47 @@ function refactorNamespaceToModule(ns: ModuleDeclaration, sourceFile: SourceFile
 
   exportedDeclarations.forEach((declarations: Node[]) => {
     declarations.forEach((declaration: Node) => {
-      console.log(`Processando declaração: ${declaration.getKindName()}`);
+      const kindName = declaration.getKindName();
+      console.log(`Processando declaração: ${kindName}`);
       const declarationText = declaration.getText().replace("export ", "");
+
+      // Verifica referências a outros namespaces no texto da declaração
+      const referencedNamespaces = new Set<string>();
+      declaration.getDescendantsOfKind(SyntaxKind.TypeReference).forEach((typeRef) => {
+        const typeName = typeRef.getTypeName()?.getText();
+        if (typeName && sourceFiles.some((sf) => {
+          const namespaces = sf.getNamespaces() as unknown as ModuleDeclaration[]; // Conversão dupla
+          return namespaces?.some((n: ModuleDeclaration) => n.getName() === typeName) || false;
+        })) {
+          referencedNamespaces.add(typeName);
+        }
+      });
+
       try {
         (declaration as any).remove();
-        console.log(`Removido: ${declaration.getKindName()}`);
+        console.log(`Removido: ${kindName}`);
       } catch (e: unknown) {
         const errorMessage = e instanceof Error ? e.message : String(e);
-        console.warn(`Aviso: Não foi possível remover ${declaration.getKindName()} - ${errorMessage}`);
+        console.warn(`Aviso: Não foi possível remover ${kindName} - ${errorMessage}`);
       }
       sourceFile.addStatements(`export ${declarationText}`);
       console.log(`Adicionado export: ${declarationText}`);
+
+      // Adiciona importações para namespaces referenciados
+      referencedNamespaces.forEach((nsName) => {
+        const nsFile = sourceFiles.find((sf) => {
+          const namespaces = sf.getNamespaces() as unknown as ModuleDeclaration[]; // Conversão dupla
+          return namespaces?.some((n: ModuleDeclaration) => n.getName() === nsName) || false;
+        });
+        if (nsFile && nsFile.getFilePath() !== sourceFile.getFilePath()) {
+          const relativePath = sourceFile.getRelativePathTo(nsFile).replace(/\.ts$/, "");
+          sourceFile.addImportDeclaration({
+            moduleSpecifier: relativePath,
+            namedImports: [nsName],
+          });
+          console.log(`Adicionada importação: import { ${nsName} } from "${relativePath}"`);
+        }
+      });
     });
   });
 
@@ -45,7 +75,7 @@ sourceFiles.forEach((sourceFile) => {
   console.log(`Namespaces encontrados no arquivo: ${namespaces.length}`);
   namespaces.forEach((ns) => {
     console.log(`Namespace encontrado: ${ns.getName()} (exportado: ${ns.hasExportKeyword()})`);
-    refactorNamespaceToModule(ns, sourceFile); // Processa todos os namespaces, exportados ou não
+    refactorNamespaceToModule(ns, sourceFile);
   });
 
   const namespaceImports = sourceFile.getImportDeclarations().filter((imp) =>

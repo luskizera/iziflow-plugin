@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
-    "outFile": "./build/code.js",    // Um único arquivo compilado
-    "module": "none",                // Não usa módulos
+    "outDir": "./build",             // Diretório de saída em vez de um único arquivo
+    "module": "esnext",             // Usa ES Modules (ou "commonjs" se preferir)
     "target": "es2017",
     "lib": ["es2017"],
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "types": ["@figma/plugin-typings"]
+    "types": ["@figma/plugin-typings"],
+    "sourceMap": true,              // Opcional, mas útil para depuração
+    "declaration": true             // Opcional, gera arquivos .d.ts para tipagem
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]

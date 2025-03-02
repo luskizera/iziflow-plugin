@@ -1,6 +1,4 @@
-namespace Connectors {
-
-
+import { Parser } from './parser'; // Adjust the import path as necessary
 
 export function createConnectors(connections: Parser.ConnectionData[], nodes: Map<string, Parser.NodeWithType>): void {
   for (const conn of connections) {
@@ -55,5 +53,4 @@ export function createConnectors(connections: Parser.ConnectionData[], nodes: Ma
       }
     }
   }
-}
 }

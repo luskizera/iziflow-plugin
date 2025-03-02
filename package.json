@@ -19,6 +19,7 @@
         "typescript-eslint": "^8.25.0"
     },
     "dependencies": {
-        "systemjs": "^6.15.1"
+        "systemjs": "^6.15.1",
+        "ts-morph": "^25.0.1"
     }
 }

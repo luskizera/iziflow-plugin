@@ -1,17 +1,6 @@
-namespace EntrypointNode {
-  interface RGBColor {
-    r: number;
-    g: number;
-    b: number;
-  }
+import { hexToRgb } from "../utils/hexToRgb";
 
-  /**
-   * Cria um frame no Figma representando um nó de entrada (EntryPoint) com Auto Layout,
-   * contendo um chip e um texto com o nome do nó.
-   * @param nodeData Objeto com dados do nó, incluindo o nome (propriedade `name`)
-   * @returns O FrameNode configurado com largura fixa de 400px e altura dinâmica
-   */
-  export async function createEntryPointNode(nodeData: Parser.NodeData): Promise<FrameNode> {
+export async function createEntryPointNode(nodeData: Parser.NodeData): Promise<FrameNode> {
     const entryNode = figma.createFrame();
     entryNode.name = nodeData.name || "ENTRYPOINT";
 
@@ -67,4 +56,3 @@ namespace EntrypointNode {
 
     return entryNode;
   }
-}

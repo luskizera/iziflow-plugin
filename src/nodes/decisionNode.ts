@@ -1,24 +1,10 @@
+import { NodeData } from './../core/parser';
+import { hexToRgb } from "../utils/hexToRgb";
+
 // decisionNode.ts
-namespace DecisionNode {
-  interface RGBColor {
-    r: number;
-    g: number;
-    b: number;
-  }
+export interface DecisionNode {createDecisionNode(data: NodeData): Promise<SceneNode>;}
 
-  /**
-   * Representa os dados de um nó Decision, podendo ser um objeto simples com nome ou um NodeData mais complexo.
-   */
-  type DecisionData = { name?: string } | Parser.NodeData;
-
-  /**
-   * Cria um nó Decision no Figma representando uma decisão com um losango cinza e texto centralizado.
-   * O frame é transparente (300x200px) com layoutMode: "NONE", contendo um polígono de 300x200px (#A3A3A3) e texto preto.
-   * @param data Dados do nó, incluindo o nome opcional
-   * @returns Promise<SceneNode> Frame configurado como nó Decision
-   * @throws Error se houver falha ao carregar fontes ou criar elementos
-   */
-  export async function createDecisionNode(data: DecisionData): Promise<SceneNode> {
+export async function createDecisionNode(data: NodeData): Promise<SceneNode> {
     try {
       // Extrai o nome do nó (padrão "DECISION" se não fornecido)
       const name = "name" in data ? data.name : data.name || "DECISION";
@@ -123,17 +109,3 @@ namespace DecisionNode {
       throw error;
     }
   }
-
-  /**
-   * Converte uma cor HEX para o formato RGB normalizado (0-1) usado pelo Figma.
-   * @param hex String HEX da cor (ex.: "#A3A3A3")
-   * @returns Objeto com valores RGB normalizados
-   */
-  export function hexToRgb(hex: string): RGBColor {
-    const sanitizedHex = hex.replace("#", "");
-    const r = parseInt(sanitizedHex.slice(0, 2), 16) / 255;
-    const g = parseInt(sanitizedHex.slice(2, 4), 16) / 255;
-    const b = parseInt(sanitizedHex.slice(4, 6), 16) / 255;
-    return { r, g, b };
-  }
-}

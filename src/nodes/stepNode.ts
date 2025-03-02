@@ -1,17 +1,8 @@
-namespace StepNode {
-    interface RGBColor {
-      r: number;
-      g: number;
-      b: number;
-    }
-  
-    /**
-     * Cria um nó STEP no Figma com layout baseado em Auto Layout.
-     * A altura é ajustada dinamicamente ao conteúdo, sem fill ou stroke no frame principal.
-     * @param nodeData Dados do nó, incluindo `name` e opcionalmente `description` com labels e conteúdos.
-     * @returns FrameNode configurado corretamente.
-     */
-    export async function createStepNode(nodeData: any): Promise<FrameNode> {
+import { ChipNode } from "./chipNode";
+import { hexToRgb } from "../utils/hexToRgb";
+import { FrameNode } from "@figma/plugin-typings";1
+
+export async function createStepNode(nodeData: any): Promise<FrameNode> {
       try {
         // Cria o frame principal com Auto Layout
         const parentFrame = figma.createFrame();
@@ -136,18 +127,3 @@ namespace StepNode {
         throw error;
       }
     }
-  
-  
-    /**
-     * Converte uma cor HEX para RGB normalizado usado pelo Figma.
-     * @param hex Cor no formato HEX
-     * @returns RGBColor
-     */
-    function hexToRgb(hex: string): RGBColor {
-      const cleanHex = hex.replace("#", "");
-      const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
-      const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
-      const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
-      return { r, g, b };
-    }
-  }

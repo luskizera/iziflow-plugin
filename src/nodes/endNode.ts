@@ -1,17 +1,6 @@
-namespace EndNode {
-  interface RGBColor {
-    r: number;
-    g: number;
-    b: number;
-  }
+import { hexToRgb } from "../utils/hexToRgb";
 
-  /**
-   * Cria o End Node no Figma com formato circular
-   * Exibe o texto "End" centralizado manualmente em um frame de 140x140px
-   * @param nodeData Dados do nó
-   * @returns FrameNode estilizado
-   */
-  export async function createEndNode(nodeData: any): Promise<FrameNode> {
+export async function createEndNode(nodeData: any): Promise<FrameNode> {
     const endNode = figma.createFrame();
     endNode.name = nodeData.name || "End";
     endNode.resize(140, 140); // Mantém tamanho fixo de 140x140px
@@ -19,7 +8,7 @@ namespace EndNode {
     endNode.layoutMode = "NONE"; // Remove Auto Layout, posicionamento manual
     endNode.fills = [{
       type: 'SOLID',
-      color: hexToRGB('#18181B')
+      color: hexToRgb('#18181B')
     }];
 
     // Carrega a fonte e cria o texto
@@ -30,7 +19,7 @@ namespace EndNode {
     textNode.fontName = { family: "Inter", style: "Bold" };
     textNode.textAlignHorizontal = "CENTER";
     textNode.textAlignVertical = "CENTER";
-    textNode.fills = [{ type: 'SOLID', color: hexToRGB('#FAFAFA') }]; // Texto branco
+    textNode.fills = [{ type: 'SOLID', color: hexToRgb('#FAFAFA') }]; // Texto branco
     textNode.textAutoResize = "WIDTH_AND_HEIGHT"; // Ajusta automaticamente ao conteúdo
 
     // Ajusta o tamanho do texto para garantir centralização
@@ -53,19 +42,3 @@ namespace EndNode {
 
     return endNode;
   }
-
-  /**
-   * Converte uma cor HEX para o formato RGB normalizado usado pelo Figma
-   * @param hex - Código hexadecimal da cor (ex.: #18181B)
-   * @returns RGBColor
-   */
-  export function hexToRGB(hex: string): RGBColor {
-    const sanitizedHex = hex.replace('#', '');
-    const bigint = parseInt(sanitizedHex, 16);
-    return {
-      r: ((bigint >> 16) & 255) / 255,
-      g: ((bigint >> 8) & 255) / 255,
-      b: (bigint & 255) / 255
-    };
-  }
-}

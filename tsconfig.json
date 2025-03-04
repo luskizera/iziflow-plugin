@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
-    "outDir": "./build",             // Diretório de saída em vez de um único arquivo
-    "module": "esnext",             // Usa ES Modules (ou "commonjs" se preferir)
-    "target": "es2017",
-    "lib": ["es2017"],
+    "outDir": "./build",
+    "rootDir": "./src",
+    "module": "esnext",
+    "target": "ES6",
+    "lib": ["es6", "DOM"],
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "types": ["@figma/plugin-typings"],
-    "sourceMap": true,              // Opcional, mas útil para depuração
-    "declaration": true             // Opcional, gera arquivos .d.ts para tipagem
+    "sourceMap": true,
+    "declaration": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]

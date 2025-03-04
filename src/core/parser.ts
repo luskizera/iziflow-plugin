@@ -1,9 +1,14 @@
-import { Layout } from "./layout";
+import { layoutNodes } from "./layout";
+import { createStartNode } from "../nodes/startNode";
+import { createEndNode } from "../nodes/endNode";
+import { createEntryPointNode } from "../nodes/entrypointNode";
+import { createStepNode } from "../nodes/stepNode";
+import { createDecisionNode } from "../nodes/decisionNode";
+import { transformDescription } from "./transformDescription";
 
-export interface Parser {
-  parseJSON(json: FlowJSON): Promise<Map<string, NodeWithType>>;}
 
-  
+
+
 export async function parseJSON(json: FlowJSON): Promise<Map<string, NodeWithType>> {
     const nodes = new Map<string, NodeWithType>();
     const connections = json.connections || [];
@@ -25,7 +30,7 @@ export async function parseJSON(json: FlowJSON): Promise<Map<string, NodeWithTyp
         console.log(`🟡 Criando nó: ${nodeData.name} (${nodeData.type})`);
         console.log("🔵 Descrição original do nó:", nodeData.description);
 
-        // Transforma a descrição apenas para o nó STEP e passa diretamente
+
         let transformedDescription: { label: string; content: string | string[] }[] | undefined = undefined;
         if (nodeData.type === "STEP" && nodeData.description) {
           transformedDescription = transformDescription(nodeData.description);
@@ -34,19 +39,19 @@ export async function parseJSON(json: FlowJSON): Promise<Map<string, NodeWithTyp
 
         switch (nodeData.type) {
           case "START":
-            figmaNode = await StartNode.createStartNode(nodeData);
+            figmaNode = await createStartNode(nodeData);
             break;
           case "ENTRYPOINT":
-            figmaNode = await EntrypointNode.createEntryPointNode(nodeData);
+            figmaNode = await createEntryPointNode(nodeData);
             break;
           case "STEP":
-            figmaNode = await StepNode.createStepNode({ ...nodeData, description: transformedDescription });
+            figmaNode = await createStepNode({ ...nodeData, description: transformedDescription });
             break;
           case "DECISION":
-            figmaNode = await DecisionNode.createDecisionNode(nodeData);
+            figmaNode = await createDecisionNode(nodeData);
             break;
           case "END":
-            figmaNode = await EndNode.createEndNode(nodeData);
+            figmaNode = await createEndNode(nodeData);
             break;
           default:
             console.error(`❌ Tipo de nó desconhecido: ${nodeData.type}`);
@@ -64,7 +69,7 @@ export async function parseJSON(json: FlowJSON): Promise<Map<string, NodeWithTyp
     }
 
     console.log("📐 Realizando layout dos nós...");
-    Layout.layoutNodes(
+    layoutNodes(
       new Map<string, SceneNode>([...nodes].map(([id, data]) => [id, data.node])),
       connections,
       300 // Espaçamento

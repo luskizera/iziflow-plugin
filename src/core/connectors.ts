@@ -1,6 +1,6 @@
-import { Parser } from './parser'; // Adjust the import path as necessary
+import { ConnectionData, NodeWithType } from './parser'; // Adjust the import path as necessary
 
-export function createConnectors(connections: Parser.ConnectionData[], nodes: Map<string, Parser.NodeWithType>): void {
+export function createConnectors(connections: ConnectionData[], nodes: Map<string, NodeWithType>): void {
   for (const conn of connections) {
     const fromNodeData = nodes.get(conn.from);
     const toNodeData = nodes.get(conn.to);

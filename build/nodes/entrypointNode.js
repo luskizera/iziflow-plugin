@@ -1,11 +1,8 @@
 import { hexToRgb } from "../utils/hexToRgb";
-import { NodeData } from "../core/parser";
 import { createChipNode } from "./chipNode";
-
-export async function createEntryPointNode(data: NodeData): Promise<FrameNode> {
+export async function createEntryPointNode(data) {
     const entryNode = figma.createFrame();
     entryNode.name = data.name || "ENTRYPOINT";
-
     // Configuração do Auto Layout para largura fixa e altura dinâmica
     entryNode.layoutMode = "VERTICAL";
     entryNode.primaryAxisSizingMode = "AUTO"; // Deve ajustar altura ao conteúdo
@@ -21,18 +18,15 @@ export async function createEntryPointNode(data: NodeData): Promise<FrameNode> {
     entryNode.fills = [{ type: "SOLID", color: hexToRgb("#F4F4F5") }];
     entryNode.strokes = [{ type: "SOLID", color: hexToRgb("#A1A1AA") }];
     entryNode.dashPattern = [4, 4];
-
     // Carrega todas as fontes necessárias de uma vez
     await Promise.all([
-      figma.loadFontAsync({ family: "Inter", style: "Bold" }), // Para o chip
-      figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }), // Para o texto
+        figma.loadFontAsync({ family: "Inter", style: "Bold" }), // Para o chip
+        figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }), // Para o texto
     ]);
-
     // Adiciona o chip
     const chip = await createChipNode("ENTRYPOINT");
     entryNode.appendChild(chip);
     console.log("Altura do chip após adicionar:", chip.height);
-
     // Adiciona o texto
     const nameText = figma.createText();
     nameText.characters = data.name || "ENTRYPOINT";
@@ -46,15 +40,13 @@ export async function createEntryPointNode(data: NodeData): Promise<FrameNode> {
     entryNode.appendChild(nameText);
     console.log("Altura do texto após adicionar:", nameText.height);
     console.log("Altura do entryNode antes de ajuste:", entryNode.height);
-
     // Calcula a altura total manualmente como fallback
     const totalHeight = chip.height + nameText.height + entryNode.itemSpacing + entryNode.paddingTop + entryNode.paddingBottom;
     entryNode.resize(400, totalHeight);
     console.log("Altura ajustada manualmente:", totalHeight);
-
     // Adiciona um pequeno atraso pra garantir que o Figma processe o layout
     await new Promise((resolve) => setTimeout(resolve, 0));
     console.log("Altura final do entryNode após tick:", entryNode.height);
-
     return entryNode;
-  }
+}
+//# sourceMappingURL=entrypointNode.js.map

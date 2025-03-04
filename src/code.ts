@@ -1,71 +1,50 @@
-import { Project, SourceFile, ModuleDeclaration, SyntaxKind, Node } from "ts-morph";
+import { parseJSON, FlowJSON } from "./core/parser";
+import { layoutNodes } from "./core/layout";
+import { createConnectors } from "./core/connectors";
 
-const project = new Project({
-  tsConfigFilePath: "F:/Design/Plugin Figma/iziflow-plugin/tsconfig.json",
-});
+// Injeção de HTML via esbuild
+declare const __html__: string;
 
-const sourceFiles = project.getSourceFiles();
-console.log(`Total de arquivos encontrados: ${sourceFiles.length}`);
-
-function refactorNamespaceToModule(ns: ModuleDeclaration, sourceFile: SourceFile) {
-  console.log(`Processando namespace: ${ns.getName()}`);
-  const exportedDeclarations = ns.getExportedDeclarations();
-  console.log(`Declarações exportadas no namespace ${ns.getName()}: ${exportedDeclarations.size}`);
-
-  exportedDeclarations.forEach((declarations: Node[]) => {
-    declarations.forEach((declaration: Node) => {
-      console.log(`Processando declaração: ${declaration.getKindName()}`);
-      const declarationText = declaration.getText().replace("export ", "");
-      try {
-        (declaration as any).remove();
-        console.log(`Removido: ${declaration.getKindName()}`);
-      } catch (e: unknown) {
-        const errorMessage = e instanceof Error ? e.message : String(e);
-        console.warn(`Aviso: Não foi possível remover ${declaration.getKindName()} - ${errorMessage}`);
-      }
-      sourceFile.addStatements(`export ${declarationText}`);
-      console.log(`Adicionado export: ${declarationText}`);
-    });
-  });
-
-  if (ns.getExportedDeclarations().size === 0) {
-    console.log(`Namespace ${ns.getName()} agora vazio, removendo...`);
-    ns.remove();
-  } else {
-    console.log(`Namespace ${ns.getName()} ainda tem declarações: ${ns.getExportedDeclarations().size}`);
-  }
+async function loadFonts() {
+    try {
+        await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+        await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+        await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+        await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
+    } catch (error) {
+        console.error("Erro ao carregar fontes:", error);
+        figma.notify("Erro ao carregar fontes.");
+        throw error;
+    }
 }
 
-sourceFiles.forEach((sourceFile) => {
-  console.log(`Analisando arquivo: ${sourceFile.getFilePath()}`);
-  const namespaces = sourceFile
-    .getStatements()
-    .filter((stmt) => stmt.getKind() === SyntaxKind.ModuleDeclaration) as ModuleDeclaration[];
+figma.showUI(__html__, { width: 624, height: 400 });
 
-  console.log(`Namespaces encontrados no arquivo: ${namespaces.length}`);
-  namespaces.forEach((ns) => {
-    console.log(`Namespace encontrado: ${ns.getName()} (exportado: ${ns.hasExportKeyword()})`);
-    refactorNamespaceToModule(ns, sourceFile); // Processa todos os namespaces, exportados ou não
-  });
+figma.ui.onmessage = async (msg: { type: string; json?: string }) => {
+    if (msg.type === "generate-flow" && msg.json) {
+        try {
+            await loadFonts();
 
-  const namespaceImports = sourceFile.getImportDeclarations().filter((imp) =>
-    imp.getText().includes("namespace")
-  );
-  console.log(`Importações com 'namespace': ${namespaceImports.length}`);
+            const flowData: FlowJSON = JSON.parse(msg.json);
+            const nodeMap = await parseJSON(flowData);
 
-  namespaceImports.forEach((imp) => {
-    const modulePath = imp.getModuleSpecifierValue();
-    const namedImports = imp.getNamedImports();
-    namedImports.forEach((namedImp) => {
-      const importName = namedImp.getName();
-      imp.remove();
-      sourceFile.addImportDeclaration({
-        moduleSpecifier: modulePath,
-        namedImports: [importName],
-      });
-    });
-  });
-});
+            const sceneNodeMap = new Map(
+                [...nodeMap].map(([id, data]) => [id, data.node])
+            );
 
-project.saveSync();
-console.log("Refatoração concluída!");
+            layoutNodes(sceneNodeMap, flowData.connections, 300);
+            createConnectors(flowData.connections, nodeMap);
+
+            figma.viewport.scrollAndZoomIntoView([...sceneNodeMap.values()]);
+            figma.notify("Fluxo criado com sucesso!");
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error("Erro ao gerar o fluxo:", error.message);
+                figma.notify(`Erro: ${error.message}`);
+            } else {
+                console.error("Erro desconhecido", error);
+                figma.notify("Ocorreu um erro desconhecido.");
+            }
+        }
+    }
+};

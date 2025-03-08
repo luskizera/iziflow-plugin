@@ -139,6 +139,68 @@ var NodeCache = class _NodeCache {
 };
 var nodeCache = NodeCache.getInstance();
 
+// src/utils/layoutManager.ts
+var LayoutManager = class _LayoutManager {
+  constructor() {
+    this.layoutQueue = [];
+    this.isProcessing = false;
+  }
+  static getInstance() {
+    if (!_LayoutManager.instance) {
+      _LayoutManager.instance = new _LayoutManager();
+    }
+    return _LayoutManager.instance;
+  }
+  /**
+   * Processa o layout de um nó de forma otimizada
+   */
+  processLayout(node) {
+    return __async(this, null, function* () {
+      return new Promise((resolve) => {
+        this.layoutQueue.push(() => __async(this, null, function* () {
+          try {
+            node.setRelaunchData({ relaunch: "" });
+            figma.notify(`Layout processado: ${node.name}`);
+            resolve();
+          } catch (error) {
+            console.error(`Erro ao processar layout do n\xF3 ${node.name}:`, error);
+            resolve();
+          }
+        }));
+        if (!this.isProcessing) {
+          this.processQueue();
+        }
+      });
+    });
+  }
+  /**
+   * Processa a fila de layouts pendentes
+   */
+  processQueue() {
+    return __async(this, null, function* () {
+      if (this.isProcessing || this.layoutQueue.length === 0) {
+        return;
+      }
+      this.isProcessing = true;
+      while (this.layoutQueue.length > 0) {
+        const task = this.layoutQueue.shift();
+        if (task) {
+          yield task();
+        }
+      }
+      this.isProcessing = false;
+    });
+  }
+  /**
+   * Limpa a fila de layouts
+   */
+  clearQueue() {
+    this.layoutQueue = [];
+    this.isProcessing = false;
+  }
+};
+var layoutManager = LayoutManager.getInstance();
+
 // src/nodes/startNode.ts
 function createStartNode(nodeData) {
   return __async(this, null, function* () {
@@ -168,7 +230,7 @@ function createStartNode(nodeData) {
       textNode.y = (startNode.height - textHeight) / 2;
       startNode.appendChild(textNode);
       figma.currentPage.appendChild(startNode);
-      yield new Promise((resolve) => setTimeout(resolve, 0));
+      yield layoutManager.processLayout(startNode);
       return startNode;
     }));
   });
@@ -203,7 +265,7 @@ function createEndNode(nodeData) {
       textNode.y = (endNode.height - textHeight) / 2;
       endNode.appendChild(textNode);
       figma.currentPage.appendChild(endNode);
-      yield new Promise((resolve) => setTimeout(resolve, 0));
+      yield layoutManager.processLayout(endNode);
       return endNode;
     }));
   });

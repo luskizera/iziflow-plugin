@@ -95,119 +95,171 @@ function hexToRgb(hex) {
   return { r, g, b };
 }
 
+// src/utils/nodeCache.ts
+var NodeCache = class _NodeCache {
+  constructor() {
+    this.loadedFonts = /* @__PURE__ */ new Set();
+    this.processingQueue = Promise.resolve();
+  }
+  static getInstance() {
+    if (!_NodeCache.instance) {
+      _NodeCache.instance = new _NodeCache();
+    }
+    return _NodeCache.instance;
+  }
+  /**
+   * Carrega uma fonte de forma otimizada, usando cache
+   */
+  loadFont(family, style) {
+    return __async(this, null, function* () {
+      const fontKey = `${family}-${style}`;
+      if (!this.loadedFonts.has(fontKey)) {
+        yield figma.loadFontAsync({ family, style });
+        this.loadedFonts.add(fontKey);
+      }
+    });
+  }
+  /**
+   * Adiciona uma tarefa à fila de processamento
+   */
+  enqueueTask(task) {
+    return __async(this, null, function* () {
+      const result = this.processingQueue.then(() => task());
+      this.processingQueue = result.then(() => {
+      });
+      return result;
+    });
+  }
+  /**
+   * Limpa o cache de fontes
+   */
+  clearFontCache() {
+    this.loadedFonts.clear();
+  }
+};
+var nodeCache = NodeCache.getInstance();
+
 // src/nodes/startNode.ts
 function createStartNode(nodeData) {
   return __async(this, null, function* () {
-    const startNode = figma.createFrame();
-    startNode.name = nodeData.name || "START";
-    startNode.resize(140, 140);
-    startNode.cornerRadius = 400;
-    startNode.layoutMode = "NONE";
-    startNode.fills = [{
-      type: "SOLID",
-      color: hexToRgb("#18181B")
-    }];
-    yield figma.loadFontAsync({ family: "Inter", style: "Bold" });
-    const textNode = figma.createText();
-    textNode.characters = "START";
-    textNode.fontSize = 24;
-    textNode.fontName = { family: "Inter", style: "Bold" };
-    textNode.textAlignHorizontal = "CENTER";
-    textNode.textAlignVertical = "CENTER";
-    textNode.fills = [{ type: "SOLID", color: hexToRgb("#FAFAFA") }];
-    textNode.textAutoResize = "WIDTH_AND_HEIGHT";
-    const textWidth = Math.min(100, textNode.width);
-    const textHeight = textNode.height;
-    textNode.resize(textWidth, textHeight);
-    textNode.x = (startNode.width - textWidth) / 2;
-    textNode.y = (startNode.height - textHeight) / 2;
-    startNode.appendChild(textNode);
-    figma.currentPage.appendChild(startNode);
-    yield new Promise((resolve) => setTimeout(resolve, 0));
-    return startNode;
+    return nodeCache.enqueueTask(() => __async(this, null, function* () {
+      const startNode = figma.createFrame();
+      startNode.name = nodeData.name || "START";
+      startNode.resize(140, 140);
+      startNode.cornerRadius = 400;
+      startNode.layoutMode = "NONE";
+      startNode.fills = [{
+        type: "SOLID",
+        color: hexToRgb("#18181B")
+      }];
+      yield nodeCache.loadFont("Inter", "Bold");
+      const textNode = figma.createText();
+      textNode.characters = "START";
+      textNode.fontSize = 24;
+      textNode.fontName = { family: "Inter", style: "Bold" };
+      textNode.textAlignHorizontal = "CENTER";
+      textNode.textAlignVertical = "CENTER";
+      textNode.fills = [{ type: "SOLID", color: hexToRgb("#FAFAFA") }];
+      textNode.textAutoResize = "WIDTH_AND_HEIGHT";
+      const textWidth = Math.min(100, textNode.width);
+      const textHeight = textNode.height;
+      textNode.resize(textWidth, textHeight);
+      textNode.x = (startNode.width - textWidth) / 2;
+      textNode.y = (startNode.height - textHeight) / 2;
+      startNode.appendChild(textNode);
+      figma.currentPage.appendChild(startNode);
+      yield new Promise((resolve) => setTimeout(resolve, 0));
+      return startNode;
+    }));
   });
 }
 
 // src/nodes/endNode.ts
 function createEndNode(nodeData) {
   return __async(this, null, function* () {
-    const endNode = figma.createFrame();
-    endNode.name = nodeData.name || "End";
-    endNode.resize(140, 140);
-    endNode.cornerRadius = 400;
-    endNode.layoutMode = "NONE";
-    endNode.fills = [{
-      type: "SOLID",
-      color: hexToRgb("#18181B")
-    }];
-    yield figma.loadFontAsync({ family: "Inter", style: "Bold" });
-    const textNode = figma.createText();
-    textNode.characters = "End";
-    textNode.fontSize = 24;
-    textNode.fontName = { family: "Inter", style: "Bold" };
-    textNode.textAlignHorizontal = "CENTER";
-    textNode.textAlignVertical = "CENTER";
-    textNode.fills = [{ type: "SOLID", color: hexToRgb("#FAFAFA") }];
-    textNode.textAutoResize = "WIDTH_AND_HEIGHT";
-    const textWidth = Math.min(80, textNode.width);
-    const textHeight = textNode.height;
-    textNode.resize(textWidth, textHeight);
-    textNode.x = (endNode.width - textWidth) / 2;
-    textNode.y = (endNode.height - textHeight) / 2;
-    endNode.appendChild(textNode);
-    figma.currentPage.appendChild(endNode);
-    yield new Promise((resolve) => setTimeout(resolve, 0));
-    return endNode;
+    return nodeCache.enqueueTask(() => __async(this, null, function* () {
+      const endNode = figma.createFrame();
+      endNode.name = nodeData.name || "End";
+      endNode.resize(140, 140);
+      endNode.cornerRadius = 400;
+      endNode.layoutMode = "NONE";
+      endNode.fills = [{
+        type: "SOLID",
+        color: hexToRgb("#18181B")
+      }];
+      yield nodeCache.loadFont("Inter", "Bold");
+      const textNode = figma.createText();
+      textNode.characters = "End";
+      textNode.fontSize = 24;
+      textNode.fontName = { family: "Inter", style: "Bold" };
+      textNode.textAlignHorizontal = "CENTER";
+      textNode.textAlignVertical = "CENTER";
+      textNode.fills = [{ type: "SOLID", color: hexToRgb("#FAFAFA") }];
+      textNode.textAutoResize = "WIDTH_AND_HEIGHT";
+      const textWidth = Math.min(80, textNode.width);
+      const textHeight = textNode.height;
+      textNode.resize(textWidth, textHeight);
+      textNode.x = (endNode.width - textWidth) / 2;
+      textNode.y = (endNode.height - textHeight) / 2;
+      endNode.appendChild(textNode);
+      figma.currentPage.appendChild(endNode);
+      yield new Promise((resolve) => setTimeout(resolve, 0));
+      return endNode;
+    }));
   });
 }
 
 // src/nodes/chipNode.ts
 function createChipNode(type) {
   return __async(this, null, function* () {
-    const chip = figma.createFrame();
-    chip.layoutMode = "HORIZONTAL";
-    chip.primaryAxisSizingMode = "AUTO";
-    chip.counterAxisSizingMode = "AUTO";
-    chip.paddingLeft = 16;
-    chip.paddingRight = 16;
-    chip.paddingTop = 4;
-    chip.paddingBottom = 4;
-    chip.cornerRadius = 8;
-    chip.strokeWeight = 0;
-    chip.fills = [{ type: "SOLID", color: hexToRgb("#18181B") }];
-    yield figma.loadFontAsync({ family: "Inter", style: "Bold" });
-    const textNode = figma.createText();
-    textNode.characters = type.toUpperCase();
-    textNode.fontSize = 14;
-    textNode.fontName = { family: "Inter", style: "Bold" };
-    textNode.fills = [{ type: "SOLID", color: hexToRgb("#FAFAFA") }];
-    textNode.textAutoResize = "WIDTH_AND_HEIGHT";
-    chip.appendChild(textNode);
-    return chip;
+    return nodeCache.enqueueTask(() => __async(this, null, function* () {
+      const chip = figma.createFrame();
+      chip.layoutMode = "HORIZONTAL";
+      chip.primaryAxisSizingMode = "AUTO";
+      chip.counterAxisSizingMode = "AUTO";
+      chip.paddingLeft = 16;
+      chip.paddingRight = 16;
+      chip.paddingTop = 4;
+      chip.paddingBottom = 4;
+      chip.cornerRadius = 8;
+      chip.strokeWeight = 0;
+      chip.fills = [{ type: "SOLID", color: hexToRgb("#18181B") }];
+      yield nodeCache.loadFont("Inter", "Bold");
+      const textNode = figma.createText();
+      textNode.characters = type.toUpperCase();
+      textNode.fontSize = 14;
+      textNode.fontName = { family: "Inter", style: "Bold" };
+      textNode.fills = [{ type: "SOLID", color: hexToRgb("#FAFAFA") }];
+      textNode.textAutoResize = "WIDTH_AND_HEIGHT";
+      chip.appendChild(textNode);
+      return chip;
+    }));
   });
 }
 function createDescriptionChip(label) {
   return __async(this, null, function* () {
-    const chip = figma.createFrame();
-    chip.layoutMode = "HORIZONTAL";
-    chip.primaryAxisSizingMode = "AUTO";
-    chip.counterAxisSizingMode = "AUTO";
-    chip.paddingLeft = 12;
-    chip.paddingRight = 12;
-    chip.paddingTop = 2;
-    chip.paddingBottom = 2;
-    chip.cornerRadius = 8;
-    chip.strokeWeight = 0;
-    chip.fills = [{ type: "SOLID", color: hexToRgb("#F4F4F5") }];
-    yield figma.loadFontAsync({ family: "Inter", style: "Bold" });
-    const textNode = figma.createText();
-    textNode.characters = label.toUpperCase();
-    textNode.fontSize = 12;
-    textNode.fontName = { family: "Inter", style: "Semi Bold" };
-    textNode.fills = [{ type: "SOLID", color: hexToRgb("#3F3F46") }];
-    textNode.textAutoResize = "WIDTH_AND_HEIGHT";
-    chip.appendChild(textNode);
-    return chip;
+    return nodeCache.enqueueTask(() => __async(this, null, function* () {
+      const chip = figma.createFrame();
+      chip.layoutMode = "HORIZONTAL";
+      chip.primaryAxisSizingMode = "AUTO";
+      chip.counterAxisSizingMode = "AUTO";
+      chip.paddingLeft = 12;
+      chip.paddingRight = 12;
+      chip.paddingTop = 2;
+      chip.paddingBottom = 2;
+      chip.cornerRadius = 4;
+      chip.strokeWeight = 0;
+      chip.fills = [{ type: "SOLID", color: hexToRgb("#27272A") }];
+      yield nodeCache.loadFont("Inter", "Semi Bold");
+      const textNode = figma.createText();
+      textNode.characters = label.toUpperCase();
+      textNode.fontSize = 12;
+      textNode.fontName = { family: "Inter", style: "Semi Bold" };
+      textNode.fills = [{ type: "SOLID", color: hexToRgb("#FAFAFA") }];
+      textNode.textAutoResize = "WIDTH_AND_HEIGHT";
+      chip.appendChild(textNode);
+      return chip;
+    }));
   });
 }
 

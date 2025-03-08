@@ -1,5 +1,6 @@
 import { hexToRgb } from "../utils/hexToRgb";
 import { nodeCache } from "../utils/nodeCache";
+import { layoutManager } from "../utils/layoutManager";
 
 export async function createStartNode(nodeData: any): Promise<FrameNode> {
     return nodeCache.enqueueTask(async () => {
@@ -41,8 +42,8 @@ export async function createStartNode(nodeData: any): Promise<FrameNode> {
         // Força a renderização completa e adiciona à página
         figma.currentPage.appendChild(startNode);
 
-        // Força um pequeno atraso para garantir que o Figma processe o layout
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        // Processa o layout de forma otimizada
+        await layoutManager.processLayout(startNode);
 
         return startNode;
     });

@@ -3,7 +3,11 @@ import { Layout } from './lib/layout';
 import { Frames } from './lib/frames';
 import { Connectors } from './lib/connectors';
 
-figma.showUI(__html__, { width: 624, height: 550 });
+figma.showUI(__html__, { 
+  width: 624, 
+  height: 550, // Ajuste este valor conforme necessário
+  themeColors: true 
+});
 
 figma.ui.onmessage = async (msg: any) => {
   if (msg.type === 'generate-flow') {

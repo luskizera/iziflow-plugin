@@ -19,7 +19,6 @@ export function App() {
       setError(null);
       setIsLoading(true);
       
-      // Validar JSON com Zod
       const parsed = JSON.parse(json);
       const result = FlowDataSchema.safeParse(parsed);
       
@@ -27,7 +26,14 @@ export function App() {
         throw new Error(result.error.message);
       }
       
-      dispatchTS("generate-flow", { json });
+      // Adicione logs para debug
+      console.log('Enviando JSON:', json);
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'generate-flow', 
+          json 
+        } 
+      }, '*');
 
     } catch (error: any) {
       setError(error.message);
@@ -38,54 +44,60 @@ export function App() {
   };
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">IziFlow V2</h1>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        >
-          {theme === "dark" ? "🌞" : "🌙"}
-        </Button>
+    <div className="h-[550px] flex flex-col">
+      <div className="flex-none p-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">IziFlow V2</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? "🌞" : "🌙"}
+          </Button>
+        </div>
       </div>
 
-      <Tabs defaultValue="editor">
-        <TabsList>
-          <TabsTrigger value="editor">Editor</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="editor" className="space-y-4">
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold">JSON do User Flow</h2>
-            <Textarea 
-              placeholder="Cole aqui o JSON do fluxo..."
-              value={json}
-              onChange={(e) => setJson(e.target.value)}
-              className="h-[240px] font-mono text-sm"
-            />
-          </div>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+      <div className="flex-1 p-4 overflow-hidden">
+        <Tabs defaultValue="editor" className="h-full flex flex-col">
+          <TabsList>
+            <TabsTrigger value="editor">Editor</TabsTrigger>
+            <TabsTrigger value="preview">Preview</TabsTrigger>
+          </TabsList>
           
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? "Gerando..." : "Gerar Fluxo"}
-          </Button>
-        </TabsContent>
+          <div className="flex-1 overflow-hidden">
+            <TabsContent value="editor" className="h-full space-y-4">
+              <div className="space-y-2">
+                <h2 className="text-lg font-semibold">JSON do User Flow</h2>
+                <Textarea 
+                  placeholder="Cole aqui o JSON do fluxo..."
+                  value={json}
+                  onChange={(e) => setJson(e.target.value)}
+                  className="h-[240px] font-mono text-sm"
+                />
+              </div>
 
-        <TabsContent value="preview">
-          <FlowPreview json={json} />
-        </TabsContent>
-      </Tabs>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? "Gerando..." : "Gerar Fluxo"}
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="preview" className="h-full">
+              <FlowPreview json={json} />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
     </div>
   );
 }

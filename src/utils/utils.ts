@@ -1,6 +1,22 @@
 import { manifest } from "../../figma.config";
-import type { EventTS } from "../../shared/universals";
-import type { Message, PluginMessageEvent } from "../globals";
+
+// Definir o tipo EventTS aqui mesmo
+export type EventTS = {
+  "generate-flow": {
+    json: string;
+  };
+  "closePlugin": void;
+};
+
+export type Message = {
+  event: keyof EventTS;
+  [key: string]: any;
+};
+
+export type PluginMessageEvent = {
+  pluginMessage: Message;
+  pluginId?: string;
+};
 
 export const dispatch = (msg: Message, global = false, origin = "*") => {
   let data: PluginMessageEvent = { pluginMessage: msg };
@@ -10,11 +26,11 @@ export const dispatch = (msg: Message, global = false, origin = "*") => {
 
 export const dispatchTS = <Key extends keyof EventTS>(
   event: Key,
-  data: EventTS[Key],
+  data?: EventTS[Key] extends void ? never : EventTS[Key],
   global = false,
   origin = "*"
 ) => {
-  dispatch({ event, ...data }, global, origin);
+  dispatch({ event, ...(data || {}) }, global, origin);
 };
 
 export const listenTS = <Key extends keyof EventTS>(

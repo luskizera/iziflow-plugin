@@ -3,29 +3,48 @@ import { defineConfig } from "vite";
 import { figmaPlugin, figmaPluginInit, runAction } from "vite-figma-plugin";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
 
 import { config } from "./figma.config";
 
 const action = process.env.ACTION;
 const mode = process.env.MODE;
 
-if (action)
-  runAction(
-    {},
-    // config,
-    action,
-  );
+if (action) runAction({}, action);
 
 figmaPluginInit();
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), viteSingleFile(), figmaPlugin(config, mode), tailwindcss()],
+  plugins: [
+    react(), 
+    viteSingleFile(), 
+    figmaPlugin(config, mode)
+  ],
   build: {
-    assetsInlineLimit: Infinity,
+    assetsInlineLimit: 0,
     emptyOutDir: false,
     outDir: ".tmp",
+    sourcemap: mode === "development",
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+        // Removido manualChunks pois não é compatível com inlineDynamicImports
+      },
+      treeshake: true,
+    },
+    chunkSizeWarningLimit: 2000, // Aumentado para evitar warnings
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production',
+        drop_debugger: mode === 'production',
+        pure_funcs: ['console.log'],
+        passes: 2
+      },
+      format: {
+        comments: false
+      }
+    },
+    target: 'esnext'
   },
   resolve: {
     alias: {

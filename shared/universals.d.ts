@@ -1,6 +1,4 @@
 export interface EventTS {
-  createSvg: {
-    svg: string;
-  };
   closePlugin: {};
+  // Adicione aqui seus novos eventos
 }

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es6",
     "useDefineForClassFields": true,
-    "module": "es6",
+    "module": "es2020",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "verbatimModuleSyntax": true,

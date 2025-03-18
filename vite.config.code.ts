@@ -10,10 +10,20 @@ export default defineConfig({
     target: "chrome58",
     rollupOptions: {
       output: {
-        manualChunks: {},
+        inlineDynamicImports: true,
         entryFileNames: `code.js`,
       },
       input: "./src-code/code.ts",
+      treeshake: true,
     },
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        passes: 2,
+        drop_console: true,
+        drop_debugger: true
+      },
+      mangle: true
+    }
   },
 });

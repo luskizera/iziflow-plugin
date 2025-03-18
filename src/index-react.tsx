@@ -1,10 +1,20 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "./index.css";
-import { App } from "./main";
+import "@/index.css";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { ThemeProvider } from '@/components/providers/theme-provider';
+import { App } from '@/components/app';
 
-ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+export default function IndexReact() {
+  return (
+    <ThemeProvider defaultTheme="light">
+      <App />
+    </ThemeProvider>
+  );
+}
+
+// Crie a raiz e renderize o componente
+const rootElement = document.getElementById('root');
+if (rootElement) {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(<IndexReact />);
+}

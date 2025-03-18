@@ -42,7 +42,7 @@ export function App() {
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
-            {theme === "dark" ? <Sun size={24}/> : <Moon size={24}/>}
+            {theme === "dark" ? <Sun size={24} aria-label="Light Mode"/> : <Moon size={24} aria-label="Dark Mode"/>}
           </Button>
         </div>
       </div>

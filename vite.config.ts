@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import { figmaPlugin, figmaPluginInit, runAction } from "vite-figma-plugin";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 import { config } from "./figma.config";
 
@@ -17,7 +18,8 @@ export default defineConfig({
   plugins: [
     react(), 
     viteSingleFile(), 
-    figmaPlugin(config, mode)
+    figmaPlugin(config, mode),
+    tailwindcss()
   ],
   build: {
     assetsInlineLimit: 0,

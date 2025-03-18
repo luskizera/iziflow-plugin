@@ -1,6 +1,5 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@import 'tailwindcss-animate';
+@import "tailwindcss";
 
 /* @plugin 'tailwindcss-animate'; */
 /* @custom-variant dark (&:is(.dark *)); */
@@ -153,6 +152,7 @@
     margin: 0;
     overflow: hidden;
     height: 100vh;
+    transition-colors: background-color 0.2s, color 0.2s;
   }
 
   #root {

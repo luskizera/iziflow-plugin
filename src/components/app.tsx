@@ -14,17 +14,14 @@ export function App() {
 
   const handleSubmit = async () => {
     try {
-      console.log("1. Iniciando handleSubmit");
       setError(null);
       setIsLoading(true);
       
-      console.log("2. JSON antes do parse:", json);
-      const parsed = JSON.parse(json);
-      console.log("3. JSON após parse:", parsed);
-
-      console.log("4. Disparando evento para o plugin");
-      dispatchTS("generate-flow", { json: parsed });
-      console.log("5. Evento disparado");
+      // Validar se é um JSON válido
+      JSON.parse(json); // apenas para validação
+      
+      // Enviar o JSON como string
+      dispatchTS("generate-flow", { json });
 
     } catch (error: any) {
       console.error("Erro no handleSubmit:", error);

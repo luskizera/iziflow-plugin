@@ -2,6 +2,7 @@ import { listenTS } from "./utils/code-utils";
 import { Layout } from './lib/layout';
 import { Frames } from './lib/frames';
 import { Connectors } from './lib/connectors';
+import { Logger } from './utils/logger';
 
 export interface EventTS {
   'generate-flow': {
@@ -17,49 +18,57 @@ figma.showUI(__html__, {
 });
 
 figma.ui.onmessage = async (msg) => {
-  console.log("1. Plugin recebeu mensagem:", msg);
+  Logger.info('Plugin', 'Mensagem recebida', msg);
+
+  if (msg.type === 'console') {
+    Logger.debug('UI', msg.message);
+    return;
+  }
   
   if (msg.type === 'generate-flow') {
     try {
-      console.log("2. Iniciando geração do fluxo");
-      console.log("3. Dados recebidos:", msg.json);
+      Logger.info('Flow', 'Iniciando geração');
       
+      if (typeof msg.json !== 'string') {
+        throw new Error("JSON inválido: deve ser uma string");
+      }
+
       const jsonData = JSON.parse(msg.json);
-      console.log('D. JSON parseado:', jsonData);
+      Logger.debug('Flow', 'JSON parseado', jsonData);
       
       const flow = jsonData.flows?.[0] || jsonData;
-      console.log('3. Flow selecionado:', flow);
+      Logger.debug('Flow', 'Flow selecionado', flow);
 
       if (!flow.nodes || !flow.connections) {
         throw new Error("JSON inválido: faltam 'nodes' ou 'connections'.");
       }
 
       const { nodes, connections } = flow;
-      console.log('4. Nodes:', nodes);
-      console.log('5. Connections:', connections);
+      Logger.debug('Flow', 'Nodes', nodes);
+      Logger.debug('Flow', 'Connections', connections);
 
       // Carregar fontes
-      console.log('6. Carregando fontes...');
+      Logger.info('Flow', 'Carregando fontes...');
       await Promise.all([
         figma.loadFontAsync({ family: "Inter", style: "Regular" }),
         figma.loadFontAsync({ family: "Inter", style: "Bold" }),
         figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }),
         figma.loadFontAsync({ family: "Inter", style: "Medium" })
       ]);
-      console.log('7. Fontes carregadas');
+      Logger.info('Flow', 'Fontes carregadas');
 
       // Construir grafo
-      console.log('8. Construindo grafo...');
+      Logger.info('Flow', 'Construindo grafo...');
       const graph = Layout.buildGraph(nodes, connections);
       const { adjacencyList, inDegree } = graph;
-      console.log('9. Grafo construído:', graph);
+      Logger.debug('Flow', 'Grafo construído', graph);
 
       // Identificar nós iniciais
       let startNodes = nodes.filter((n: any) => n.type === "START");
       if (startNodes.length === 0) {
         startNodes = nodes.filter((n: any) => inDegree[n.id] === 0);
       }
-      console.log('10. Nós iniciais:', startNodes);
+      Logger.debug('Flow', 'Nós iniciais', startNodes);
 
       // Calcular níveis
       const nodeLevel: { [id: string]: number } = {};
@@ -79,7 +88,7 @@ figma.ui.onmessage = async (msg) => {
           }
         });
       }
-      console.log('11. Níveis calculados:', nodeLevel);
+      Logger.debug('Flow', 'Níveis calculados', nodeLevel);
 
       // Agrupar nós
       const levelToNodes: { [level: number]: string[] } = {};
@@ -90,7 +99,7 @@ figma.ui.onmessage = async (msg) => {
         }
         levelToNodes[lvl].push(nodeId);
       });
-      console.log('12. Nós agrupados por nível:', levelToNodes);
+      Logger.debug('Flow', 'Nós agrupados por nível', levelToNodes);
 
       const sortedLevels = Layout.getSortedLevels(levelToNodes);
       const nodeMap: { [id: string]: SceneNode } = {};
@@ -100,11 +109,11 @@ figma.ui.onmessage = async (msg) => {
       const centerY = figma.viewport.center.y;
 
       for (const level of sortedLevels) {
-        console.log(`13. Processando nível ${level}`);
+        Logger.info('Flow', `Processando nível ${level}`);
         const nodesAtLevel = levelToNodes[level];
         for (const nodeId of nodesAtLevel) {
           const nodeData = nodes.find((n: any) => n.id === nodeId);
-          console.log(`14. Criando nó ${nodeId}:`, nodeData);
+          Logger.debug('Flow', `Criando nó ${nodeId}`, nodeData);
           
           let frame: FrameNode;
           switch (nodeData.type) {
@@ -128,22 +137,23 @@ figma.ui.onmessage = async (msg) => {
           frame.y = centerY - frame.height / 2;
           currentX += frame.width + 300;
           nodeMap[nodeId] = frame;
-          console.log(`15. Nó ${nodeId} criado e posicionado:`, frame);
+          Logger.debug('Flow', `Nó ${nodeId} criado e posicionado`, frame);
         }
       }
 
       // Criar conexões
-      console.log('16. Criando conexões...');
+      Logger.info('Flow', 'Criando conexões...');
       Connectors.createConnectors(connections, nodeMap);
-      console.log('17. Conexões criadas');
+      Logger.info('Flow', 'Conexões criadas');
 
       figma.notify("Fluxo gerado com sucesso!");
+      Logger.success('Flow', 'Geração concluída com sucesso');
     } catch (error) {
-      console.error('Erro no plugin:', error);
+      Logger.error('Flow', 'Erro na geração', error);
       figma.notify(`Erro: ${error.message}`);
     }
   } else {
-    console.log('Tipo de mensagem desconhecido:', msg.type);
+    Logger.warn('Plugin', 'Tipo de mensagem desconhecido', msg.type);
   }
 };
 

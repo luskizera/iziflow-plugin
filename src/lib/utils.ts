@@ -8,9 +8,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const notify = (message: string) => {
-  if (typeof figma !== 'undefined') {
-    figma.notify(message);
-  } else {
-    console.log('[Notification]:', message);
-  }
+  parent.postMessage({
+    pluginMessage: {
+      type: 'console',
+      message: `[UI] ${message}`
+    }
+  }, '*');
 };

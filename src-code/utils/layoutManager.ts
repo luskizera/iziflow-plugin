@@ -1,3 +1,4 @@
+import { nodeCache } from "./nodeCache";
 
 /**
  * Gerenciador de layout otimizado para o plugin IziFlow

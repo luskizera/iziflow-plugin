@@ -6,8 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { useTheme } from "./providers/theme-provider";
 import { FlowPreview } from "./flow-preview";
 import { dispatchTS } from "@/utils/utils";
-import { FlowDataSchema } from "@/lib/schema";
-
 export function App() {
   const [json, setJson] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,28 +14,21 @@ export function App() {
 
   const handleSubmit = async () => {
     try {
+      console.log("1. Iniciando handleSubmit");
       setError(null);
       setIsLoading(true);
       
+      console.log("2. JSON antes do parse:", json);
       const parsed = JSON.parse(json);
-      const result = FlowDataSchema.safeParse(parsed);
-      
-      if (!result.success) {
-        throw new Error(result.error.message);
-      }
-      
-      // Adicione logs para debug
-      console.log('Enviando JSON:', json);
-      parent.postMessage({ 
-        pluginMessage: { 
-          type: 'generate-flow', 
-          json 
-        } 
-      }, '*');
+      console.log("3. JSON após parse:", parsed);
+
+      console.log("4. Disparando evento para o plugin");
+      dispatchTS("generate-flow", { json: parsed });
+      console.log("5. Evento disparado");
 
     } catch (error: any) {
+      console.error("Erro no handleSubmit:", error);
       setError(error.message);
-      console.error("Erro:", error);
     } finally {
       setIsLoading(false);
     }

@@ -26,11 +26,17 @@ export const dispatch = (msg: Message, global = false, origin = "*") => {
 
 export const dispatchTS = <Key extends keyof EventTS>(
   event: Key,
-  data?: EventTS[Key] extends void ? never : EventTS[Key],
+  data?: EventTS[Key],
   global = false,
   origin = "*"
 ) => {
-  dispatch({ event, ...(data || {}) }, global, origin);
+  console.log('dispatchTS:', { event, data, global, origin });
+  const message = { 
+    type: event, 
+    ...data 
+  };
+  console.log('Mensagem final:', message);
+  parent.postMessage({ pluginMessage: message }, origin);
 };
 
 export const listenTS = <Key extends keyof EventTS>(

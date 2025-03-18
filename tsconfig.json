@@ -18,6 +18,7 @@
     "typeRoots": [
       "./node_modules/@types",
       "./src/globals.d.ts",
+      "./src/types",
       "shared/universals.d.ts"
     ],
     "baseUrl": ".",

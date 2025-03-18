@@ -1,4 +1,6 @@
 export interface EventTS {
+  'generate-flow': {
+    json: string;
+  };
   closePlugin: {};
-  // Adicione aqui seus novos eventos
 }

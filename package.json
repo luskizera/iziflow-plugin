@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --watch",
-    "devcode": "vite build --watch --config vite.config.code.ts ",
+    "devcode": "vite build --config vite.config.code.ts --watch",
     "build": "vite build",
     "buildcode": "vite build --config vite.config.code.ts",
     "preview": "vite preview",

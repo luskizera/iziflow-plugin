@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { useTheme } from "./providers/theme-provider";
 import { FlowPreview } from "./flow-preview";
 import { dispatchTS } from "@/utils/utils";
+import { Sun, Moon } from 'lucide-react';
 export function App() {
   const [json, setJson] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +42,7 @@ export function App() {
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
-            {theme === "dark" ? "🌞" : "🌙"}
+            {theme === "dark" ? <Sun size={24}/> : <Moon size={24}/>}
           </Button>
         </div>
       </div>

@@ -4,6 +4,7 @@
 .tmp/
 tmp
 node_modules
+.github/
 
 out/
 dist/

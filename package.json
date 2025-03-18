@@ -1,5 +1,5 @@
 {
-  "name": "iziFlowv2",
+  "name": "iziflow-v2",
   "version": "1.0.0",
   "description": "Your Figma Plugin",
   "main": "code.js",
@@ -16,28 +16,29 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "@radix-ui/react-select": "^2.1.1",
-    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-select": "^2.1.6",
+    "@radix-ui/react-slot": "^1.1.2",
+    "@tailwindcss/vite": "^4.0.14",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.427.0",
+    "lucide-react": "^0.482.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "tailwind-merge": "^2.5.2",
+    "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.94.0",
-    "@types/node": "^16.18.105",
+    "@tailwindcss/postcss": "^4.0.14",
+    "@types/node": "^16.18.126",
     "@types/react": "19.0.10",
     "@types/react-dom": "19.0.4",
     "@vitejs/plugin-react": "^4.2.1",
-    "autoprefixer": "^10.4.20",
     "cross-env": "^7.0.3",
     "postcss": "^8.4.41",
     "prettier": "^3.3.3",
-    "prettier-plugin-tailwindcss": "^0.6.6",
-    "tailwindcss": "^3.4.10",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "tailwindcss": "^4.0.14",
     "typescript": "^5.0.2",
     "vite": "^5.2.12",
     "vite-figma-plugin": "^0.0.24",
@@ -64,5 +65,10 @@
         }
       ]
     }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

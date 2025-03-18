@@ -5,7 +5,11 @@
       "../node_modules/@figma",
       "../src/globals.d.ts",
       "../shared/universals.d.ts"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["./**/*.ts"]
 }

@@ -26,7 +26,6 @@ export function FlowPreview({ json }: FlowPreviewProps) {
       }
       
       const flowData = result.data;
-      // Se a propriedade "flows" existir e tiver itens, usar o primeiro; senão, tratar flowData como Flow
       const flow: Flow = ('flows' in flowData && flowData.flows && flowData.flows.length > 0)
         ? flowData.flows[0]
         : flowData as Flow;
@@ -34,7 +33,10 @@ export function FlowPreview({ json }: FlowPreviewProps) {
       const nodes: Node[] = flow.nodes.map((node: FlowNode) => ({
         id: node.id,
         type: node.type.toLowerCase(),
-        data: { label: node.name },
+        data: { 
+          label: node.name,
+          type: node.type // Adicionado tipo para estilização específica
+        },
         position: { x: 0, y: 0 },
       }));
       

@@ -3,37 +3,60 @@
  */
 class NodeCache {
     private static instance: NodeCache;
-    private loadedFonts: Set<string>;
-    private processingQueue: Promise<void>;
+    private taskQueue: Array<() => Promise<any>>;
+    private isProcessing: boolean;
 
     private constructor() {
-        this.loadedFonts = new Set();
-        this.processingQueue = Promise.resolve();
+        this.taskQueue = [];
+        this.isProcessing = false;
     }
 
-    public static getInstance(): NodeCache {
+    static getInstance() {
         if (!NodeCache.instance) {
             NodeCache.instance = new NodeCache();
         }
         return NodeCache.instance;
     }
 
-    public async loadFont(family: string, style: string): Promise<void> {
-        const fontKey = `${family}-${style}`;
-        if (!this.loadedFonts.has(fontKey)) {
-            await figma.loadFontAsync({ family, style });
-            this.loadedFonts.add(fontKey);
+    async loadFont(family: string, style: string) {
+        return figma.loadFontAsync({ family, style });
+    }
+
+    async enqueueTask<T>(task: () => Promise<T>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.taskQueue.push(async () => {
+                try {
+                    const result = await task();
+                    resolve(result);
+                } catch (error) {
+                    console.error("Erro na execução da task:", error);
+                    reject(error);
+                }
+            });
+
+            if (!this.isProcessing) {
+                this.processQueue();
+            }
+        });
+    }
+
+    private async processQueue() {
+        if (this.isProcessing || this.taskQueue.length === 0) return;
+
+        this.isProcessing = true;
+
+        try {
+            while (this.taskQueue.length > 0) {
+                const task = this.taskQueue.shift();
+                if (task) {
+                    await task();
+                }
+            }
+        } catch (error) {
+            console.error("Erro no processamento da fila:", error);
+        } finally {
+            this.isProcessing = false;
         }
-    }
-
-    public async enqueueTask<T>(task: () => Promise<T>): Promise<T> {
-        const result = this.processingQueue.then(() => task());
-        this.processingQueue = result.then(() => {});
-        return result;
-    }
-
-    public clearFontCache(): void {
-        this.loadedFonts.clear();
     }
 }
 

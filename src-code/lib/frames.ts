@@ -65,61 +65,102 @@ export namespace Frames {
   }
 
   export async function createStepNode(nodeData: any): Promise<FrameNode> {
-    return nodeCache.enqueueTask(async () => {
-        // Cria o frame principal
-        const stepNode = figma.createFrame();
-        stepNode.name = nodeData.name || "Unnamed Step";
-        stepNode.layoutMode = "VERTICAL";
-        stepNode.primaryAxisSizingMode = "AUTO";
-        stepNode.counterAxisSizingMode = "AUTO";
-        stepNode.itemSpacing = 16;
-        stepNode.fills = [];
-        stepNode.strokes = [];
+    if (!nodeData || !nodeData.type) {
+      console.error('NodeData inválido:', nodeData);
+      throw new Error('NodeData inválido');
+    }
 
-        // Bloco do título com configurações otimizadas
-        const titleBlock = figma.createFrame();
-        titleBlock.name = "STEP Title Block";
-        titleBlock.layoutMode = "VERTICAL";
-        titleBlock.primaryAxisSizingMode = "AUTO";
-        titleBlock.counterAxisSizingMode = "FIXED";
-        titleBlock.resize(400, titleBlock.height); // Altura será ajustada automaticamente
-        titleBlock.itemSpacing = 8;
-        titleBlock.paddingTop = titleBlock.paddingBottom = titleBlock.paddingLeft = titleBlock.paddingRight = 24;
-        titleBlock.cornerRadius = 24;
-        titleBlock.strokes = [{ type: "SOLID", color: hexToRgb("#A1A1AA") }];
-        titleBlock.strokeWeight = 2;
-        titleBlock.fills = [{ type: "SOLID", color: hexToRgb("#F4F4F5") }];
+    try {
+      console.log(`[Step] Criando ${nodeData.type}:`, {
+        id: nodeData.id,
+        name: nodeData.name,
+        type: nodeData.type,
+        description: nodeData.description
+      });
 
-        // Chip "STEP" otimizado
-        const stepChip = await createTypeChip("STEP");
-        titleBlock.appendChild(stepChip);
+      // Criar frame principal
+      const stepNode = figma.createFrame();
+      figma.currentPage.appendChild(stepNode);
 
-        // Título principal com cache de fonte
-        await nodeCache.loadFont("Inter", "Semi Bold");
-        const titleText = figma.createText();
-        titleText.characters = nodeData.name || "Untitled Step";
-        titleText.fontName = { family: "Inter", style: "Semi Bold" };
-        titleText.fontSize = 24;
-        titleText.fills = [{ type: "SOLID", color: hexToRgb("#09090B") }];
-        titleText.textAutoResize = "WIDTH_AND_HEIGHT";
-        titleBlock.appendChild(titleText);
+      // Configuração básica
+      stepNode.name = nodeData.name || "Unnamed Step";
+      stepNode.layoutMode = "VERTICAL";
+      stepNode.primaryAxisSizingMode = "AUTO";
+      stepNode.counterAxisSizingMode = "AUTO";
+      stepNode.itemSpacing = 16;
+      stepNode.fills = [];
+      stepNode.strokes = [];
 
-        stepNode.appendChild(titleBlock);
+      // Carregar fontes
+      await Promise.all([
+        figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }),
+        figma.loadFontAsync({ family: "Inter", style: "Regular" })
+      ]);
 
-        // Bloco de descrição otimizado
-        if (Array.isArray(nodeData.description) && nodeData.description.length > 0) {
-            const descBlock = await createDescriptionBlock(nodeData.description);
-            stepNode.appendChild(descBlock);
+      // Criar e configurar título
+      const titleBlock = await createTitleBlock(nodeData);
+      stepNode.appendChild(titleBlock);
+
+      // Processar descrição se existir
+      if (nodeData.description && typeof nodeData.description === 'object') {
+        const descriptions = Object.entries(nodeData.description).map(([label, content]) => ({
+          label,
+          content: Array.isArray(content) ? content.join('\n') : String(content)
+        }));
+
+        if (descriptions.length > 0) {
+          const descBlock = await createDescriptionBlock(descriptions);
+          stepNode.appendChild(descBlock);
         }
+      }
 
-        // Força a renderização e adiciona à página
-        figma.currentPage.appendChild(stepNode);
+      console.log(`[Step] Frame criado com sucesso:`, stepNode.id);
+      return stepNode;
 
-        // Processa o layout de forma otimizada
-        await layoutManager.processLayout(stepNode);
+    } catch (error) {
+      console.error('[Step] Erro:', error);
+      throw error;
+    }
+  }
 
-        return stepNode;
-    });
+  // Novo método auxiliar para criar bloco de título
+  async function createTitleBlock(nodeData: any): Promise<FrameNode> {
+    const titleBlock = figma.createFrame();
+    titleBlock.name = `${nodeData.type} Title Block`;
+    titleBlock.layoutMode = "VERTICAL";
+    titleBlock.primaryAxisSizingMode = "AUTO";
+    titleBlock.counterAxisSizingMode = "FIXED";
+    titleBlock.itemSpacing = 8;
+    titleBlock.paddingTop = titleBlock.paddingBottom = titleBlock.paddingLeft = titleBlock.paddingRight = 24;
+    titleBlock.cornerRadius = 24;
+
+    // Estilo específico para cada tipo
+    if (nodeData.type === "ENTRYPOINT") {
+      titleBlock.strokes = [{ type: "SOLID", color: hexToRgb("#A1A1AA") }];
+      titleBlock.fills = [{ type: "SOLID", color: hexToRgb("#F4F4F5") }];
+      titleBlock.dashPattern = [4, 4];
+    } else {
+      titleBlock.strokes = [{ type: "SOLID", color: hexToRgb("#A1A1AA") }];
+      titleBlock.fills = [{ type: "SOLID", color: hexToRgb("#F4F4F5") }];
+    }
+    titleBlock.strokeWeight = 2;
+
+    // Adicionar chip e texto do título
+    const typeChip = await createTypeChip(nodeData.type);
+    titleBlock.appendChild(typeChip);
+
+    const titleText = figma.createText();
+    titleText.characters = nodeData.name || "Untitled Step";
+    titleText.fontName = { family: "Inter", style: "Semi Bold" };
+    titleText.fontSize = 24;
+    titleText.fills = [{ type: "SOLID", color: hexToRgb("#09090B") }];
+    titleText.textAutoResize = "WIDTH_AND_HEIGHT";
+    titleBlock.appendChild(titleText);
+
+    // Redimensiona usando a altura calculada do bloco
+    titleBlock.resize(400, titleBlock.height);
+
+    return titleBlock;
   }
 
   export async function createDecisionNode(nodeData: any): Promise<FrameNode> {
@@ -146,7 +187,7 @@ export namespace Frames {
     titleText.characters = nodeData.name || "Untitled Decision";
     titleText.fontName = { family: "Inter", style: "Semi Bold" };
     titleText.fontSize = 18;
-    titleText.fills = [{ type: "SOLID", color: hexToRgb("#FFFFFF") }];
+    titleText.fills = [{ type: "SOLID", color: hexToRgb("#09090B") }];
     
     const textContainer = figma.createFrame();
     textContainer.layoutMode = "NONE";
@@ -190,27 +231,28 @@ export namespace Frames {
   }
 
   async function createDescriptionBlock(descriptions: any[]): Promise<FrameNode> {
-    return nodeCache.enqueueTask(async () => {
-        const block = figma.createFrame();
-        block.name = "Description Block";
-        block.layoutMode = "VERTICAL";
-        block.primaryAxisSizingMode = "AUTO";
-        block.counterAxisSizingMode = "FIXED";
-        block.resize(400, block.height); // Altura será ajustada automaticamente
-        block.itemSpacing = 8;
-        block.paddingTop = block.paddingBottom = block.paddingLeft = block.paddingRight = 24;
-        block.cornerRadius = 24;
-        block.strokes = [{ type: "SOLID", color: hexToRgb("#E4E4E7") }];
-        block.strokeWeight = 2;
-        block.fills = [{ type: "SOLID", color: hexToRgb("#FFFFFF") }];
+    const block = figma.createFrame();
+    block.name = "Description Block";
+    block.layoutMode = "VERTICAL";
+    block.primaryAxisSizingMode = "AUTO";
+    block.counterAxisSizingMode = "FIXED";
+    block.itemSpacing = 8;
+    block.paddingTop = block.paddingBottom = block.paddingLeft = block.paddingRight = 24;
+    block.cornerRadius = 24;
+    block.strokes = [{ type: "SOLID", color: hexToRgb("#E4E4E7") }];
+    block.strokeWeight = 2;
+    block.fills = [{ type: "SOLID", color: hexToRgb("#FFFFFF") }];
 
-        for (const desc of descriptions) {
-            const itemFrame = await createDescriptionItem(desc);
-            block.appendChild(itemFrame);
-        }
+    // Adiciona cada seção da descrição
+    for (const desc of descriptions) {
+      const itemFrame = await createDescriptionItem(desc);
+      block.appendChild(itemFrame);
+    }
 
-        return block;
-    });
+    // Redimensiona usando a altura calculada
+    block.resize(400, block.height);
+
+    return block;
   }
 
   async function createDescriptionItem(desc: any): Promise<FrameNode> {
@@ -222,20 +264,22 @@ export namespace Frames {
     frame.counterAxisSizingMode = "AUTO";
     frame.itemSpacing = 8;
     frame.paddingBottom = 24;
+    frame.fills = [];
+    frame.strokes = [];
 
-    if (desc.label) {
-      const labelChip = await createTypeChip(desc.label.toUpperCase());
-      frame.appendChild(labelChip);
-    }
+    // Adiciona o chip com o label
+    const labelChip = await createTypeChip(desc.label.toUpperCase());
+    frame.appendChild(labelChip);
 
-    if (desc.content) {
-      const content = figma.createText();
-      await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-      content.characters = desc.content;
-      content.fontName = { family: "Inter", style: "Regular" };
-      content.fontSize = 18;
-      frame.appendChild(content);
-    }
+    // Adiciona o conteúdo
+    const content = figma.createText();
+    content.characters = desc.content;
+    content.fontName = { family: "Inter", style: "Regular" };
+    content.fontSize = 18;
+    content.fills = [{ type: "SOLID", color: hexToRgb("#1E1E1E") }];
+    content.textAutoResize = "HEIGHT";
+    content.layoutAlign = "STRETCH";
+    frame.appendChild(content);
 
     return frame;
   }

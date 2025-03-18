@@ -1,7 +1,12 @@
 export interface FlowNode {
   id: string;
-  type: "START" | "END" | "STEP" | "DECISION";
+  type: "START" | "END" | "STEP" | "DECISION" | "ENTRYPOINT";
   name: string;
+  metadata?: {
+    category?: string;
+    createdBy?: string;
+    [key: string]: any;
+  };
   description?: {
     label: string;
     content: string;

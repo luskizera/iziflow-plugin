@@ -2,8 +2,12 @@ import { z } from "zod";
 
 export const FlowNodeSchema = z.object({
   id: z.string(),
-  type: z.enum(["START", "END", "STEP", "DECISION"]),
+  type: z.enum(["START", "END", "STEP", "DECISION", "ENTRYPOINT"]),
   name: z.string(),
+  metadata: z.object({
+    category: z.string().optional(),
+    createdBy: z.string().optional(),
+  }).optional(),
   description: z.array(z.object({
     label: z.string(),
     content: z.string()

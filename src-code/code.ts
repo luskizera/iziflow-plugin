@@ -2,73 +2,78 @@ import { listenTS } from "./utils/code-utils";
 import { Layout } from './lib/layout';
 import { Frames } from './lib/frames';
 import { Connectors } from './lib/connectors';
-import { Logger } from './utils/logger';
 
-export interface EventTS {
-  'generate-flow': {
-    json: string;
-  };
-  closePlugin: {};
-}
-
+// Debug mode para desenvolvimento
 figma.showUI(__html__, { 
   width: 624, 
-  height: 550, // Ajuste este valor conforme necessário
-  themeColors: true 
+  height: 550,
+  themeColors: true,
+  title: 'IziFlow V2 (Debug Mode)'
 });
 
+// Função auxiliar para debug
+function debugLog(context: string, message: string, data?: any) {
+  const formattedMessage = `[${context}] ${message}`;
+  console.log(formattedMessage, data || '');
+  figma.ui.postMessage({ 
+    type: 'debug', 
+    message: formattedMessage,
+    data: data ? JSON.stringify(data, null, 2) : ''
+  });
+}
+
 figma.ui.onmessage = async (msg) => {
-  Logger.info('Plugin', 'Mensagem recebida', msg);
+  debugLog('Plugin', 'Mensagem recebida:', msg);
 
   if (msg.type === 'console') {
-    Logger.debug('UI', msg.message);
+    debugLog('UI', msg.message);
     return;
   }
   
   if (msg.type === 'generate-flow') {
     try {
-      Logger.info('Flow', 'Iniciando geração');
+      debugLog('Flow', 'Iniciando geração');
       
       if (typeof msg.json !== 'string') {
         throw new Error("JSON inválido: deve ser uma string");
       }
 
       const jsonData = JSON.parse(msg.json);
-      Logger.debug('Flow', 'JSON parseado', jsonData);
+      debugLog('Flow', 'JSON parseado', jsonData);
       
       const flow = jsonData.flows?.[0] || jsonData;
-      Logger.debug('Flow', 'Flow selecionado', flow);
+      debugLog('Flow', 'Flow selecionado', flow);
 
       if (!flow.nodes || !flow.connections) {
         throw new Error("JSON inválido: faltam 'nodes' ou 'connections'.");
       }
 
       const { nodes, connections } = flow;
-      Logger.debug('Flow', 'Nodes', nodes);
-      Logger.debug('Flow', 'Connections', connections);
+      debugLog('Flow', 'Nodes', nodes);
+      debugLog('Flow', 'Connections', connections);
 
       // Carregar fontes
-      Logger.info('Flow', 'Carregando fontes...');
+      debugLog('Flow', 'Carregando fontes...');
       await Promise.all([
         figma.loadFontAsync({ family: "Inter", style: "Regular" }),
         figma.loadFontAsync({ family: "Inter", style: "Bold" }),
         figma.loadFontAsync({ family: "Inter", style: "Semi Bold" }),
         figma.loadFontAsync({ family: "Inter", style: "Medium" })
       ]);
-      Logger.info('Flow', 'Fontes carregadas');
+      debugLog('Flow', 'Fontes carregadas');
 
       // Construir grafo
-      Logger.info('Flow', 'Construindo grafo...');
+      debugLog('Flow', 'Construindo grafo...');
       const graph = Layout.buildGraph(nodes, connections);
       const { adjacencyList, inDegree } = graph;
-      Logger.debug('Flow', 'Grafo construído', graph);
+      debugLog('Flow', 'Grafo construído', graph);
 
       // Identificar nós iniciais
       let startNodes = nodes.filter((n: any) => n.type === "START");
       if (startNodes.length === 0) {
         startNodes = nodes.filter((n: any) => inDegree[n.id] === 0);
       }
-      Logger.debug('Flow', 'Nós iniciais', startNodes);
+      debugLog('Flow', 'Nós iniciais', startNodes);
 
       // Calcular níveis
       const nodeLevel: { [id: string]: number } = {};
@@ -88,7 +93,7 @@ figma.ui.onmessage = async (msg) => {
           }
         });
       }
-      Logger.debug('Flow', 'Níveis calculados', nodeLevel);
+      debugLog('Flow', 'Níveis calculados', nodeLevel);
 
       // Agrupar nós
       const levelToNodes: { [level: number]: string[] } = {};
@@ -99,7 +104,7 @@ figma.ui.onmessage = async (msg) => {
         }
         levelToNodes[lvl].push(nodeId);
       });
-      Logger.debug('Flow', 'Nós agrupados por nível', levelToNodes);
+      debugLog('Flow', 'Nós agrupados por nível', levelToNodes);
 
       const sortedLevels = Layout.getSortedLevels(levelToNodes);
       const nodeMap: { [id: string]: SceneNode } = {};
@@ -109,51 +114,67 @@ figma.ui.onmessage = async (msg) => {
       const centerY = figma.viewport.center.y;
 
       for (const level of sortedLevels) {
-        Logger.info('Flow', `Processando nível ${level}`);
+        debugLog('Flow', `Processando nível ${level}`);
         const nodesAtLevel = levelToNodes[level];
         for (const nodeId of nodesAtLevel) {
           const nodeData = nodes.find((n: any) => n.id === nodeId);
-          Logger.debug('Flow', `Criando nó ${nodeId}`, nodeData);
           
-          let frame: FrameNode;
-          switch (nodeData.type) {
-            case "START":
-              frame = await Frames.createStartNode(nodeData);
-              break;
-            case "END":
-              frame = await Frames.createEndNode(nodeData);
-              break;
-            case "STEP":
-              frame = await Frames.createStepNode(nodeData);
-              break;
-            case "DECISION":
-              frame = await Frames.createDecisionNode(nodeData);
-              break;
-            default:
-              frame = await Frames.createStepNode(nodeData);
-          }
+          debugLog('Flow', `Criando nó ${nodeId}`, {
+            id: nodeData.id,
+            name: nodeData.name,
+            type: nodeData.type,
+            metadata: nodeData.metadata || {}
+          });
+          
+          let frame: FrameNode | null = null;
+          
+          try {
+            switch (nodeData.type) {
+              case "START":
+                frame = await Frames.createStartNode(nodeData);
+                break;
+              case "END":
+                frame = await Frames.createEndNode(nodeData);
+                break;
+              case "STEP":
+              case "ENTRYPOINT":
+                frame = await Frames.createStepNode(nodeData);
+                break;
+              case "DECISION":
+                frame = await Frames.createDecisionNode(nodeData);
+                break;
+              default:
+                frame = await Frames.createStepNode(nodeData);
+            }
 
-          frame.x = currentX;
-          frame.y = centerY - frame.height / 2;
-          currentX += frame.width + 300;
-          nodeMap[nodeId] = frame;
-          Logger.debug('Flow', `Nó ${nodeId} criado e posicionado`, frame);
+            if (!frame) throw new Error(`Falha ao criar nó ${nodeId}`);
+            
+            frame.x = currentX;
+            frame.y = centerY - frame.height / 2;
+            currentX += frame.width + 300;
+            nodeMap[nodeId] = frame;
+            
+            debugLog('Flow', `Nó ${nodeId} criado`, { frameId: frame.id });
+          } catch (error) {
+            debugLog('Error', `Erro ao criar nó ${nodeId}`, error);
+            throw error;
+          }
         }
       }
 
       // Criar conexões
-      Logger.info('Flow', 'Criando conexões...');
+      debugLog('Flow', 'Criando conexões...');
       Connectors.createConnectors(connections, nodeMap);
-      Logger.info('Flow', 'Conexões criadas');
+      debugLog('Flow', 'Conexões criadas');
 
       figma.notify("Fluxo gerado com sucesso!");
-      Logger.success('Flow', 'Geração concluída com sucesso');
+      debugLog('Flow', 'Geração concluída com sucesso');
     } catch (error) {
-      Logger.error('Flow', 'Erro na geração', error);
+      console.error('Erro:', error);
       figma.notify(`Erro: ${error.message}`);
     }
   } else {
-    Logger.warn('Plugin', 'Tipo de mensagem desconhecido', msg.type);
+    debugLog('Plugin', 'Tipo de mensagem desconhecido', msg.type);
   }
 };
 

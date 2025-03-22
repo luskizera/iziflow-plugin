@@ -1,43 +1,42 @@
-# Shadcn Figma Plugin
+# IziFlow v2
 
-A template for creating a Figma plugin using Vite, React, Tailwind, and Shadcn/UI.
+> Plugin Figma para automação de fluxos de usuário através de JSON
 
-https://github.com/user-attachments/assets/8cf9a283-f02b-48d6-be5b-77d54607aefe
+## 🚀 Início Rápido
 
-## Quick Start
+```bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/iziflowv2.git
 
-Install Dependencies
+# Instale as dependências
+npm install
 
-- npm - `npm i`
+# Inicie o desenvolvimento
+npm run dev
+```
 
-Build the PLugin
+## 📚 Documentação
 
-- npm - `npm run build`
+- [Guia de Início Rápido](docs/getting-started.md)
+- [Arquitetura](docs/architecture.md)
+- [Componentes](docs/components.md)
 
-Development Mode
+## 🛠 Desenvolvimento
 
-- npm - `npm run dev`
+Para iniciar o modo de desenvolvimento:
 
-## Add Plugin to Figma
+```bash
+npm run dev      # UI
+npm run devcode  # Plugin
+```
 
-1. Open Figma
-2. Select Figma Menu > Plugins > Development > Import Plugin from Manifest
-3. Select the `manifest.json` file in the `dist` folder
+## 📦 Build
 
-## Technologies Used
+```bash
+npm run build
+npm run zip
+```
 
-- Typescript
-- Vite
-- React
-- TailwindCSS
-- Shadcn
+## 📄 Licença
 
-## Credits
-
-This project was scaffolded using the [Bolt Figma](https://github.com/hyperbrew/bolt-figma) template. You can learn more about how to use this template in the original repository.
-
-SVGs are provided by [Vecteezy](https://www.vecteezy.com/).
-
-## Acknowledgements
-
-This project was initially created as an internship assignment for [KofferX.com](https://kofferx.com).
+MIT © [Seu Nome]

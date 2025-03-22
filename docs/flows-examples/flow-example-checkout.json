@@ -1,0 +1,185 @@
+{
+  "flowName": "Checkout com Decisão de Pagamento",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Start",
+      "type": "START",
+      "metadata": {
+        "category": "System"
+      },
+      "description": {}
+    },
+    {
+      "id": "2",
+      "name": "Cart Review",
+      "type": "ENTRYPOINT",
+      "metadata": {
+        "category": "Shopping"
+      },
+      "description": {
+        "action": "Usuário revisa itens no carrinho."
+      }
+    },
+    {
+      "id": "3",
+      "name": "Shipping Information",
+      "type": "STEP",
+      "metadata": {
+        "category": "Form"
+      },
+      "description": {
+        "action": "Usuário insere informações de envio.",
+        "inputs": [
+          "Endereço",
+          "CEP",
+          "Telefone"
+        ],
+        "errors": [
+          "CEP inválido",
+          "Endereço incompleto"
+        ]
+      }
+    },
+    {
+      "id": "4",
+      "name": "Payment Method Selection",
+      "type": "DECISION",
+      "metadata": {
+        "category": "Payment"
+      },
+      "description": {
+        "action": "Usuário escolhe método de pagamento.",
+        "options": [
+          "Cartão de Crédito",
+          "Boleto",
+          "Pix"
+        ]
+      }
+    },
+    {
+      "id": "5",
+      "name": "Credit Card Payment",
+      "type": "STEP",
+      "metadata": {
+        "category": "Payment"
+      },
+      "description": {
+        "action": "Usuário insere dados do cartão.",
+        "inputs": [
+          "Número do Cartão",
+          "Validade",
+          "CVV"
+        ],
+        "errors": [
+          "Cartão recusado",
+          "Dados incorretos"
+        ]
+      }
+    },
+    {
+      "id": "6",
+      "name": "Boleto Generation",
+      "type": "STEP",
+      "metadata": {
+        "category": "Payment"
+      },
+      "description": {
+        "action": "Usuário gera boleto para pagamento."
+      }
+    },
+    {
+      "id": "7",
+      "name": "Pix Payment",
+      "type": "STEP",
+      "metadata": {
+        "category": "Payment"
+      },
+      "description": {
+        "action": "Usuário escaneia QR Code para pagar com Pix."
+      }
+    },
+    {
+      "id": "8",
+      "name": "Order Confirmation",
+      "type": "STEP",
+      "metadata": {
+        "category": "Success"
+      },
+      "description": {
+        "message": "Pedido confirmado com sucesso!"
+      }
+    },
+    {
+      "id": "9",
+      "name": "End",
+      "type": "END",
+      "metadata": {
+        "category": "System"
+      },
+      "description": {}
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "1",
+      "to": "2",
+      "conditionLabel": "Iniciar Checkout"
+    },
+    {
+      "id": "c2",
+      "from": "2",
+      "to": "3",
+      "conditionLabel": "Continuar para Endereço"
+    },
+    {
+      "id": "c3",
+      "from": "3",
+      "to": "4",
+      "conditionLabel": "Informações de Envio Concluídas"
+    },
+    {
+      "id": "c4",
+      "from": "4",
+      "to": "5",
+      "conditionLabel": "Escolheu Cartão de Crédito"
+    },
+    {
+      "id": "c5",
+      "from": "4",
+      "to": "6",
+      "conditionLabel": "Escolheu Boleto"
+    },
+    {
+      "id": "c6",
+      "from": "4",
+      "to": "7",
+      "conditionLabel": "Escolheu Pix"
+    },
+    {
+      "id": "c7",
+      "from": "5",
+      "to": "8",
+      "conditionLabel": "Pagamento Aprovado"
+    },
+    {
+      "id": "c8",
+      "from": "6",
+      "to": "8",
+      "conditionLabel": "Boleto Gerado"
+    },
+    {
+      "id": "c9",
+      "from": "7",
+      "to": "8",
+      "conditionLabel": "Pix Realizado"
+    },
+    {
+      "id": "c10",
+      "from": "8",
+      "to": "9",
+      "conditionLabel": "Finalizar"
+    }
+  ]
+}

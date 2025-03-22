@@ -9,4 +9,5 @@ node_modules
 out/
 dist/
 code.js
-.vs
+.vs/
+.vscode/

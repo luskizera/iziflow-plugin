@@ -7,6 +7,7 @@ IziFlow é um plugin para Figma que automatiza a criação de fluxos de usuário
 - [Guia de Início Rápido](docs/getting-started.md)
 - [Arquitetura](docs/architecture.md)
 - [Componentes](docs/components.md)
+- [GPT Model](https://chatgpt.com/g/g-67ddf4ec15ec8191af753f9ed387092f-iziflow-assistant)
 
 # Guia de Início Rápido
 

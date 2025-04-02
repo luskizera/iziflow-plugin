@@ -1,127 +1,158 @@
 {
-    "flowName": "User Onboarding Flow",
-    "nodes": [
-        {
-            "id": "1",
-            "name": "Start",
-            "type": "START",
-            "metadata": {
-                "category": "System"
-            },
-            "description": {}
-        },
-        {
-            "id": "2",
-            "name": "Welcome Screen",
-            "type": "ENTRYPOINT",
-            "metadata": {
-                "category": "Onboarding"
-            },
-            "description": {
-                "message": "Bem-vindo ao nosso aplicativo! Vamos começar?"
-            }
-        },
-        {
-            "id": "3",
-            "name": "User Registration",
-            "type": "STEP",
-            "metadata": {
-                "category": "Authentication"
-            },
-            "description": {
-                "action": "Usuário preenche o formulário de cadastro.",
-                "inputs": [
-                    "Nome Completo",
-                    "Email",
-                    "Senha"
-                ],
-                "errors": [
-                    "Email já cadastrado",
-                    "Senha fraca"
-                ]
-            }
-        },
-        {
-            "id": "4",
-            "name": "Email Verification",
-            "type": "STEP",
-            "metadata": {
-                "category": "Verification"
-            },
-            "description": {
-                "action": "Usuário verifica o email através de um código enviado."
-            }
-        },
-        {
-            "id": "5",
-            "name": "Profile Setup",
-            "type": "STEP",
-            "metadata": {
-                "category": "Onboarding"
-            },
-            "description": {
-                "action": "Usuário configura seu perfil adicionando foto e preferências."
-            }
-        },
-        {
-            "id": "6",
-            "name": "Tutorial",
-            "type": "STEP",
-            "metadata": {
-                "category": "Onboarding"
-            },
-            "description": {
-                "action": "Usuário assiste a um tutorial de introdução ao aplicativo."
-            }
-        },
-        {
-            "id": "7",
-            "name": "End",
-            "type": "END",
-            "metadata": {
-                "category": "System"
-            },
-            "description": {
-                "message": "Onboarding concluído! Aproveite o aplicativo."
-            }
-        }
-    ],
-    "connections": [
-        {
-            "id": "c1",
-            "from": "1",
-            "to": "2",
-            "conditionLabel": "Iniciar Onboarding"
-        },
-        {
-            "id": "c2",
-            "from": "2",
-            "to": "3",
-            "conditionLabel": "Começar Cadastro"
-        },
-        {
-            "id": "c3",
-            "from": "3",
-            "to": "4",
-            "conditionLabel": "Cadastro Completo"
-        },
-        {
-            "id": "c4",
-            "from": "4",
-            "to": "5",
-            "conditionLabel": "Email Verificado"
-        },
-        {
-            "id": "c5",
-            "from": "5",
-            "to": "6",
-            "conditionLabel": "Perfil Configurado"
-        },
-        {
-            "id": "c6",
-            "from": "6",
-            "to": "7",
-            "conditionLabel": "Tutorial Assistido"
-        }
-    ]
+  "flowName": "User Onboarding Flow",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Start",
+      "type": "START",
+      "metadata": {
+        "category": "System"
+      },
+      "description": {
+        "fields": []
+      }
+    },
+    {
+      "id": "2",
+      "name": "Welcome Screen",
+      "type": "ENTRYPOINT",
+      "metadata": {
+        "category": "Onboarding"
+      },
+      "description": {
+        "fields": [
+          {
+            "label": "Message",
+            "content": "Bem-vindo ao nosso aplicativo! Vamos começar?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3",
+      "name": "User Registration",
+      "type": "STEP",
+      "metadata": {
+        "category": "Authentication"
+      },
+      "description": {
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário preenche o formulário de cadastro."
+          },
+          {
+            "label": "Inputs",
+            "content": "Nome Completo, Email, Senha"
+          },
+          {
+            "label": "Errors",
+            "content": "Email já cadastrado, Senha fraca"
+          }
+        ]
+      }
+    },
+    {
+      "id": "4",
+      "name": "Email Verification",
+      "type": "STEP",
+      "metadata": {
+        "category": "Verification"
+      },
+      "description": {
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário verifica o email através de um código enviado."
+          }
+        ]
+      }
+    },
+    {
+      "id": "5",
+      "name": "Profile Setup",
+      "type": "STEP",
+      "metadata": {
+        "category": "Onboarding"
+      },
+      "description": {
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário configura seu perfil adicionando foto e preferências."
+          }
+        ]
+      }
+    },
+    {
+      "id": "6",
+      "name": "Tutorial",
+      "type": "STEP",
+      "metadata": {
+        "category": "Onboarding"
+      },
+      "description": {
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário assiste a um tutorial de introdução ao aplicativo."
+          }
+        ]
+      }
+    },
+    {
+      "id": "7",
+      "name": "End",
+      "type": "END",
+      "metadata": {
+        "category": "System"
+      },
+      "description": {
+        "fields": [
+          {
+            "label": "Message",
+            "content": "Onboarding concluído! Aproveite o aplicativo."
+          }
+        ]
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "1",
+      "to": "2",
+      "conditionLabel": "Iniciar Onboarding"
+    },
+    {
+      "id": "c2",
+      "from": "2",
+      "to": "3",
+      "conditionLabel": "Começar Cadastro"
+    },
+    {
+      "id": "c3",
+      "from": "3",
+      "to": "4",
+      "conditionLabel": "Cadastro Completo"
+    },
+    {
+      "id": "c4",
+      "from": "4",
+      "to": "5",
+      "conditionLabel": "Email Verificado"
+    },
+    {
+      "id": "c5",
+      "from": "5",
+      "to": "6",
+      "conditionLabel": "Perfil Configurado"
+    },
+    {
+      "id": "c6",
+      "from": "6",
+      "to": "7",
+      "conditionLabel": "Tutorial Assistido"
+    }
+  ]
 }

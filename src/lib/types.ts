@@ -1,3 +1,4 @@
+// src/lib/types.ts
 export interface FlowNode {
   id: string;
   type: "START" | "END" | "STEP" | "DECISION" | "ENTRYPOINT";

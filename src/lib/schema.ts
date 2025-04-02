@@ -1,3 +1,4 @@
+// src/lib/schema.ts
 import { z } from "zod";
 
 export const FlowNodeSchema = z.object({

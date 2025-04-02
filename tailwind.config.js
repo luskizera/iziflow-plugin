@@ -1,94 +1,93 @@
-/** @type {import('tailwindcss').Config} */
-export default {
-  darkMode: ["class"],
-  content: [
-    './src/**/*.{ts,tsx}',
-  ],
-  theme: {
-  	extend: {
-  		colors: {
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
-  			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
-  			},
-  			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
-  			},
-  			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
-  			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
-  			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
-  			},
-  			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
-  			},
-  			sidebar: {
-  				DEFAULT: 'hsl(var(--sidebar-background))',
-  				foreground: 'hsl(var(--sidebar-foreground))',
-  				primary: 'hsl(var(--sidebar-primary))',
-  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-  				accent: 'hsl(var(--sidebar-accent))',
-  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-  				border: 'hsl(var(--sidebar-border))',
-  				ring: 'hsl(var(--sidebar-ring))'
-  			},
-  			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
-  			}
-  		},
-  		borderColor: {
-  			DEFAULT: 'hsl(var(--border))'
-  		},
-  		keyframes: {
-  			'accordion-down': {
-  				from: {
-  					height: '0'
-  				},
-  				to: {
-  					height: 'var(--radix-accordion-content-height)'
-  				}
-  			},
-  			'accordion-up': {
-  				from: {
-  					height: 'var(--radix-accordion-content-height)'
-  				},
-  				to: {
-  					height: '0'
-  				}
-  			}
-  		},
-  		animation: {
-  			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
-  		},
-  		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		}
-  	}
-  },
-  plugins: [require("tailwindcss-animate")]
-}
+// ./
+module.exports = {
+	darkMode: ["class"],
+	content: [
+	  "./src/**/*.{ts,tsx}",
+	  "./components/**/*.{ts,tsx}",
+	  "./app/**/*.{ts,tsx}"
+	],
+	theme: {
+	  container: {
+		center: true,
+		padding: "2rem",
+		screens: {
+		  "2xl": "1400px"
+		}
+	  },
+	  extend: {
+		colors: {
+		  "foreground_primary_default": "var(--primary-900)",
+		  "foreground_secondary_default": "var(--zinc-100)",
+		  "foreground_destructive_default": "var(--red-900)",
+		  "foreground_success_default": "var(--emerald-600)",
+		  "foreground_warning_default": "var(--yellow-600)",
+		  "foreground_disabled_default": "var(--zinc-600)",
+		  "foreground_default": "var(--zinc-50)",
+		  "foreground_muted": "var(--zinc-400)",
+		  "foreground_accent": "var(--zinc-50)",
+		  "background_primary_default": "var(--primary-50)",
+		  "background_primary_default_hover": "rgba(250, 250, 250, 0.800000011920929)",
+		  "background_primary_light": "var(--primary-900)",
+		  "background_primary_light_hover": "var(--primary-950)",
+		  "background_secondary_default": "var(--zinc-800)",
+		  "background_destructive_default": "var(--red-800)",
+		  "background_destructive_default_hover": "rgba(153, 27, 27, 0.800000011920929)",
+		  "background_destructive_light": "rgba(220, 38, 38, 0.15000000596046448)",
+		  "background_destructive_light_hover": "rgba(220, 38, 38, 0.20000000298023224)",
+		  "background_success_default": "var(--emerald-800)",
+		  "background_warning_default": "var(--yellow-500)",
+		  "background_warning_default_hover": "var(--yellow-600)",
+		  "background_warning_light": "rgba(234, 179, 8, 0.15000000596046448)",
+		  "background_warning_light_hover": "rgba(234, 179, 8, 0.20000000298023224)",
+		  "background_success_default_hover": "var(--emerald-900)",
+		  "background_success_light": "rgba(5, 150, 105, 0.15000000596046448)",
+		  "background_success_light_hover": "rgba(5, 150, 105, 0.20000000298023224)",
+		  "background_disabled_default": "var(--neutral-400)",
+		  "background_default": "var(--zinc-950)",
+		  "background_card": "var(--zinc-950)",
+		  "background_popover": "var(--zinc-950)",
+		  "background_input": "var(--zinc-700)",
+		  "background_muted": "var(--zinc-800)",
+		  "background_accent": "var(--zinc-800)",
+		  "border_primary_default": "var(--zinc-300)",
+		  "border_destructive_default": "var(--red-900)",
+		  "border_success_default": "var(--emerald-600)",
+		  "charts_chart_1_opacity100": "rgba(38, 98, 217, 1)",
+		  "charts_chart_1_opacity80": "rgba(38, 98, 217, 0.800000011920929)",
+		  "charts_chart_1_opacity50": "rgba(38, 98, 217, 0.5)",
+		  "charts_chart_1_opacity10": "rgba(38, 98, 217, 0.10000000149011612)",
+		  "charts_chart_2_opacity100": "rgba(226, 54, 112, 1)",
+		  "charts_chart_2_opacity80": "rgba(226, 54, 112, 1)",
+		  "charts_chart_2_opacity50": "rgba(226, 54, 112, 1)",
+		  "charts_chart_2_opacity10": "rgba(226, 54, 112, 1)",
+		  "charts_chart_3_opacity100": "rgba(232, 140, 48, 1)",
+		  "charts_chart_3_opacity80": "rgba(232, 140, 48, 1)",
+		  "charts_chart_3_opacity50": "rgba(232, 140, 48, 1)",
+		  "charts_chart_3_opacity10": "rgba(232, 140, 48, 1)",
+		  "charts_chart_4_opacity100": "rgba(175, 87, 219, 1)",
+		  "charts_chart_4_opacity80": "rgba(175, 87, 219, 1)",
+		  "charts_chart_4_opacity50": "rgba(175, 87, 219, 1)",
+		  "charts_chart_4_opacity10": "rgba(175, 87, 219, 1)",
+		  "charts_chart_5_opacity100": "rgba(46, 184, 138, 1)",
+		  "charts_chart_5_opacity80": "rgba(46, 184, 138, 1)",
+		  "charts_chart_5_opacity50": "rgba(46, 184, 138, 1)",
+		  "charts_chart_5_opacity10": "rgba(46, 184, 138, 1)",
+		  "border_default": "var(--zinc-700)",
+		  "icon_default": "var(--zinc-50)",
+		  "icon_muted": "var(--zinc-400)",
+		  "icon_accent": "var(--zinc-50)",
+		  "icon_primary_default": "var(--primary-900)",
+		  "icon_secondary_default": "var(--zinc-100)",
+		  "icon_destructive_default": "var(--red-900)",
+		  "icon_success_default": "var(--emerald-600)",
+		  "icon_warning_default": "var(--yellow-600)",
+		  "icon_disabled_default": "var(--zinc-600)",
+		  "border_warning_default": "var(--yellow-600)",
+		  "icon_destructive_on_destructive": "var(--red-300)",
+		  "icon_destructive_hover___on_destructive": "var(--white)"
+		},
+	  }
+	},
+	plugins: []
+  };
+  

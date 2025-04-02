@@ -8,7 +8,7 @@ figma.showUI(__html__, {
   width: 624, 
   height: 550,
   themeColors: true,
-  title: 'IziFlow V2 (Debug Mode)'
+  title: 'IziFlow V2'
 });
 
 // Função auxiliar para debug

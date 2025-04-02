@@ -1,3 +1,4 @@
+// src/utils/dispatch.ts
 import { notify } from '@/lib/utils';
 
 export const dispatchTS = (event: string, data?: any) => {

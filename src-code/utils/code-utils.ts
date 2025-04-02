@@ -1,4 +1,3 @@
-import type { Message, PluginMessageEvent } from "../../src/globals";
 import type { EventTS } from "../../shared/universals";
 
 export const dispatch = (data: any, origin = "*") => {

@@ -8,7 +8,9 @@
       "metadata": {
         "category": "System"
       },
-      "description": {}
+      "description": {
+        "fields": []
+      }
     },
     {
       "id": "2",
@@ -18,7 +20,12 @@
         "category": "Shopping"
       },
       "description": {
-        "action": "Usuário revisa itens no carrinho."
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário revisa itens no carrinho."
+          }
+        ]
       }
     },
     {
@@ -29,15 +36,19 @@
         "category": "Form"
       },
       "description": {
-        "action": "Usuário insere informações de envio.",
-        "inputs": [
-          "Endereço",
-          "CEP",
-          "Telefone"
-        ],
-        "errors": [
-          "CEP inválido",
-          "Endereço incompleto"
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário insere informações de envio."
+          },
+          {
+            "label": "Inputs",
+            "content": "Endereço, CEP, Telefone"
+          },
+          {
+            "label": "Errors",
+            "content": "CEP inválido, Endereço incompleto"
+          }
         ]
       }
     },
@@ -49,11 +60,15 @@
         "category": "Payment"
       },
       "description": {
-        "action": "Usuário escolhe método de pagamento.",
-        "options": [
-          "Cartão de Crédito",
-          "Boleto",
-          "Pix"
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário escolhe método de pagamento."
+          },
+          {
+            "label": "Options",
+            "content": "Cartão de Crédito, Boleto, Pix"
+          }
         ]
       }
     },
@@ -65,15 +80,19 @@
         "category": "Payment"
       },
       "description": {
-        "action": "Usuário insere dados do cartão.",
-        "inputs": [
-          "Número do Cartão",
-          "Validade",
-          "CVV"
-        ],
-        "errors": [
-          "Cartão recusado",
-          "Dados incorretos"
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário insere dados do cartão."
+          },
+          {
+            "label": "Inputs",
+            "content": "Número do Cartão, Validade, CVV"
+          },
+          {
+            "label": "Errors",
+            "content": "Cartão recusado, Dados incorretos"
+          }
         ]
       }
     },
@@ -85,7 +104,12 @@
         "category": "Payment"
       },
       "description": {
-        "action": "Usuário gera boleto para pagamento."
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário gera boleto para pagamento."
+          }
+        ]
       }
     },
     {
@@ -96,7 +120,12 @@
         "category": "Payment"
       },
       "description": {
-        "action": "Usuário escaneia QR Code para pagar com Pix."
+        "fields": [
+          {
+            "label": "Action",
+            "content": "Usuário escaneia QR Code para pagar com Pix."
+          }
+        ]
       }
     },
     {
@@ -107,7 +136,12 @@
         "category": "Success"
       },
       "description": {
-        "message": "Pedido confirmado com sucesso!"
+        "fields": [
+          {
+            "label": "Message",
+            "content": "Pedido confirmado com sucesso!"
+          }
+        ]
       }
     },
     {
@@ -117,7 +151,9 @@
       "metadata": {
         "category": "System"
       },
-      "description": {}
+      "description": {
+        "fields": []
+      }
     }
   ],
   "connections": [

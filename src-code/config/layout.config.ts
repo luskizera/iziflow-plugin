@@ -1,55 +1,40 @@
-// Tipos básicos (corrigidos)
-type FigmaConnectorMagnet = "AUTO" | "TOP" | "LEFT" | "BOTTOM" | "RIGHT" | "TOP_LEFT" | "TOP_RIGHT" | "BOTTOM_LEFT" | "BOTTOM_RIGHT";
-type FigmaConnectorLineType = "STRAIGHT" | "ELBOWED" | "CURVED";
+/// <reference types="@figma/plugin-typings" />
+
+// Não definimos mais aliases locais 'Figma...'
 
 // --- Configuração de Layout de Conectores ---
 export const Connectors = {
-    // Magnets de Origem Padrão
-    DEFAULT_PRIMARY_START_MAGNET: "RIGHT" as FigmaConnectorMagnet,
-    DEFAULT_SECONDARY_START_MAGNET: "BOTTOM" as FigmaConnectorMagnet,
+    // Usamos 'as ConnectorMagnet' para garantir o tipo correto vindo das tipagens globais
+    DEFAULT_PRIMARY_START_MAGNET: "RIGHT" as ConnectorMagnet,
+    DEFAULT_SECONDARY_START_MAGNET: "BOTTOM" as ConnectorMagnet,
+    DEFAULT_END_MAGNET: "LEFT" as ConnectorMagnet,
 
-    // Magnet de Destino Padrão (quase sempre LEFT)
-    DEFAULT_END_MAGNET: "LEFT" as FigmaConnectorMagnet,
+    // Usamos 'as ConnectorLineType'
+    DEFAULT_PRIMARY_LINE_TYPE: "STRAIGHT" as ConnectorLineType,
+    DEFAULT_SECONDARY_LINE_TYPE: "ELBOWED" as ConnectorLineType,
 
-    // Tipos de Linha Padrão
-    DEFAULT_PRIMARY_LINE_TYPE: "STRAIGHT" as FigmaConnectorLineType,
-    DEFAULT_SECONDARY_LINE_TYPE: "ELBOWED" as FigmaConnectorLineType,
+    DECISION_PRIMARY_LINE_TYPE: "ELBOWED" as ConnectorLineType,
+    DECISION_SECONDARY_LINE_TYPE: "ELBOWED" as ConnectorLineType,
+    DECISION_PRIMARY_MAGNET_SEQUENCE: ["TOP", "RIGHT", "BOTTOM"] as ConnectorMagnet[],
+    DECISION_SECONDARY_START_MAGNET: "BOTTOM" as ConnectorMagnet,
 
-    // Configurações Específicas para Decisões
-    DECISION_PRIMARY_LINE_TYPE: "ELBOWED" as FigmaConnectorLineType,
-    DECISION_SECONDARY_LINE_TYPE: "ELBOWED" as FigmaConnectorLineType, // Mantém ELBOWED para secundárias de decisão
-    DECISION_PRIMARY_MAGNET_SEQUENCE: ["TOP", "RIGHT", "BOTTOM"] as FigmaConnectorMagnet[],
-    DECISION_SECONDARY_START_MAGNET: "BOTTOM" as FigmaConnectorMagnet, // Confirma saída inferior para secundárias
+    CONVERGENCE_PRIMARY_LINE_TYPE: "ELBOWED" as ConnectorLineType,
 
-    // Configurações Específicas para Convergência
-    CONVERGENCE_PRIMARY_LINE_TYPE: "ELBOWED" as FigmaConnectorLineType, // Linhas primárias chegando a um nó com >1 entrada
-
-    // Offsets de Etiqueta
-    LABEL_OFFSET_NEAR_START: 45, // Distância da etiqueta ao nó (para decisões)
-    LABEL_OFFSET_MID_LINE_Y: 10, // Offset Y para etiquetas no meio da linha
+    LABEL_OFFSET_NEAR_START: 45,
+    LABEL_OFFSET_MID_LINE_Y: 10,
 };
 
 // --- Configuração de Layout de Nós ---
 export const Nodes = {
-    // Espaçamento entre níveis de nós (horizontal)
     HORIZONTAL_SPACING: 300,
-
-    // Espaçamento vertical entre nós no mesmo nível (se aplicável)
-    VERTICAL_SPACING: 150, // Pode não ser usado na lógica atual, mas útil para futuras expansões
-
-    // Configurações de Layout Interno dos Nós (ex: Step/Entrypoint)
-    TITLE_BLOCK_PADDING: 24, // Assume padding igual em todos os lados
+    VERTICAL_SPACING: 150,
+    TITLE_BLOCK_PADDING: 24,
     TITLE_BLOCK_ITEM_SPACING: 8,
-
-    DESCRIPTION_BLOCK_PADDING: 24, // Assume padding igual
+    DESCRIPTION_BLOCK_PADDING: 24,
     DESCRIPTION_BLOCK_ITEM_SPACING: 8,
-
-    DESCRIPTION_ITEM_PADDING_BOTTOM: 24, // Espaçamento após o conteúdo do item
-    DESCRIPTION_ITEM_SPACING: 8, // Espaçamento entre Label e Content
-
-    GENERAL_NODE_PADDING: { horizontal: 24, vertical: 20 }, // Para outros tipos, se padronizado
-    GENERAL_NODE_ITEM_SPACING: 16, // Para outros tipos, se padronizado
-
-    // Largura fixa para blocos de Step/Entrypoint (para garantir alinhamento)
+    DESCRIPTION_ITEM_PADDING_BOTTOM: 24,
+    DESCRIPTION_ITEM_SPACING: 8,
+    GENERAL_NODE_PADDING: { horizontal: 24, vertical: 20 },
+    GENERAL_NODE_ITEM_SPACING: 16,
     STEP_ENTRYPOINT_BLOCK_WIDTH: 400,
 };

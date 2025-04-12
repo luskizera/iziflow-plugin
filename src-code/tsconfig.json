@@ -1,15 +1,28 @@
 {
   "compilerOptions": {
+    "target": "ES2020", // Ou ES6
+    "module": "ES2020", // Ou ES6
+    "lib": ["ES2020", "DOM"], // Adicionar DOM pode ajudar com tipos globais
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node", // Ou 'bundler' dependendo do seu setup
     "typeRoots": [
       "../node_modules/@types",
-      "../node_modules/@figma",
-      "../src/globals.d.ts",
-      "../shared/universals.d.ts"
+      "../node_modules/@figma" // Confirme este caminho relativo!
     ],
-    "baseUrl": ".",
+    "baseUrl": ".", // Se usar imports baseados em baseUrl dentro de src-code
     "paths": {
-      "@/*": ["./src/*"]
+      // Seus paths aqui, se houver
     }
   },
-  "include": ["./**/*.ts"]
+  "include": [
+    "./**/*.ts", // Inclui tudo dentro de src-code
+    "../lib/types.ts", // Inclui explicitamente o arquivo de tipos compartilhado
+    "../config/*.ts" // <<<<<< INCLUI explicitamente os arquivos de configuração
+  ],
+  "exclude": [
+      "../node_modules" // Garante que node_modules está excluído
+  ]
 }

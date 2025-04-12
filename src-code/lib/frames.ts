@@ -1,179 +1,204 @@
-import { hexToRgb } from "../utils/hexToRgb"; // Necessário se as cores não forem usadas diretamente
+import { hexToRgb } from "../utils/hexToRgb";
 import { nodeCache } from "../utils/nodeCache";
-import { NodeData, DescriptionField } from "../../src/lib/types"; // Ajuste o caminho se necessário
+import type { NodeData, DescriptionField } from '../../src/lib/types';
 import * as StyleConfig from "../config/styles.config";
 import * as LayoutConfig from "../config/layout.config";
 
+function frameDebugLog(context: string, message: string, data?: any) {
+    console.log(`[Frames:${context}] ${message}`, data || '');
+}
+
 export namespace Frames {
 
-    // Carregamento único de fontes usadas pelos frames (pode ser movido para code.ts se preferir)
-    async function loadFrameFonts(): Promise<void> {
-        try {
-            await Promise.all(
-                StyleConfig.FontsToLoad.map(font => nodeCache.loadFont(font.family, font.style))
-            );
-        } catch (e) {
-            console.error("[Frames] Erro ao carregar fontes:", e);
-            figma.notify("Erro ao carregar fontes para os nós.", { error: true });
-        }
-    }
-    // Chame isso uma vez antes de começar a criar os frames em code.ts
-    // await loadFrameFonts(); // Descomente se mover o carregamento para cá
-
+    // Funções createStartNode, createEndNode, createDecisionNode - permanecem iguais à versão anterior
     export async function createStartNode(nodeData: NodeData): Promise<FrameNode> {
-        await nodeCache.loadFont(StyleConfig.Nodes.START_END.FONT.family, StyleConfig.Nodes.START_END.FONT.style); // Garante a fonte específica
+       frameDebugLog('StartNode', `Iniciando criação para ID: ${nodeData.id}`);
+       await nodeCache.loadFont(StyleConfig.Nodes.START_END.FONT.family, StyleConfig.Nodes.START_END.FONT.style);
 
-        const frame = figma.createFrame();
-        const style = StyleConfig.Nodes.START_END;
-        frame.name = (nodeData.name?.trim()) || "Start";
-        frame.layoutMode = "NONE"; // Para posicionamento manual do texto
-        frame.primaryAxisSizingMode = "FIXED";
-        frame.counterAxisSizingMode = "FIXED";
-        frame.resize(style.SIZE, style.SIZE);
-        frame.cornerRadius = style.CORNER_RADIUS;
-        frame.fills = style.FILL;
+       const frame = figma.createFrame();
+       const style = StyleConfig.Nodes.START_END;
+       frame.name = (nodeData.name?.trim()) || "Start";
+       frame.layoutMode = "NONE";
+       frame.primaryAxisSizingMode = "FIXED";
+       frame.counterAxisSizingMode = "FIXED";
+       frame.resize(style.SIZE, style.SIZE);
+       frame.cornerRadius = style.CORNER_RADIUS;
+       frame.fills = style.FILL;
 
-        const titleText = figma.createText();
-        titleText.characters = "START"; // Texto fixo
-        titleText.fontName = style.FONT;
-        titleText.fontSize = style.FONT_SIZE;
-        titleText.fills = style.TEXT_COLOR;
-        titleText.textAlignHorizontal = "CENTER";
-        titleText.textAlignVertical = "CENTER";
-        // Necessário definir tamanho para centralizar corretamente em frame NONE
-        titleText.resize(style.SIZE, style.SIZE);
-        frame.appendChild(titleText);
-        // Texto ocupa todo o frame, já centralizado pelas propriedades de texto
+       const titleText = figma.createText();
+       titleText.characters = "START";
+       titleText.fontName = style.FONT;
+       titleText.fontSize = style.FONT_SIZE;
+       titleText.fills = style.TEXT_COLOR;
+       titleText.textAlignHorizontal = "CENTER";
+       titleText.textAlignVertical = "CENTER";
+       titleText.resize(style.SIZE, style.SIZE);
+       frame.appendChild(titleText);
 
-        return frame;
+       frameDebugLog('StartNode', `Criação concluída. ID Figma: ${frame.id}`);
+       return frame;
     }
 
     export async function createEndNode(nodeData: NodeData): Promise<FrameNode> {
-         await nodeCache.loadFont(StyleConfig.Nodes.START_END.FONT.family, StyleConfig.Nodes.START_END.FONT.style); // Garante a fonte específica
+       frameDebugLog('EndNode', `Iniciando criação para ID: ${nodeData.id}`);
+       await nodeCache.loadFont(StyleConfig.Nodes.START_END.FONT.family, StyleConfig.Nodes.START_END.FONT.style);
 
-        const frame = figma.createFrame();
-        const style = StyleConfig.Nodes.START_END;
-        frame.name = (nodeData.name?.trim()) || "End";
-        frame.layoutMode = "NONE";
-        frame.primaryAxisSizingMode = "FIXED";
-        frame.counterAxisSizingMode = "FIXED";
-        frame.resize(style.SIZE, style.SIZE);
-        frame.cornerRadius = style.CORNER_RADIUS;
-        frame.fills = style.FILL;
+       const frame = figma.createFrame();
+       const style = StyleConfig.Nodes.START_END;
+       frame.name = (nodeData.name?.trim()) || "End";
+       frame.layoutMode = "NONE";
+       frame.primaryAxisSizingMode = "FIXED";
+       frame.counterAxisSizingMode = "FIXED";
+       frame.resize(style.SIZE, style.SIZE);
+       frame.cornerRadius = style.CORNER_RADIUS;
+       frame.fills = style.FILL;
 
-        const titleText = figma.createText();
-        titleText.characters = "END"; // Texto fixo
-        titleText.fontName = style.FONT;
-        titleText.fontSize = style.FONT_SIZE;
-        titleText.fills = style.TEXT_COLOR;
-        titleText.textAlignHorizontal = "CENTER";
-        titleText.textAlignVertical = "CENTER";
-        titleText.resize(style.SIZE, style.SIZE);
-        frame.appendChild(titleText);
+       const titleText = figma.createText();
+       titleText.characters = "END";
+       titleText.fontName = style.FONT;
+       titleText.fontSize = style.FONT_SIZE;
+       titleText.fills = style.TEXT_COLOR;
+       titleText.textAlignHorizontal = "CENTER";
+       titleText.textAlignVertical = "CENTER";
+       titleText.resize(style.SIZE, style.SIZE);
+       frame.appendChild(titleText);
 
-        return frame;
+       frameDebugLog('EndNode', `Criação concluída. ID Figma: ${frame.id}`);
+       return frame;
     }
 
-    export async function createStepNode(nodeData: NodeData): Promise<FrameNode> {
-        // Fontes devem ser pré-carregadas idealmente em code.ts ou com loadFrameFonts()
-        const nodeWidth = LayoutConfig.Nodes.STEP_ENTRYPOINT_BLOCK_WIDTH;
-
-        const stepNode = figma.createFrame();
-        stepNode.name = nodeData.name || "Unnamed Step/Entry";
-        stepNode.layoutMode = "VERTICAL";
-        stepNode.primaryAxisSizingMode = "AUTO"; // Altura automática
-        stepNode.counterAxisSizingMode = "FIXED"; // Largura fixa
-        stepNode.itemSpacing = LayoutConfig.Nodes.GENERAL_NODE_ITEM_SPACING; // Espaço entre Título e Descrição
-        stepNode.fills = []; // Frame principal é transparente
-        stepNode.strokes = [];
-        stepNode.resize(nodeWidth, 0); // Define largura fixa, altura inicial 0 (será AUTO)
-
-
-        // Criar e configurar título
-        const titleBlock = await createTitleBlock(nodeData, nodeWidth);
-        stepNode.appendChild(titleBlock);
-
-        // Processar campos da descrição, se houver
-        if (nodeData.description && nodeData.description.length > 0) {
-            const descBlock = await createDescriptionBlock(nodeData.description, nodeWidth);
-            stepNode.appendChild(descBlock);
-        } else {
-             // Se não houver descrição, removemos o espaçamento extra
-             stepNode.itemSpacing = 0;
-        }
-
-        console.log(`[Frames] Nó Step/Entry criado: ${stepNode.name} (ID: ${stepNode.id})`);
-        return stepNode;
-    }
-
-    export async function createDecisionNode(nodeData: NodeData): Promise<FrameNode> {
+     export async function createDecisionNode(nodeData: NodeData): Promise<FrameNode> {
+        frameDebugLog('DecisionNode', `Iniciando criação para ID: ${nodeData.id}`);
         await nodeCache.loadFont(StyleConfig.Nodes.DECISION.FONT.family, StyleConfig.Nodes.DECISION.FONT.style);
 
         const frame = figma.createFrame();
         const style = StyleConfig.Nodes.DECISION;
         frame.name = (nodeData.name?.trim()) || "Decision";
-        frame.layoutMode = "NONE"; // Para posicionar losango e texto
+        frame.layoutMode = "NONE";
         frame.resize(style.WIDTH, style.HEIGHT);
-        frame.fills = []; // Frame container transparente
+        frame.fills = [];
         frame.strokes = [];
 
-        // Criar o Losango
         const diamond = figma.createPolygon();
         diamond.pointCount = 4;
-        diamond.resize(style.WIDTH, style.HEIGHT); // Losango ocupa todo o frame
+        diamond.resize(style.WIDTH, style.HEIGHT);
         diamond.name = "Diamond Shape";
         diamond.fills = style.SHAPE_FILL;
         frame.appendChild(diamond);
 
-        // Criar o Texto
         const titleText = figma.createText();
         titleText.characters = nodeData.name || "Untitled Decision";
         titleText.fontName = style.FONT;
         titleText.fontSize = style.FONT_SIZE;
         titleText.fills = style.TEXT_COLOR;
         titleText.textAlignHorizontal = "CENTER";
-        titleText.textAutoResize = "HEIGHT"; // Ajusta altura, largura limitada abaixo
-        // Limitar largura do texto para caber dentro do losango
-        const maxTextWidth = style.WIDTH * 0.7; // Ajuste este fator conforme necessário
-        titleText.resize(maxTextWidth, titleText.height); // Aplica largura máxima
+        titleText.textAutoResize = "HEIGHT";
+        const maxTextWidth = style.WIDTH * 0.7;
+        // Definir largura PRIMEIRO para calcular altura correta
+        titleText.resize(maxTextWidth, 1); // Altura mínima temporária
+        // Força o Figma a calcular a altura baseada no conteúdo e largura
+        await new Promise(resolve => setTimeout(resolve, 0)); // Pequena pausa pode ajudar
 
         frame.appendChild(titleText);
 
-        // Centralizar texto dentro do frame/losango
+        // Re-calcular centralização APÓS o texto ter sua altura final
         titleText.x = (style.WIDTH - titleText.width) / 2;
         titleText.y = (style.HEIGHT - titleText.height) / 2;
 
-        console.log(`[Frames] Nó Decision criado: ${frame.name} (ID: ${frame.id})`);
+        frameDebugLog('DecisionNode', `Criação concluída. ID Figma: ${frame.id}`);
         return frame;
     }
 
-    // --- Funções Auxiliares Privadas (Refatoradas) ---
+    // --- Correção Principal: Step/Entrypoint com Auto Layout ---
+    export async function createStepNode(nodeData: NodeData): Promise<FrameNode> {
+        frameDebugLog('StepNode', `Iniciando criação para ID: ${nodeData.id}, Nome: ${nodeData.name}`);
+        const nodeWidth = LayoutConfig.Nodes.STEP_ENTRYPOINT_BLOCK_WIDTH;
 
-    // Cria o Chip (usado em Título e Descrição)
+        const stepNode = figma.createFrame();
+        stepNode.name = nodeData.name || "Unnamed Step/Entry";
+        stepNode.layoutMode = "VERTICAL";
+        stepNode.primaryAxisSizingMode = "AUTO"; // <<< Altura é AUTO
+        stepNode.counterAxisSizingMode = "FIXED"; // <<< Largura é FIXA
+        stepNode.itemSpacing = LayoutConfig.Nodes.GENERAL_NODE_ITEM_SPACING;
+        stepNode.fills = [];
+        stepNode.strokes = [];
+        stepNode.resizeWithoutConstraints(nodeWidth, 1); // Define largura fixa, altura inicial mínima
+
+        frameDebugLog('StepNode', `Frame base criado com L=${nodeWidth}. ID: ${stepNode.id}`);
+
+        // Criar e configurar título
+        try {
+            const titleBlock = await createTitleBlock(nodeData, nodeWidth);
+            stepNode.appendChild(titleBlock);
+            frameDebugLog('StepNode', `Bloco de título adicionado. Altura título: ${titleBlock.height}, Altura nó: ${stepNode.height}`);
+        } catch (error) {
+            frameDebugLog('StepNode', `Erro ao criar bloco de título para ${nodeData.id}:`, error);
+        }
+
+        // --- CORREÇÃO NA VERIFICAÇÃO DA DESCRIÇÃO ---
+        const descriptionFields = nodeData.description?.fields; // Acessa a propriedade 'fields'
+        frameDebugLog('StepNode', `Verificando descrição para ${nodeData.id}:`, descriptionFields);
+
+        if (descriptionFields && Array.isArray(descriptionFields) && descriptionFields.length > 0) {
+            frameDebugLog('StepNode', `Descrição encontrada com ${descriptionFields.length} campos. Criando bloco...`);
+            try {
+                // Passa o array 'fields' para a função
+                const descBlock = await createDescriptionBlock(descriptionFields, nodeWidth);
+                if (descBlock.height > 1) {
+                    stepNode.appendChild(descBlock);
+                    frameDebugLog('StepNode', `Bloco de descrição adicionado. Altura desc: ${descBlock.height}, Altura final nó: ${stepNode.height}`);
+                } else {
+                    frameDebugLog('StepNode', 'Bloco de descrição criado mas vazio. Removendo.');
+                    descBlock.remove();
+                    stepNode.itemSpacing = 0;
+                }
+            } catch (error) {
+                frameDebugLog('StepNode', `Erro ao criar bloco de descrição para ${nodeData.id}:`, error);
+                stepNode.itemSpacing = 0;
+            }
+        } else {
+            frameDebugLog('StepNode', `Nenhuma descrição válida encontrada para ${nodeData.id}.`);
+            stepNode.itemSpacing = 0; // Remove espaço se não houver descrição
+        }
+        // Fim da correção
+
+        // Log final da altura
+        // Uma pequena pausa pode dar tempo ao Figma para calcular o layout final
+        await new Promise(resolve => setTimeout(resolve, 0));
+        frameDebugLog('StepNode', `Criação finalizada para ${nodeData.id}. Altura final: ${stepNode.height}`);
+        if (stepNode.height <= 1) {
+             console.warn(`[Frames:StepNode] ALERTA: Nó ${nodeData.id} ('${nodeData.name}') finalizou com altura <= 1. Verifique Auto Layout dos filhos.`);
+        }
+
+        return stepNode;
+    }
+
+    // --- Funções Auxiliares (Garantir Largura Fixa) ---
+
     async function createTypeChip(text: string): Promise<FrameNode> {
-        // Fonte deve ser carregada antes
         const chip = figma.createFrame();
-        const style = StyleConfig.Labels; // Usando estilos de Label para chips
+        const style = StyleConfig.Labels;
         chip.name = `Chip: ${text}`;
         chip.layoutMode = "HORIZONTAL";
-        chip.primaryAxisSizingMode = chip.counterAxisSizingMode = "AUTO";
+        // Ambos AUTO para chip se ajustar ao texto
+        chip.primaryAxisSizingMode = "AUTO";
+        chip.counterAxisSizingMode = "AUTO";
         chip.paddingTop = chip.paddingBottom = style.PADDING_VERTICAL;
         chip.paddingLeft = chip.paddingRight = style.PADDING_HORIZONTAL;
         chip.cornerRadius = style.CORNER_RADIUS;
         chip.fills = style.FILL;
 
         const chipText = figma.createText();
-        chipText.characters = text.toUpperCase(); // Deixar texto do chip em maiúsculas
+        chipText.characters = text.toUpperCase();
         chipText.fontName = style.FONT;
         chipText.fontSize = style.FONT_SIZE;
         chipText.fills = style.TEXT_COLOR;
+        // Texto também AUTO
         chipText.textAutoResize = "WIDTH_AND_HEIGHT";
         chip.appendChild(chipText);
-
         return chip;
     }
 
-    // Cria o Bloco de Título para Step/Entrypoint
     async function createTitleBlock(nodeData: NodeData, nodeWidth: number): Promise<FrameNode> {
         const titleBlock = figma.createFrame();
         const style = StyleConfig.Nodes.TITLE_BLOCK;
@@ -181,9 +206,8 @@ export namespace Frames {
 
         titleBlock.name = `${nodeData.type} Title Block`;
         titleBlock.layoutMode = "VERTICAL";
-        titleBlock.layoutAlign = "STRETCH"; // Ocupa a largura do pai (stepNode)
-        titleBlock.primaryAxisSizingMode = "AUTO";
-        titleBlock.counterAxisSizingMode = "AUTO"; // Largura definida pelo pai
+        titleBlock.primaryAxisSizingMode = "AUTO"; // <<< Altura AUTO
+        titleBlock.counterAxisSizingMode = "FIXED"; // <<< Largura FIXA
         titleBlock.itemSpacing = layout.TITLE_BLOCK_ITEM_SPACING;
         titleBlock.paddingTop = titleBlock.paddingBottom = titleBlock.paddingLeft = titleBlock.paddingRight = layout.TITLE_BLOCK_PADDING;
         titleBlock.cornerRadius = style.CORNER_RADIUS;
@@ -193,114 +217,141 @@ export namespace Frames {
         if (nodeData.type === "ENTRYPOINT") {
             titleBlock.dashPattern = style.ENTRYPOINT_DASH_PATTERN;
         }
+        // Define a largura fixa do bloco
+        titleBlock.resizeWithoutConstraints(nodeWidth, 1);
 
-        // Chip com o tipo do nó
         const typeChip = await createTypeChip(nodeData.type);
+        // Chip não precisa de layoutAlign pois o pai é vertical e o chip tem largura AUTO
         titleBlock.appendChild(typeChip);
 
-        // Texto do título
         const titleText = figma.createText();
         titleText.characters = nodeData.name || `Untitled ${nodeData.type}`;
         titleText.fontName = style.FONT;
         titleText.fontSize = style.FONT_SIZE;
         titleText.fills = style.TEXT_COLOR;
-        titleText.layoutAlign = "STRETCH"; // Ocupa a largura do titleBlock
-        titleText.textAutoResize = "HEIGHT"; // Ajusta altura automaticamente
+        titleText.layoutAlign = "STRETCH"; // <<< Texto estica na largura disponível
+        titleText.textAutoResize = "HEIGHT"; // <<< Altura do texto é automática
         titleBlock.appendChild(titleText);
 
+        // Pequena pausa para garantir cálculo do layout antes de retornar
+        await new Promise(resolve => setTimeout(resolve, 0));
+        frameDebugLog('TitleBlock', `Bloco de título criado para ${nodeData.id}. Altura: ${titleBlock.height}`);
         return titleBlock;
     }
 
-    // Cria o Bloco de Descrição para Step/Entrypoint
+    // Recebe agora 'descriptionFields' (o array)
     async function createDescriptionBlock(descriptionFields: DescriptionField[], nodeWidth: number): Promise<FrameNode> {
+        frameDebugLog('DescBlock', `Iniciando criação com ${descriptionFields.length} campos.`);
         const block = figma.createFrame();
         const style = StyleConfig.Nodes.DESCRIPTION_BLOCK;
         const layout = LayoutConfig.Nodes;
 
         block.name = "Description Block";
         block.layoutMode = "VERTICAL";
-        block.layoutAlign = "STRETCH";
-        block.primaryAxisSizingMode = "AUTO";
-        block.counterAxisSizingMode = "AUTO"; // Largura definida pelo pai
+        block.primaryAxisSizingMode = "AUTO"; // <<< Altura AUTO
+        block.counterAxisSizingMode = "FIXED"; // <<< Largura FIXA
         block.itemSpacing = layout.DESCRIPTION_BLOCK_ITEM_SPACING;
         block.paddingTop = block.paddingBottom = block.paddingLeft = block.paddingRight = layout.DESCRIPTION_BLOCK_PADDING;
         block.cornerRadius = style.CORNER_RADIUS;
         block.strokes = style.STROKE;
         block.strokeWeight = style.STROKE_WEIGHT;
         block.fills = style.FILL;
+        // Define a largura fixa do bloco
+        block.resizeWithoutConstraints(nodeWidth, 1);
+
+        let hasVisibleContent = false;
 
         for (const field of descriptionFields) {
-            if (field.label && field.content) { // Garante que temos label e conteúdo
-                 const itemFrame = await createDescriptionItem(field);
-                 block.appendChild(itemFrame);
+            if (field && field.label && typeof field.label === 'string' && field.label.trim() !== '') {
+                frameDebugLog('DescBlock', `Processando campo: ${field.label}`);
+                try {
+                    // Passa a largura disponível para o item (largura do bloco - paddings)
+                    const itemAvailableWidth = nodeWidth - (layout.DESCRIPTION_BLOCK_PADDING * 2);
+                    const itemFrame = await createDescriptionItem(field, itemAvailableWidth);
+                    if (itemFrame.height > 1) {
+                        block.appendChild(itemFrame);
+                        hasVisibleContent = true;
+                    } else {
+                        frameDebugLog('DescBlock', `Item '${field.label}' criado com altura zero. Removendo.`);
+                        itemFrame.remove();
+                    }
+                } catch (itemError) {
+                    frameDebugLog('DescBlock', `Erro ao criar item '${field.label}':`, itemError);
+                }
             } else {
-                console.warn(`[Frames] Campo de descrição inválido ignorado em ${block.parent?.name || 'nó desconhecido'}:`, field);
+                frameDebugLog('DescBlock', `Campo inválido ignorado:`, field);
             }
         }
 
-         // Remover padding inferior do último item para evitar espaçamento duplo
-         const children = block.children;
-         if (children.length > 0) {
-             const lastChild = children[children.length - 1];
-             if ('paddingBottom' in lastChild) {
-                (lastChild as FrameNode).paddingBottom = 0;
+        if (!hasVisibleContent) {
+            frameDebugLog('DescBlock', `Nenhum item visível adicionado. Redimensionando para altura mínima.`);
+            block.resize(nodeWidth, 1); // Garante altura mínima > 0 se vazio
+            // Ajusta padding para não ocupar espaço visual se estiver vazio
+            block.paddingTop = block.paddingBottom = 0;
+            block.itemSpacing = 0;
+        } else {
+             const children = block.children;
+             if (children.length > 0) {
+                 const lastChild = children[children.length - 1];
+                 // Remove padding do último item via config
+                 if ('paddingBottom' in lastChild && typeof lastChild.paddingBottom === 'number') {
+                    (lastChild as FrameNode).paddingBottom = 0;
+                 }
              }
-         }
+             // Pausa para garantir cálculo do layout
+             await new Promise(resolve => setTimeout(resolve, 0));
+             frameDebugLog('DescBlock', `Bloco de descrição finalizado. Altura: ${block.height}`);
+        }
 
 
         return block;
     }
 
-    // Cria um Item dentro do Bloco de Descrição
-    async function createDescriptionItem(field: DescriptionField): Promise<FrameNode> {
+     // Recebe largura disponível
+    async function createDescriptionItem(field: DescriptionField, availableWidth: number): Promise<FrameNode> {
         const frame = figma.createFrame();
         const style = StyleConfig.Nodes.DESCRIPTION_ITEM;
         const layout = LayoutConfig.Nodes;
 
         frame.name = field.label || "Description Item";
         frame.layoutMode = "VERTICAL";
-        frame.layoutAlign = "STRETCH"; // Ocupa largura do bloco de descrição
-        frame.primaryAxisSizingMode = "AUTO";
-        frame.counterAxisSizingMode = "AUTO"; // Largura definida pelo pai
+        frame.primaryAxisSizingMode = "AUTO"; // <<< Altura AUTO
+        frame.counterAxisSizingMode = "FIXED"; // <<< Largura FIXA (herdada/definida)
         frame.itemSpacing = layout.DESCRIPTION_ITEM_SPACING;
-        frame.paddingBottom = layout.DESCRIPTION_ITEM_PADDING_BOTTOM; // Espaço após este item
+        frame.paddingBottom = layout.DESCRIPTION_ITEM_PADDING_BOTTOM;
         frame.fills = [];
         frame.strokes = [];
+        // Define a largura fixa do item
+        frame.resizeWithoutConstraints(availableWidth, 1);
 
-        // Chip com o Label
-        const labelChip = await createTypeChip(field.label); // Assume que label sempre existe aqui
+        const labelChip = await createTypeChip(field.label);
+        // Chip não precisa de layoutAlign
         frame.appendChild(labelChip);
 
-        // Conteúdo
         let contentText = '';
-        // Simplificar formatação - apenas junta arrays com nova linha
-        if (Array.isArray(field.content)) {
-            contentText = field.content.join('\n');
-        } else if (typeof field.content === 'object' && field.content !== null) {
-             // Formata objeto como chave: valor
-             contentText = Object.entries(field.content)
-                 .map(([key, value]) => `${key}: ${value}`)
-                 .join('\n');
-        }
-        else {
-            contentText = String(field.content ?? ''); // Garante que é string
-        }
+        if (Array.isArray(field.content)) { contentText = field.content.join('\n'); }
+        else if (typeof field.content === 'object' && field.content !== null) { contentText = Object.entries(field.content).map(([k, v]) => `${k}: ${v}`).join('\n'); }
+        else { contentText = String(field.content ?? ''); }
 
-        if (contentText.trim()) { // Só adiciona se houver conteúdo
+        if (contentText.trim()) {
             const content = figma.createText();
             content.characters = contentText;
             content.fontName = style.CONTENT_FONT;
             content.fontSize = style.CONTENT_FONT_SIZE;
             content.fills = style.CONTENT_TEXT_COLOR;
-            content.layoutAlign = "STRETCH";
-            content.textAutoResize = "HEIGHT";
+            content.layoutAlign = "STRETCH"; // <<< Ocupa largura
+            content.textAutoResize = "HEIGHT"; // <<< Altura automática
             frame.appendChild(content);
         } else {
-             // Se não houver conteúdo, remove o espaçamento extra após o chip
-             frame.itemSpacing = 0;
+            frame.itemSpacing = 0;
+            frame.paddingBottom = 0;
+            frameDebugLog('DescItem', `Campo '${field.label}' sem conteúdo.`);
         }
 
-
+        // Pausa para garantir cálculo
+        await new Promise(resolve => setTimeout(resolve, 0));
+        frameDebugLog('DescItem', `Item '${field.label}' criado. Altura: ${frame.height}`);
         return frame;
     }
+
 } // Fim do namespace Frames

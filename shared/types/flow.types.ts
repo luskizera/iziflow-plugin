@@ -23,16 +23,16 @@ export interface FlowNode {
   metadata?: {
     category?: string;
     createdBy?: string;
-    [key: string]: any;
+    [key: string]: any; // Permite outras propriedades em metadata
   };
   /**
    * CORREÇÃO: 'description' agora é um objeto opcional
    * que CONTÉM a propriedade 'fields' (que é o array).
    */
-  description?: {
-    fields: DescriptionField[]; // O array está DENTRO de 'fields'
-    // Você pode adicionar outras propriedades dentro de 'description' se necessário
-    // title?: string; // Exemplo
+  description?: { // <--- Agora é um objeto opcional
+    fields: DescriptionField[]; // <--- O array está aqui dentro
+    // Você pode adicionar outras propriedades aqui no futuro se precisar
+    // title?: string;
   };
 }
 
@@ -45,7 +45,7 @@ export type NodeData = FlowNode;
  * Representa uma conexão entre dois nós.
  */
 export interface Connection {
-  id?: string;
+  id?: string; // ID pode ser opcional
   from: string;
   to: string;
   condition?: string;
@@ -58,13 +58,14 @@ export interface Connection {
  * Representa um fluxo completo com nome, nós e conexões.
  */
 export interface Flow {
-  flowName?: string;
+  flowName?: string; // Nome do fluxo pode ser opcional
   nodes: FlowNode[];
   connections: Connection[];
 }
 
 /**
  * Representa a estrutura geral do JSON de entrada.
+ * Pode ser um Flow diretamente ou um objeto contendo um array 'flows'.
  */
 export interface FlowData {
   flowName?: string;

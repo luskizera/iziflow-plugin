@@ -1,4 +1,4 @@
-import type { EventTS } from "../../shared/universals";
+import type { EventTS } from "../../shared/types/messaging.types";
 
 export const dispatch = (data: any, origin = "*") => {
   figma.ui.postMessage(data, {

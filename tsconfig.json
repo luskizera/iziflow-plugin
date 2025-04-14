@@ -1,6 +1,7 @@
+// tsconfig.json (Raiz do Projeto - Confirmar esta versão)
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "ES2020",
     "useDefineForClassFields": true,
     "module": "es2020",
     "moduleResolution": "bundler",
@@ -13,27 +14,30 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "jsx": "react-jsx",
-    "checkJs": true,
+    "checkJs": false,
     "isolatedModules": true,
-    "typeRoots": [
-      "./node_modules/@types",
-      "./src/globals.d.ts",
-      "./src/types",
-      "shared/universals.d.ts"
-    ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"]
+    },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@figma", // <--- Importante para contexto global do editor
+      "./shared/types"
+    ]
   },
   "include": [
-    "src/**/*.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
-    "src/**/*.js",
-    "src/**/*.svelte",
-    "src-code/**/*.ts",
-    "shared/universals.d.ts"
+    "src",
+    "src-code",
+    "shared",
+    "vite.config.ts",
+    "vite.config.code.ts",
+    "figma.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".tmp",
+    "dist"
   ]
 }

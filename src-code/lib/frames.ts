@@ -1,6 +1,6 @@
 import { hexToRgb } from "../utils/hexToRgb";
 import { nodeCache } from "../utils/nodeCache";
-import type { NodeData, DescriptionField } from '../../src/lib/types';
+import type { NodeData, DescriptionField } from '../../shared/types/flow.types';
 import * as StyleConfig from "../config/styles.config";
 import * as LayoutConfig from "../config/layout.config";
 

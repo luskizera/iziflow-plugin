@@ -45,7 +45,7 @@ async function preloadFonts() {
 }
 
 // --- UI e Listener principal ---
-figma.showUI(__html__, { width: 624, height: 550, themeColors: true, title: 'IziFlow (Markdown)' });
+figma.showUI(__html__, { width: 624, height: 430, themeColors: true, title: 'IziFlow Plugin' });
 
 // Tipagem mais específica da mensagem esperada
 type PluginMessagePayload = EventTS[keyof EventTS] & { type: keyof EventTS };

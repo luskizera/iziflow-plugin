@@ -1,135 +1,151 @@
 // src/components/app.tsx
-import { useState, useRef, useEffect } from "react"; // <-- Importar useRef e useEffect
-import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
-import { Alert, AlertDescription } from "./ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { useTheme } from "./providers/theme-provider";
+import { useState, useRef, useEffect } from "react";
+import { Button } from "./ui/button";         // Ajuste o caminho se necessário
+import { Textarea } from "./ui/textarea";       // Ajuste o caminho se necessário
+import { Alert, AlertDescription } from "./ui/alert"; // Ajuste o caminho se necessário
+import { useTheme } from "./providers/theme-provider"; // Ajuste o caminho se necessário
+// 👇 Caminho correto para seus utils e tipos
 import { dispatchTS, listenTS } from "@/utils/utils";
+import type { EventTS } from '@shared/types/messaging.types';
 import { SunIcon, MoonIcon } from 'lucide-react';
 
 export function App() {
   const [markdown, setMarkdown] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Estado de Loading
   const { theme, setTheme } = useTheme();
-  const textareaRef = useRef<HTMLTextAreaElement>(null); // <-- Criar a ref
+  const markdownTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const tabOptions = [
-    { id: "editor", label: "MD input" },
-    { id: "preview", label: "Manual create" },
-  ];
-
-  // <-- Adicionar useEffect para foco inicial
   useEffect(() => {
-    // Foca no textarea assim que o componente monta
-    textareaRef.current?.focus();
-  }, []); // Array vazio garante que rode apenas uma vez na montagem
+    markdownTextareaRef.current?.focus();
+  }, []);
 
+  // --- Listener para Mensagens do Backend ---
+  useEffect(() => {
+    console.log("<<< Configurando listener de mensagens da UI >>>");
+
+    const handleMessage = (event: MessageEvent<any>) => {
+        // Log para ver TODAS as mensagens que chegam
+        console.log('<<< Mensagem Bruta Recebida pela UI:', event.data);
+
+        // Verificar se a mensagem tem a estrutura esperada
+        const pluginMessage = event.data?.pluginMessage;
+        if (!pluginMessage || typeof pluginMessage.type !== 'string') {
+            // Ignora mensagens que não se parecem com as do plugin
+            // console.log('Mensagem ignorada (formato inválido):', event.data);
+            return;
+        }
+
+        const messageType = pluginMessage.type as keyof EventTS;
+        console.log(`<<< Tipo de Mensagem Recebida: ${messageType} >>>`, pluginMessage);
+
+        // Atualizar estado com base no tipo da mensagem
+        switch (messageType) {
+            case 'generation-success': {
+                console.log('<<< Processando generation-success >>>');
+                const payload = pluginMessage as EventTS['generation-success'];
+                setIsLoading(false); // <-- PONTO CHAVE: Finaliza o loading
+                setError(null);      // Limpa erros anteriores
+                console.log("Sucesso reportado pelo plugin:", payload.message);
+                // Poderia adicionar uma notificação visual de sucesso aqui se quisesse
+                break;
+            }
+            case 'generation-error':
+            case 'parse-error': {
+                console.log(`<<< Processando ${messageType} >>>`);
+                const payload = pluginMessage as EventTS['generation-error'] | EventTS['parse-error'];
+                setIsLoading(false); // <-- PONTO CHAVE: Finaliza o loading
+                setError(payload.message || `Erro desconhecido (${messageType})`);
+                console.error(`Erro reportado pelo plugin (${messageType}):`, payload.message);
+                if ('lineNumber' in payload && payload.lineNumber) {
+                    console.error(`  (Erro de parse na linha: ${payload.lineNumber})`);
+                     // Atualiza o erro com a linha, se disponível
+                     setError(`${payload.message} (na linha ${payload.lineNumber})`);
+                }
+                break;
+            }
+            case 'debug': {
+                const payload = pluginMessage as EventTS['debug'];
+                console.log(`[PLUGIN DEBUG UI] ${payload.message}`, payload.data ? JSON.parse(payload.data) : '');
+                break;
+            }
+            // Ignorar outros tipos de mensagem que a UI não precisa tratar diretamente
+            default:
+                // console.log(`Mensagem tipo '${messageType}' recebida, mas não tratada diretamente pela UI.`);
+                break;
+        }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Função de limpeza: remove o listener quando o componente desmontar
+    return () => {
+        console.log("<<< Removendo listener de mensagens da UI >>>");
+        window.removeEventListener('message', handleMessage);
+    };
+  }, []); // Array vazio garante que o setup/cleanup rode apenas uma vez
+
+
+  // --- Função handleSubmit (Inalterada da versão anterior correta) ---
   const handleSubmit = async () => {
-    // 1. Resetar o estado de erro ao tentar um novo envio
     setError(null);
-    // 2. Indicar que o processo começou (estado de carregamento)
     setIsLoading(true);
+    const markdownToSend = markdown;
 
-    // 3. Obter o conteúdo Markdown do estado (substitui a leitura do 'json')
-    const markdownToSend = markdown; // Lê do estado 'markdown'
-
-    // 4. Validar se há conteúdo para enviar
     if (!markdownToSend.trim()) {
-        setError("O campo Markdown não pode estar vazio."); // Mensagem de erro clara
-        setIsLoading(false); // Para o carregamento, pois não houve envio
-        return; // Interrompe a execução
+        setError("O campo Markdown não pode estar vazio.");
+        setIsLoading(false);
+        return;
     }
-
-    // 5. Tentar enviar a mensagem para o backend (código do plugin)
     try {
-       // Chama a função dispatchTS (verifique se está importada corretamente)
-       // Envia o tipo de evento 'generate-flow' e um payload contendo
-       // a chave 'markdown' com o valor da string Markdown.
-       // (Conforme definido em shared/types/messaging.types.ts)
-       console.log("Enviando para o backend:", { markdown: markdownToSend }); // Log para debug
+       console.log(">>> Enviando para o backend:", { markdown: markdownToSend });
        dispatchTS("generate-flow", { markdown: markdownToSend });
-
-       // IMPORTANTE: Não definimos setIsLoading(false) aqui!
-       // A UI agora deve ESPERAR uma mensagem de volta do backend
-       // ('generation-success' ou 'generation-error') para saber quando
-       // o processo terminou (seja com sucesso ou falha).
-       // Isso é tratado no listener useEffect que adicionamos anteriormente.
-
+       // NÃO chamar setIsLoading(false) aqui
     } catch (dispatchError: any) {
-      // 6. Capturar erros que podem ocorrer *durante o envio* da mensagem
-      // (Isso é raro, mas pode acontecer se houver problema com a comunicação interna do Figma)
       console.error("Erro ao despachar a mensagem 'generate-flow':", dispatchError);
       const errorMsg = dispatchError instanceof Error ? dispatchError.message : String(dispatchError);
       setError(`Erro interno ao enviar dados: ${errorMsg}`);
-      setIsLoading(false); // Resetar loading se o próprio dispatch falhar
+      setIsLoading(false); // Parar loading APENAS se o dispatch falhar
     }
-    // Não há 'finally { setIsLoading(false); }' aqui.
   };
 
   return (
-    <div className="flex flex-col items-start justify-center gap-6 p-6">
-      {/* Header permanece igual */}
-      <header className="flex items-center justify-between w-full">
-        <h1 className="flex-1 font-h-3 text-foreground text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
-          iziFlow Plugin
-        </h1>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="w-10 h-10 p-2 border border-border_primary_default rounded-lg"
-        >
-          {theme === "dark" ?
-            <SunIcon className="w-4 h-4" /> :
-            <MoonIcon className="w-4 h-4" />
-          }
-        </Button>
+    // --- JSX da UI (Inalterado da versão anterior correta) ---
+    <div className="flex flex-col items-start justify-stretch h-screen p-4 gap-4">
+      {/* Header */}
+      <header className="flex items-center justify-between w-full flex-shrink-0">
+         <h1 className="flex-1 font-sans text-2xl font-semibold">IziFlow plugin</h1>
+         <Button variant="outline" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+           {theme === "dark" ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+         </Button>
       </header>
 
-      <Tabs defaultValue="editor" className="w-full">
-        {/* TabsList permanece igual */}
-        <TabsList className="grid grid-cols-2 p-1 bg-zinc-100 rounded-lg">
-          {tabOptions.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* Área de Texto Markdown */}
+       <Textarea
+        ref={markdownTextareaRef}
+        value={markdown}
+        onChange={(e) => setMarkdown(e.target.value)}
+        placeholder={
+`Paste your .md here.`
+        }
+        className="flex-grow w-full resize-none font-mono text-sm h-[200px]"
+      />
 
-        <TabsContent value="editor" className="mt-4 space-y-4">
-          <Textarea
-            ref={textareaRef} // <-- Anexar a ref
-            value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
-            placeholder="Cole seu markdown aqui..."
-            // 👇 Alterado de min-h para h
-            className="h-[200px] resize-none"
-          />
-
-          {error && (
+      {/* Área de Erro e Botão */}
+      <div className="w-full mt-auto flex-shrink-0 space-y-2">
+         {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
           <Button
             onClick={handleSubmit}
-            disabled={isLoading || !markdown.trim()} // <-- Desabilita se estiver carregando ou vazio
+            disabled={isLoading || !markdown.trim()}
             className="w-full"
           >
             {isLoading ? "Gerando..." : "Gerar Fluxo"}
           </Button>
-        </TabsContent>
-
-        {/* TabsContent para preview permanece igual */}
-        <TabsContent value="preview" className="mt-4">
-          <div className="text-center text-muted-foreground">
-            Em desenvolvimento...
-          </div>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }

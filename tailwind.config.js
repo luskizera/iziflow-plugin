@@ -14,7 +14,15 @@ module.exports = {
 		  "2xl": "1400px"
 		}
 	  },
+	  fontFamily: {
+		sans: ["var(--font-sans)", "sans-serif"],
+		mono: ["var(--font-mono)", "monospace"]
+	  },
 	  extend: {
+		fontFamily: {
+		  sans: ["var(--font-sans)", "sans-serif"],
+		  mono: ["var(--font-mono)", "monospace"]
+		},
 		colors: {
 		  "foreground_primary_default": "var(--primary-900)",
 		  "foreground_secondary_default": "var(--zinc-100)",

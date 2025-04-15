@@ -1,6 +1,7 @@
 import path from "path";
 import { defineConfig } from "vite";
 import { figmaPlugin, figmaPluginInit, runAction } from "vite-figma-plugin";
+import tailwindcss from "@tailwindcss/vite"
 import { viteSingleFile } from "vite-plugin-singlefile";
 import react from "@vitejs/plugin-react";
 
@@ -17,6 +18,7 @@ export default defineConfig({
   plugins: [
     react(), 
     viteSingleFile(), 
+    tailwindcss(),
     figmaPlugin(config, mode),
   ],
   build: {

@@ -5,18 +5,18 @@ import { Textarea } from "./ui/textarea";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { useTheme } from "./providers/theme-provider";
-import { dispatchTS } from "@/utils/utils";
+import { dispatchTS, listenTS } from "@/utils/utils";
 import { SunIcon, MoonIcon } from 'lucide-react';
 
 export function App() {
-  const [json, setJson] = useState("");
+  const [markdown, setMarkdown] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { theme, setTheme } = useTheme();
   const textareaRef = useRef<HTMLTextAreaElement>(null); // <-- Criar a ref
 
   const tabOptions = [
-    { id: "editor", label: "JSON input" },
+    { id: "editor", label: "MD input" },
     { id: "preview", label: "Manual create" },
   ];
 
@@ -27,21 +27,45 @@ export function App() {
   }, []); // Array vazio garante que rode apenas uma vez na montagem
 
   const handleSubmit = async () => {
-    try {
-      setError(null);
-      setIsLoading(true);
+    // 1. Resetar o estado de erro ao tentar um novo envio
+    setError(null);
+    // 2. Indicar que o processo começou (estado de carregamento)
+    setIsLoading(true);
 
-      JSON.parse(json);
-      dispatchTS("generate-flow", { json });
+    // 3. Obter o conteúdo Markdown do estado (substitui a leitura do 'json')
+    const markdownToSend = markdown; // Lê do estado 'markdown'
 
-    } catch (error: any) {
-      console.error("Erro no handleSubmit:", error);
-      // Tenta extrair a mensagem de erro de forma mais segura
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      setError(`Erro ao processar JSON: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
+    // 4. Validar se há conteúdo para enviar
+    if (!markdownToSend.trim()) {
+        setError("O campo Markdown não pode estar vazio."); // Mensagem de erro clara
+        setIsLoading(false); // Para o carregamento, pois não houve envio
+        return; // Interrompe a execução
     }
+
+    // 5. Tentar enviar a mensagem para o backend (código do plugin)
+    try {
+       // Chama a função dispatchTS (verifique se está importada corretamente)
+       // Envia o tipo de evento 'generate-flow' e um payload contendo
+       // a chave 'markdown' com o valor da string Markdown.
+       // (Conforme definido em shared/types/messaging.types.ts)
+       console.log("Enviando para o backend:", { markdown: markdownToSend }); // Log para debug
+       dispatchTS("generate-flow", { markdown: markdownToSend });
+
+       // IMPORTANTE: Não definimos setIsLoading(false) aqui!
+       // A UI agora deve ESPERAR uma mensagem de volta do backend
+       // ('generation-success' ou 'generation-error') para saber quando
+       // o processo terminou (seja com sucesso ou falha).
+       // Isso é tratado no listener useEffect que adicionamos anteriormente.
+
+    } catch (dispatchError: any) {
+      // 6. Capturar erros que podem ocorrer *durante o envio* da mensagem
+      // (Isso é raro, mas pode acontecer se houver problema com a comunicação interna do Figma)
+      console.error("Erro ao despachar a mensagem 'generate-flow':", dispatchError);
+      const errorMsg = dispatchError instanceof Error ? dispatchError.message : String(dispatchError);
+      setError(`Erro interno ao enviar dados: ${errorMsg}`);
+      setIsLoading(false); // Resetar loading se o próprio dispatch falhar
+    }
+    // Não há 'finally { setIsLoading(false); }' aqui.
   };
 
   return (
@@ -49,7 +73,7 @@ export function App() {
       {/* Header permanece igual */}
       <header className="flex items-center justify-between w-full">
         <h1 className="flex-1 font-h-3 text-foreground text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
-          JSON from User Flow
+          iziFlow Plugin
         </h1>
         <Button
           variant="outline"
@@ -77,9 +101,9 @@ export function App() {
         <TabsContent value="editor" className="mt-4 space-y-4">
           <Textarea
             ref={textareaRef} // <-- Anexar a ref
-            value={json}
-            onChange={(e) => setJson(e.target.value)}
-            placeholder="Cole seu JSON aqui..."
+            value={markdown}
+            onChange={(e) => setMarkdown(e.target.value)}
+            placeholder="Cole seu markdown aqui..."
             // 👇 Alterado de min-h para h
             className="h-[200px] resize-none"
           />
@@ -92,7 +116,7 @@ export function App() {
 
           <Button
             onClick={handleSubmit}
-            disabled={isLoading || !json.trim()} // <-- Desabilita se estiver carregando ou vazio
+            disabled={isLoading || !markdown.trim()} // <-- Desabilita se estiver carregando ou vazio
             className="w-full"
           >
             {isLoading ? "Gerando..." : "Gerar Fluxo"}

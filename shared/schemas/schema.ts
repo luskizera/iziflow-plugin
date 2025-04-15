@@ -1,4 +1,4 @@
-// src/lib/schema.ts
+// shared/schemas/schema.ts
 import { z } from "zod";
 
 // Define o schema para DescriptionField primeiro

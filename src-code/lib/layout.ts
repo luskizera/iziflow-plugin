@@ -1,3 +1,4 @@
+// src-code/lib/layout.ts
 export namespace Layout {
   export function buildGraph(nodes: any[], connections: any[]) {
     const adjacencyList: { [id: string]: string[] } = {};

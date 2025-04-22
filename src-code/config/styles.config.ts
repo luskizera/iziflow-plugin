@@ -1,98 +1,97 @@
+// src-code/config/styles.config.ts
 /// <reference types="@figma/plugin-typings" />
 
-import { hexToRgb } from "../utils/hexToRgb";
+// Este arquivo agora foca em estilos NÃO temáticos: fontes, tamanhos, raios, pesos, etc.
+// As cores são gerenciadas por theme.config.ts
 
-// --- Cores Base ---
-const Colors = {
-    BLACK: hexToRgb("#000000"),
-    DARK_GRAY: hexToRgb("#323232"),
-    MEDIUM_GRAY: hexToRgb("#939393"),
-    LIGHT_GRAY_STROKE: hexToRgb("#A1A1AA"),
-    VERY_LIGHT_GRAY_FILL: hexToRgb("#F4F4F5"),
-    BORDER_GRAY: hexToRgb("#E4E4E7"),
-    WHITE: hexToRgb("#FFFFFF"),
-    WHITE_TEXT: hexToRgb("#FAFAFA"),
-    DARK_TEXT: hexToRgb("#09090B"),
-    CONTENT_TEXT: hexToRgb("#1E1E1E"),
-    START_END_FILL: hexToRgb("#18181B"),
-    DECISION_FILL: hexToRgb("#A3A3A3"),
-};
-
-// --- Estilos de Conectores ---
+// --- Estilos de Conectores (Apenas não-cor) ---
 export const Connectors = {
     PRIMARY: {
-        STROKE: [{ type: "SOLID", color: Colors.BLACK }] as ReadonlyArray<Paint>,
+        // STROKE: definido pelo tema (token: connector_primary)
         STROKE_WEIGHT: 1,
-        DASH_PATTERN: [] as number[],
-        // Usar tipo base StrokeCap
-        END_CAP: "ARROW_LINES" as StrokeCap,
+        DASH_PATTERN: [], // Sólido
+        END_CAP: "ARROW_LINES" as ConnectorStrokeCap, // Tipo correto da API
     },
     SECONDARY: {
-        STROKE: [{ type: "SOLID", color: Colors.MEDIUM_GRAY }] as ReadonlyArray<Paint>,
+        // STROKE: definido pelo tema (token: connector_secondary)
         STROKE_WEIGHT: 1,
-        DASH_PATTERN: [4, 4] as number[],
-        // Usar tipo base StrokeCap
-        END_CAP: "ARROW_LINES" as StrokeCap,
+        DASH_PATTERN: [4, 4], // Tracejado
+        END_CAP: "ARROW_LINES" as ConnectorStrokeCap, // Tipo correto da API
     },
 };
 
-// --- Estilos de Etiquetas/Chips ---
+// --- Estilos de Etiquetas/Chips (Apenas não-cor) ---
+// Reflete chipsNode e nodeTypeChip do nodeLayout.md
 export const Labels = {
-    PADDING_HORIZONTAL: 12,
-    PADDING_VERTICAL: 8,
-    CORNER_RADIUS: 4,
-    FILL: [{ type: "SOLID", color: Colors.DARK_GRAY }] as ReadonlyArray<Paint>,
-    TEXT_COLOR: [{ type: "SOLID", color: Colors.WHITE }] as ReadonlyArray<Paint>,
-    FONT: { family: "Inter", style: "Medium" } as FontName, // Usa tipo base FontName
-    FONT_SIZE: 14,
+    // Configuração base para chips de descrição (chipsNode)
+    DESC_CHIP_PADDING_HORIZONTAL: 6,
+    DESC_CHIP_PADDING_VERTICAL: 1,
+    DESC_CHIP_CORNER_RADIUS: 4,
+    DESC_CHIP_FONT_SIZE: 12,
+    DESC_CHIP_ITEM_SPACING: 4, // Espaço entre ícone e texto (embora chipsNode não tenha ícone)
+
+    // Configuração para chips de tipo de nó (nodeTypeChip)
+    TYPE_CHIP_PADDING_HORIZONTAL: 8,
+    TYPE_CHIP_PADDING_VERTICAL: 4,
+    TYPE_CHIP_CORNER_RADIUS: 6,
+    TYPE_CHIP_FONT_SIZE: 14,
+    TYPE_CHIP_ITEM_SPACING: 8, // Espaço entre ícone e texto
+
+    // Fonte comum para todos os chips
+    FONT: { family: "Inter", style: "Medium" } as FontName,
 };
 
-// --- Estilos de Nós ---
+// --- Estilos de Nós (Apenas não-cor) ---
 export const Nodes = {
     START_END: {
-        FILL: [{ type: "SOLID", color: Colors.START_END_FILL }] as ReadonlyArray<Paint>,
-        CORNER_RADIUS: 400,
-        TEXT_COLOR: [{ type: "SOLID", color: Colors.WHITE_TEXT }] as ReadonlyArray<Paint>,
-        FONT: { family: "Inter", style: "Bold" } as FontName, // Usa tipo base FontName
-        FONT_SIZE: 24,
-        SIZE: 140,
+        // FILL, STROKE, TEXT_COLOR: definidos pelo tema
+        CORNER_RADIUS: 100, // Raio para formar círculo em 150x150
+        FONT: { family: "Inter", style: "Medium" } as FontName, // Conforme discussão
+        FONT_SIZE: 30, // Conforme discussão
+        SIZE: 150, // Tamanho fixo 150x150
     },
-    DECISION: {
-        SHAPE_FILL: [{ type: "SOLID", color: Colors.DECISION_FILL }] as ReadonlyArray<Paint>,
-        TEXT_COLOR: [{ type: "SOLID", color: Colors.DARK_TEXT }] as ReadonlyArray<Paint>,
-        FONT: { family: "Inter", style: "Semi Bold" } as FontName, // Usa tipo base FontName
-        FONT_SIZE: 18,
-        WIDTH: 300,
-        HEIGHT: 200,
+    DECISION: { // Configurações para o frame principal DECISION
+        // FILL, STROKE: definidos pelo tema
+        CORNER_RADIUS: 8, // Conforme nodeLayout.md
+        // Padding e Item Spacing definidos diretamente nas funções de criação
     },
-    TITLE_BLOCK: {
-        FILL: [{ type: "SOLID", color: Colors.VERY_LIGHT_GRAY_FILL }] as ReadonlyArray<Paint>,
-        STROKE: [{ type: "SOLID", color: Colors.LIGHT_GRAY_STROKE }] as ReadonlyArray<Paint>,
-        STROKE_WEIGHT: 2,
-        CORNER_RADIUS: 24,
-        ENTRYPOINT_DASH_PATTERN: [4, 4] as number[],
-        TEXT_COLOR: [{ type: "SOLID", color: Colors.DARK_TEXT }] as ReadonlyArray<Paint>,
-        FONT: { family: "Inter", style: "Semi Bold" } as FontName, // Usa tipo base FontName
-        FONT_SIZE: 24,
+     STEP_ENTRYPOINT: { // Configurações comuns para frames principais STEP/ENTRYPOINT
+        // FILL, STROKE: definidos pelo tema
+        CORNER_RADIUS: 8, // Conforme nodeLayout.md
+        WIDTH: 400, // Largura fixa conforme nodeLayout.md
+        // Padding e Item Spacing definidos diretamente nas funções de criação
     },
-    DESCRIPTION_BLOCK: {
-        FILL: [{ type: "SOLID", color: Colors.WHITE }] as ReadonlyArray<Paint>,
-        STROKE: [{ type: "SOLID", color: Colors.BORDER_GRAY }] as ReadonlyArray<Paint>,
-        STROKE_WEIGHT: 2,
-        CORNER_RADIUS: 24,
+    TITLE_BLOCK: { // Estilos para o frame container do Título (nodeTitle)
+        // FILL: none
+        // STROKE: none
+        // Padding e Item Spacing definidos diretamente nas funções de criação
+        FONT: { family: "Inter", style: "Regular" } as FontName, // Fonte do Nome do Nó
+        FONT_SIZE: 24, // Tamanho do Nome do Nó
     },
-    DESCRIPTION_ITEM: {
-        CONTENT_TEXT_COLOR: [{ type: "SOLID", color: Colors.CONTENT_TEXT }] as ReadonlyArray<Paint>,
-        CONTENT_FONT: { family: "Inter", style: "Regular" } as FontName, // Usa tipo base FontName
-        CONTENT_FONT_SIZE: 18,
+    DESCRIPTION_BLOCK: { // Estilos para o frame container da Descrição (descBlock)
+        // FILL: none
+        // STROKE: none
+        // Padding e Item Spacing definidos diretamente nas funções de criação
+    },
+    DESCRIPTION_ITEM: { // Estilos para o frame container de cada Item da Descrição (descItem)
+        // FILL: none
+        // STROKE: none
+         // Padding e Item Spacing definidos diretamente nas funções de criação
+        CONTENT_FONT: { family: "Inter", style: "Regular" } as FontName, // Fonte do Conteúdo da Descrição
+        CONTENT_FONT_SIZE: 16, // Tamanho do Conteúdo da Descrição
+    },
+    DIVIDER: { // Estilos para o frame container do Divisor (divider)
+        // FILL: none
+        // STROKE: none
+        // Padding e Item Spacing definidos diretamente nas funções de criação
     }
 };
 
 // --- Fontes Usadas ---
-// Usar tipo base FontName para garantir consistência
+// Fontes que precisam ser carregadas via figma.loadFontAsync
 export const FontsToLoad: FontName[] = [
     { family: "Inter", style: "Regular" },
     { family: "Inter", style: "Medium" },
-    { family: "Inter", style: "Semi Bold" },
-    { family: "Inter", style: "Bold" },
+    { family: "Inter", style: "Semi Bold" }, // Se usado em algum lugar
+    { family: "Inter", style: "Bold" },    // Se usado em algum lugar (START/END agora usa Medium)
 ];

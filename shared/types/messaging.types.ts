@@ -1,6 +1,8 @@
 export interface EventTS {
   'generate-flow': {
     markdown: string; // <-- CORRETO
+    mode: 'light' | 'dark'; // <<< ADICIONAR/CONFIRMAR
+    accentColor: string;      // <<< ADICIONAR/CONFIRMAR
   };
   'generation-success': { message: string; };
   'generation-error': { message: string; };

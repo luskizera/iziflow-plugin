@@ -7,12 +7,6 @@
     "module": "ES2020",
     "lib": ["ES2020"],          // Sobrescreve 'lib' da raiz: sem "DOM"
     "outDir": "../.tmp",       // Diretório de saída
-    "rootDir": ".",            // <-- Raiz é a pasta src-code. Crucial!
-                               // Isso significa que imports para fora (../shared)
-                               // podem precisar de um 'baseUrl' relativo ou
-                               // que os 'paths' herdados da raiz resolvam corretamente
-                               // a partir da raiz do projeto.
-
     // --- TypeRoots: Define explicitamente ONDE procurar tipos ---
     // Sobrescreve os typeRoots herdados. Essencial garantir que @figma esteja aqui.
     "typeRoots": [

@@ -4,7 +4,8 @@ module.exports = {
 	content: [
 	  "./src/**/*.{ts,tsx}",
 	  "./components/**/*.{ts,tsx}",
-	  "./app/**/*.{ts,tsx}"
+	  "./app/**/*.{ts,tsx}",
+	  "./src/components/**/*.{ts,tsx}"
 	],
 	theme: {
 	  container: {

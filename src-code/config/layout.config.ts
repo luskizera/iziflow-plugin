@@ -1,6 +1,5 @@
+// src-code/config/layout.config.ts
 /// <reference types="@figma/plugin-typings" />
-
-// Não definimos mais aliases locais 'Figma...'
 
 // --- Configuração de Layout de Conectores ---
 export const Connectors = {
@@ -25,16 +24,9 @@ export const Connectors = {
 };
 
 // --- Configuração de Layout de Nós ---
+// Mantém apenas espaçamento *entre* nós
 export const Nodes = {
     HORIZONTAL_SPACING: 300,
     VERTICAL_SPACING: 150,
-    TITLE_BLOCK_PADDING: 24,
-    TITLE_BLOCK_ITEM_SPACING: 8,
-    DESCRIPTION_BLOCK_PADDING: 24,
-    DESCRIPTION_BLOCK_ITEM_SPACING: 8,
-    DESCRIPTION_ITEM_PADDING_BOTTOM: 24,
-    DESCRIPTION_ITEM_SPACING: 8,
-    GENERAL_NODE_PADDING: { horizontal: 24, vertical: 20 },
-    GENERAL_NODE_ITEM_SPACING: 16,
-    STEP_ENTRYPOINT_BLOCK_WIDTH: 400,
+    // Outras configurações de padding/spacing interno movidas ou tratadas em styles.config.ts ou frames.ts
 };

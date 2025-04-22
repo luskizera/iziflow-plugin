@@ -139,7 +139,7 @@ function parseDescLine(rawLine: string, state: ParserState, nodeMap: { [id: stri
 // 👇 CORRIGIDO para usar a linha limpa
 function parseConnLine(line: string, state: ParserState): boolean {
     // A linha já vem limpa (sem comentário e trimada) da chamada principal
-    const connRegex = /^CONN\s+(\S+)\s*->\s*(\S+)\s+"([^"]+)"(\s+\[SECONDARY\])?$/i;
+    const connRegex = /^CONN\s+(\S+)\s*->\s*(\S+)\s+"([^"]*)"(\s+\[SECONDARY\])?$/i;
     const match = line.match(connRegex);
 
     if (match) {

@@ -9,4 +9,7 @@ export interface EventTS {
   'parse-error': { message: string; lineNumber?: number; };
   'debug': { message: string; data?: string; };
   closePlugin: {};
+  'get-history': {}; // UI pede o histórico
+  'history-data': { history: string[] }; // Plugin envia o histórico para a UI
+  'add-history-entry': { markdown: string }; // UI (ou Plugin) informa para adicionar entrada
 }

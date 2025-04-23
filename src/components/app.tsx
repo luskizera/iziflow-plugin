@@ -330,7 +330,7 @@ export function App() {
                     <InfoIcon className="w-3 h-3 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="top" align="center">
-                    <p className="text-xs">
+                    <p className="text-xs font-medium">
                       Tema escolhido para os nós.
                     </p>
                   </TooltipContent>

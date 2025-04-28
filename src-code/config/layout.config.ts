@@ -3,21 +3,22 @@
 
 // --- Configuração de Layout de Conectores ---
 export const Connectors = {
-    // Usamos 'as ConnectorMagnet' para garantir o tipo correto vindo das tipagens globais
-    DEFAULT_PRIMARY_START_MAGNET: "RIGHT" as ConnectorMagnet,
-    DEFAULT_SECONDARY_START_MAGNET: "BOTTOM" as ConnectorMagnet,
-    DEFAULT_END_MAGNET: "LEFT" as ConnectorMagnet,
+    // Removido 'as ConnectorMagnet' - A API espera a string literal.
+    DEFAULT_PRIMARY_START_MAGNET: "RIGHT",
+    DEFAULT_SECONDARY_START_MAGNET: "BOTTOM",
+    DEFAULT_END_MAGNET: "LEFT",
 
-    // Usamos 'as ConnectorLineType'
-    DEFAULT_PRIMARY_LINE_TYPE: "STRAIGHT" as ConnectorLineType,
-    DEFAULT_SECONDARY_LINE_TYPE: "ELBOWED" as ConnectorLineType,
+    // Removido 'as ConnectorLineType' - A API espera a string literal.
+    DEFAULT_PRIMARY_LINE_TYPE: "ELBOWED",
+    DEFAULT_SECONDARY_LINE_TYPE: "ELBOWED",
 
-    DECISION_PRIMARY_LINE_TYPE: "ELBOWED" as ConnectorLineType,
-    DECISION_SECONDARY_LINE_TYPE: "ELBOWED" as ConnectorLineType,
-    DECISION_PRIMARY_MAGNET_SEQUENCE: ["TOP", "RIGHT", "BOTTOM"] as ConnectorMagnet[],
-    DECISION_SECONDARY_START_MAGNET: "BOTTOM" as ConnectorMagnet,
+    DECISION_PRIMARY_LINE_TYPE: "ELBOWED",
+    DECISION_SECONDARY_LINE_TYPE: "ELBOWED",
+    // Removido 'as ConnectorMagnet' do array - O tipo será inferido como string[].
+    DECISION_PRIMARY_MAGNET_SEQUENCE: ["TOP", "RIGHT", "BOTTOM"],
+    DECISION_SECONDARY_START_MAGNET: "BOTTOM",
 
-    CONVERGENCE_PRIMARY_LINE_TYPE: "ELBOWED" as ConnectorLineType,
+    CONVERGENCE_PRIMARY_LINE_TYPE: "ELBOWED",
 
     LABEL_OFFSET_NEAR_START: 45,
     LABEL_OFFSET_MID_LINE_Y: 10,
@@ -27,6 +28,5 @@ export const Connectors = {
 // Mantém apenas espaçamento *entre* nós
 export const Nodes = {
     HORIZONTAL_SPACING: 300,
-    VERTICAL_SPACING: 150,
-    // Outras configurações de padding/spacing interno movidas ou tratadas em styles.config.ts ou frames.ts
+    VERTICAL_SPACING: 0,
 };

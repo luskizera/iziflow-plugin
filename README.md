@@ -2,6 +2,8 @@
 
 > Plugin Figma/FigJam para automação de fluxos de usuário através de uma sintaxe simples baseada em Markdown.
 
+> [iziFlow GPT Copilot](https://chatgpt.com/g/g-680800ab82a88191afc106220253ff30-iziflow-assistant) 
+
 IziFlow transforma descrições textuais estruturadas de fluxos de usuário em diagramas visuais diretamente no Figma e FigJam, agilizando o processo de design e documentação.
 
 ## ✨ Destaques
@@ -23,9 +25,14 @@ git clone https://github.com/luskizera/iziflowv2.git
 npm install # ou pnpm install / yarn install
 ```
 📦 Build
+
 Para criar a versão final para uso:
 # Compila a UI e o código do plugin para produção
 ```bash
 npm run build
 npm run buildcode
 ```
+
+# No Figjam
+* Plugins > Development > Import plugin from manifest...
+* Selecione dist/manifest.json

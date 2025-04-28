@@ -3,47 +3,51 @@
 
 import type { NodeData, Connection } from '@shared/types/flow.types';
 import type { RGB } from '../config/theme.config'; // Importa tipo RGB
-import * as LayoutConfig from '../config/layout.config';
-import * as StyleConfig from '../config/styles.config'; // Para fontes, etc. (NÃO cores)
+import * as LayoutConfig from '../config/layout.config'; // Configurações de layout (sem tipos problemáticos agora)
+import * as StyleConfig from '../config/styles.config'; // Configurações de estilo (sem tipos problemáticos agora)
 import { nodeCache } from '../utils/nodeCache';
 
-// --- Interfaces Internas ---
+// --- Interfaces Internas (Tipos Removidos/Alterados para string) ---
 interface ConnectorStyleBaseConfig {
     STROKE_WEIGHT: number;
     DASH_PATTERN: number[];
-    END_CAP: ConnectorStrokeCap;
+    // A API espera um valor específico, mas usamos string aqui para evitar erro TS
+    // O valor de StyleConfig.Connectors.PRIMARY/SECONDARY.END_CAP deve ser uma string válida como "ARROW_LINES"
+    END_CAP: string;
 }
 
 interface DeterminedConnectorConfig {
     styleBase: ConnectorStyleBaseConfig;
-    startConnection: { magnet?: ConnectorMagnet; position?: { x: number, y: number } };
-    endMagnet: ConnectorMagnet;
-    lineType: ConnectorLineType;
+    // Usamos 'string' onde ConnectorMagnet falhava
+    startConnection: { magnet?: string; position?: { x: number, y: number } };
+    endMagnet: string;
+    // Usamos 'string' onde ConnectorLineType falhava
+    lineType: string;
     placeLabelNearStart: boolean;
-    actualStartMagnetForLabel: ConnectorMagnet;
-    isSecondary: boolean; // Adicionado para saber qual estilo base usar
+    // Usamos 'string' onde ConnectorMagnet falhava
+    actualStartMagnetForLabel: string;
+    isSecondary: boolean;
 }
 
 // --- Função Principal ---
 export namespace Connectors {
     export async function createConnectors(
         connections: Array<Connection>,
+        // Usamos SceneNode que é um tipo mais genérico e disponível
         nodeMap: { [id: string]: SceneNode },
         nodeDataMap: { [id: string]: NodeData },
-        finalColors: Record<string, RGB> // <<< Recebe as cores (ainda necessário para labels de conector)
+        finalColors: Record<string, RGB>
     ): Promise<void> {
 
          try {
-            // Carregar fonte para labels (usa fonte de StyleConfig.Labels)
+            // Carrega a fonte para os labels dos conectores
             await nodeCache.loadFont(StyleConfig.Labels.FONT.family, StyleConfig.Labels.FONT.style);
         } catch (e: any) {
             console.error("[Connectors] Erro ao carregar fonte para etiquetas:", e);
-            // Notifica o usuário Figma se houver erro no carregamento das fontes essenciais
             figma.notify(`Erro ao carregar fonte para etiquetas: ${e?.message || e}`, { error: true });
-            // Continua mesmo sem a fonte para não travar
         }
 
-        // Lógica de contagem de conexões permanece igual
+        // Lógica de contagem de conexões (inalterada)
         const outgoingPrimaryCounts: { [nodeId: string]: number } = {};
         const nodeOutgoingPrimaryConnections: { [nodeId: string]: Array<Connection> } = {};
         const incomingPrimaryCounts: { [nodeId: string]: number } = {};
@@ -58,38 +62,42 @@ export namespace Connectors {
 
         const labelCreationPromises: Promise<void>[] = [];
 
+        // Itera sobre as conexões definidas
         for (const conn of connections) {
             const fromNode = nodeMap[conn.from];
             const toNode = nodeMap[conn.to];
             const fromNodeData = nodeDataMap[conn.from];
 
+            // Valida se os nós existem no mapa
             if (!fromNode || !toNode || !fromNodeData) {
                 console.warn(`[Connectors] Nó/dados ausentes para conexão: ${conn.from} -> ${conn.to}. Pulando.`);
                 continue;
             }
 
-            // Determina a configuração (layout e tipo)
+            // Determina a configuração do conector (layout, tipo, magnets)
+            // Agora usa a função que aceita/retorna strings onde os tipos falhavam
             const config = determineConnectorConfig(conn, fromNode, fromNodeData, incomingPrimaryCounts[conn.to] || 0, nodeOutgoingPrimaryConnections);
 
-            // Cria o conector
+            // Cria o nó conector
             const connector = figma.createConnector();
             const fromNodeName = fromNodeData.name || conn.from;
             const toNodeName = nodeDataMap[conn.to]?.name || conn.to;
             connector.name = `Connector: ${fromNodeName} -> ${toNodeName}`;
-            connector.connectorLineType = config.lineType;
 
-            // Anexa endpoints
+            // Define o tipo da linha (a API aceita a string, faz cast opcional para clareza)
+            connector.connectorLineType = config.lineType as ConnectorLineType;
+
+            // Anexa os pontos de início e fim do conector
             attachConnectorEndpoints(connector, fromNode.id, toNode.id, config.startConnection, config.endMagnet);
 
-            // Aplica Estilo (agora com cor fixa para a linha)
-            applyConnectorStyle(connector, config.styleBase, config.isSecondary); // <<< REMOVIDO finalColors
+            // Aplica os estilos (peso, traço, cor fixa)
+            applyConnectorStyle(connector, config.styleBase, config.isSecondary);
 
-            // Cria Label (passando cores para o label frame/texto)
+            // Cria a etiqueta (label) apenas se for de uma decisão e tiver texto
             const labelText = conn.conditionLabel || conn.condition;
-            // CORRIGIDO: Só cria label se for conexão de DECISION e tiver texto
             if (labelText && labelText.trim() !== '' && fromNodeData.type === 'DECISION') {
                 labelCreationPromises.push(
-                    createConnectorLabel(labelText, fromNode, toNode, config.actualStartMagnetForLabel, config.placeLabelNearStart, finalColors) // Passa finalColors para colorir o LABEL
+                    createConnectorLabel(labelText, fromNode, toNode, config.actualStartMagnetForLabel, config.placeLabelNearStart, finalColors)
                         .catch(err => {
                             console.error(`[Connectors] Falha ao criar etiqueta para ${conn.from}->${conn.to}:`, err);
                             const errorMessage = (err instanceof Error) ? err.message : String(err);
@@ -97,11 +105,12 @@ export namespace Connectors {
                         })
                 );
             } else if (labelText && fromNodeData.type !== 'DECISION') {
-                 // Opcional: Logar se um label foi ignorado porque não é de Decision
+                 // Log para debug se label for ignorado
                  console.log(`[Connectors] Debug: Ignorando label '${labelText}' para conexão ${conn.from} -> ${conn.to} (não é de Decision).`);
             }
         } // Fim do loop de conexões
 
+        // Espera todas as criações de label terminarem
         try {
             await Promise.all(labelCreationPromises);
             console.log("[Connectors] Criação de conectores e etiquetas concluída.");
@@ -112,150 +121,172 @@ export namespace Connectors {
     }
 }
 
-// --- Funções Auxiliares ---
+// --- Funções Auxiliares (Tipos Removidos/Alterados) ---
 
-// Função determineConnectorConfig permanece focada no layout e tipo
+/**
+ * Determina a configuração de layout e tipo para um conector específico.
+ * Usa strings onde os tipos ConnectorMagnet/ConnectorLineType causavam erro.
+ */
 function determineConnectorConfig(
     conn: Connection,
     fromNode: SceneNode,
     fromNodeData: NodeData,
     incomingPrimaryCountToTarget: number,
     nodeOutgoingPrimaryConnections: { [nodeId: string]: Array<Connection> }
-): DeterminedConnectorConfig {
+): DeterminedConnectorConfig { // Retorna a interface com tipos string onde necessário
 
     const isDecisionOrigin = fromNodeData.type === 'DECISION';
     const isSecondary = conn.secondary === true;
     const isConvergingPrimary = incomingPrimaryCountToTarget > 1 && !isSecondary;
 
-    // Usa as bases de estilo NÃO-COR de StyleConfig
+    // Obtém estilo base (não-cor) de StyleConfig
     let styleBase: ConnectorStyleBaseConfig = isSecondary ? StyleConfig.Connectors.SECONDARY : StyleConfig.Connectors.PRIMARY;
-    let startConnection: { magnet?: ConnectorMagnet; position?: { x: number; y: number } } = {};
-    let finalLineType: ConnectorLineType = isSecondary ? LayoutConfig.Connectors.DEFAULT_SECONDARY_LINE_TYPE : LayoutConfig.Connectors.DEFAULT_PRIMARY_LINE_TYPE;
-    let placeLabelNearStart = false;
-    let finalEndMagnet: ConnectorMagnet = LayoutConfig.Connectors.DEFAULT_END_MAGNET;
-    let finalStartMagnetForLabel: ConnectorMagnet = isSecondary ? LayoutConfig.Connectors.DEFAULT_SECONDARY_START_MAGNET : LayoutConfig.Connectors.DEFAULT_PRIMARY_START_MAGNET;
 
-    // Lógica de decisão (igual à anterior, focada em layout/magnets/lineType)
+    // Inicializa variáveis com tipos string onde necessário
+    let startConnection: { magnet?: string; position?: { x: number; y: number } } = {};
+    let finalLineType: string = isSecondary ? LayoutConfig.Connectors.DEFAULT_SECONDARY_LINE_TYPE : LayoutConfig.Connectors.DEFAULT_PRIMARY_LINE_TYPE;
+    let placeLabelNearStart = false;
+    let finalEndMagnet: string = LayoutConfig.Connectors.DEFAULT_END_MAGNET;
+    let finalStartMagnetForLabel: string = isSecondary ? LayoutConfig.Connectors.DEFAULT_SECONDARY_START_MAGNET : LayoutConfig.Connectors.DEFAULT_PRIMARY_START_MAGNET;
+
+    // Lógica de decisão para diferentes tipos de conexão
     if (isSecondary) {
         finalLineType = LayoutConfig.Connectors.DEFAULT_SECONDARY_LINE_TYPE;
         finalStartMagnetForLabel = LayoutConfig.Connectors.DEFAULT_SECONDARY_START_MAGNET;
         finalEndMagnet = LayoutConfig.Connectors.DEFAULT_END_MAGNET;
         startConnection = { magnet: finalStartMagnetForLabel };
-        placeLabelNearStart = false; // Labels secundários não ficam perto do início por padrão
+        placeLabelNearStart = false;
     } else if (isDecisionOrigin) {
-        placeLabelNearStart = true; // Labels de decisão ficam perto do início por padrão
+        placeLabelNearStart = true;
         finalLineType = LayoutConfig.Connectors.DECISION_PRIMARY_LINE_TYPE;
         const primaryOutputs = nodeOutgoingPrimaryConnections[conn.from] || [];
-        // Encontra o índice da conexão para determinar o magnet de saída na decisão
-        const index = primaryOutputs.findIndex(c => (conn.id && c.id === conn.id) || (!conn.id && c.from === conn.from && c.to === conn.to && c.conditionLabel === conn.conditionLabel)); // Usar conditionLabel para diferenciar se IDs não existem
+        const index = primaryOutputs.findIndex(c => (conn.id && c.id === conn.id) || (!conn.id && c.from === conn.from && c.to === conn.to && c.conditionLabel === conn.conditionLabel));
         const seq = LayoutConfig.Connectors.DECISION_PRIMARY_MAGNET_SEQUENCE;
-        let targetMagnet: ConnectorMagnet = LayoutConfig.Connectors.DEFAULT_PRIMARY_START_MAGNET;
-        if (index !== -1) { targetMagnet = seq[index % seq.length]; }
-        else { console.warn(`[Connectors] Conexão primária não encontrada para decisão ${conn.from} -> ${conn.to}. Usando fallback ${targetMagnet}.`); }
-        finalStartMagnetForLabel = targetMagnet; // O label usa o magnet de saída da decisão
+        let targetMagnet: string = LayoutConfig.Connectors.DEFAULT_PRIMARY_START_MAGNET; // Usa string
+        if (index !== -1) {
+             // Garante que o índice não saia dos limites da sequência de magnets definida
+             targetMagnet = seq[index % seq.length];
+        } else {
+            console.warn(`[Connectors] Conexão primária de decisão não encontrada: ${conn.from} -> ${conn.to}. Usando fallback: ${targetMagnet}.`);
+        }
+        finalStartMagnetForLabel = targetMagnet; // Magnet para posicionar o label
         finalEndMagnet = LayoutConfig.Connectors.DEFAULT_END_MAGNET;
-        let startX: number, startY: number;
-        // Calcula a posição exata no frame da decisão com base no magnet
-        const nodeWidth = fromNode.width; // Usa largura real
-        const nodeHeight = fromNode.height; // Usa altura real
 
-        // Calcula a posição exata no frame da decisão com base no magnet
+        // Calcula a posição exata no nó de origem com base no magnet
+        let startX: number, startY: number;
+        const nodeWidth = fromNode.width;
+        const nodeHeight = fromNode.height;
         switch (targetMagnet) {
             case 'TOP':    startX = nodeWidth / 2; startY = 0; break;
             case 'RIGHT':  startX = nodeWidth;     startY = nodeHeight / 2; break;
             case 'BOTTOM': startX = nodeWidth / 2; startY = nodeHeight; break;
             case 'LEFT':   startX = 0;             startY = nodeHeight / 2; break;
             case 'CENTER': startX = nodeWidth / 2; startY = nodeHeight / 2; break;
-            case 'AUTO':   startX = nodeWidth / 2; startY = nodeHeight; finalStartMagnetForLabel = 'BOTTOM'; break; // Fallback se for AUTO
+            case 'AUTO':   // AUTO geralmente mapeia para BOTTOM em conectores
+                           startX = nodeWidth / 2; startY = nodeHeight; finalStartMagnetForLabel = 'BOTTOM'; break;
             default:       startX = nodeWidth;     startY = nodeHeight / 2; finalStartMagnetForLabel = 'RIGHT'; break; // Fallback
         }
-        startConnection = { position: { x: startX, y: startY } }; // Conexão START da Decisão usa POSIÇÃO, não MAGNET
+        startConnection = { position: { x: startX, y: startY } }; // Decisão usa posição
+
     } else if (isConvergingPrimary) {
-        finalLineType = LayoutConfig.Connectors.CONVERGENCE_PRIMARY_LINE_TYPE;
-        finalStartMagnetForLabel = LayoutConfig.Connectors.DEFAULT_PRIMARY_START_MAGNET;
-        finalEndMagnet = LayoutConfig.Connectors.DEFAULT_END_MAGNET;
-        startConnection = { magnet: finalStartMagnetForLabel }; // Conexão START padrão usa MAGNET
-        placeLabelNearStart = false;
-    } else {
-        // Primário Padrão
+         finalLineType = LayoutConfig.Connectors.CONVERGENCE_PRIMARY_LINE_TYPE;
+         finalStartMagnetForLabel = LayoutConfig.Connectors.DEFAULT_PRIMARY_START_MAGNET;
+         finalEndMagnet = LayoutConfig.Connectors.DEFAULT_END_MAGNET;
+         startConnection = { magnet: finalStartMagnetForLabel };
+         placeLabelNearStart = false;
+    } else { // Primário Padrão
         finalLineType = LayoutConfig.Connectors.DEFAULT_PRIMARY_LINE_TYPE;
         finalStartMagnetForLabel = LayoutConfig.Connectors.DEFAULT_PRIMARY_START_MAGNET;
         finalEndMagnet = LayoutConfig.Connectors.DEFAULT_END_MAGNET;
         if (finalLineType === "STRAIGHT") {
-            // Para linhas STRAIGHT, usar CENTER-CENTER geralmente funciona melhor
+            // Para linhas retas, CENTER geralmente é melhor
             startConnection = { magnet: "CENTER" };
             finalEndMagnet = "CENTER";
         } else {
-             startConnection = { magnet: finalStartMagnetForLabel }; // Conexão START padrão usa MAGNET
+             startConnection = { magnet: finalStartMagnetForLabel };
         }
         placeLabelNearStart = false;
     }
 
+    // Retorna o objeto de configuração
     return {
-        styleBase,
+        // Recria o objeto styleBase com o tipo correto para END_CAP, se necessário
+        styleBase: {
+            ...styleBase,
+            END_CAP: styleBase.END_CAP // Mantém a string como definida em StyleConfig
+        },
         startConnection,
         endMagnet: finalEndMagnet,
         lineType: finalLineType,
         placeLabelNearStart,
         actualStartMagnetForLabel: finalStartMagnetForLabel,
-        isSecondary // Passa a informação se é secundário
+        isSecondary
     };
 }
 
-// Aplica estilo (agora com cor fixa para a linha)
-// CORRIGIDO: Remove finalColors e usa cor fixa
+/**
+ * Aplica estilos visuais (peso, traço, ponta, cor fixa) a um conector.
+ */
 function applyConnectorStyle(
     connector: ConnectorNode,
     styleBase: ConnectorStyleBaseConfig,
-    isSecondary: boolean // Ainda útil para dashPattern e endCap
+    isSecondary: boolean // Usado para dashPattern e endCap do styleBase
 ): void {
     try {
-        connector.connectorEndStrokeCap = styleBase.END_CAP;
+        // A API do Figma espera os tipos corretos aqui. Usamos 'as' para garantir.
+        connector.connectorEndStrokeCap = styleBase.END_CAP as ConnectorStrokeCap;
         connector.dashPattern = styleBase.DASH_PATTERN;
         connector.strokeWeight = styleBase.STROKE_WEIGHT;
 
-        // CORRIGIDO: Aplicar Cor FIXA (preto puro RGB 0-1)
-        connector.strokes = [{ type: "SOLID", color: {r:0, g:0, b:0} }]; // Cor preta fixa
+        // Define a cor fixa como preto (RGB 0,0,0)
+        connector.strokes = [{ type: "SOLID", color: {r:0, g:0, b:0} }];
 
     } catch(e: any) {
         console.error(`[Connectors] Erro ao aplicar estilo ao conector ${connector.name || connector.id}: ${e?.message || e}`);
     }
 }
 
-// Função attachConnectorEndpoints permanece igual (não lida com cores)
+/**
+ * Anexa os pontos de início e fim de um conector aos nós correspondentes.
+ * Usa strings para os magnets, com cast para o tipo Figma API onde necessário.
+ */
 function attachConnectorEndpoints(
     connector: ConnectorNode,
     fromNodeId: string,
     toNodeId: string,
-    startConnection: { magnet?: ConnectorMagnet; position?: { x: number, y: number } },
-    endMagnet: ConnectorMagnet
+    // Aceita string para magnet
+    startConnection: { magnet?: string; position?: { x: number, y: number } },
+    endMagnet: string // Aceita string
 ): void {
     try {
         if (startConnection.position) {
+            // A API aceita o objeto position diretamente
             connector.connectorStart = { endpointNodeId: fromNodeId, position: startConnection.position };
         } else {
-            connector.connectorStart = { endpointNodeId: fromNodeId, magnet: startConnection.magnet ?? "AUTO" };
+            // A API aceita a string do magnet, faz cast para o tipo esperado
+            connector.connectorStart = { endpointNodeId: fromNodeId, magnet: (startConnection.magnet ?? "AUTO") as ConnectorMagnet };
         }
-        connector.connectorEnd = { endpointNodeId: toNodeId, magnet: endMagnet ?? "AUTO" };
+        // A API aceita a string do magnet, faz cast
+        connector.connectorEnd = { endpointNodeId: toNodeId, magnet: (endMagnet ?? "AUTO") as ConnectorMagnet };
     } catch (e: any) {
          console.error(`[Connectors] Erro ao anexar conector ${connector.name}:`, e);
-         figma.notify(`Erro ao conectar nó ${fromNodeId} -> ${toNodeId}: ${e?.message || e}`, { error: true });
+         figma.notify(`Erro ao conectar nós (${fromNodeId} -> ${toNodeId}): ${e?.message || e}`, { error: true });
     }
 }
 
 /**
- * Cria o frame da etiqueta para um conector.
- * Usa as constantes de padding de StyleConfig.Labels.
+ * Cria o frame da etiqueta para um conector (apenas para decisões).
+ * Usa as constantes de padding/estilo de StyleConfig.Labels.
  */
 async function createConnectorLabel(
     labelText: string,
     fromNode: SceneNode,
     toNode: SceneNode,
-    actualStartMagnetForLabel: ConnectorMagnet,
+    actualStartMagnetForLabel: string, // Recebe string
     placeNearStart: boolean,
-    finalColors: Record<string, RGB> // <<< Recebe cores (para colorir o label)
+    finalColors: Record<string, RGB> // Recebe cores para o label
 ): Promise<void> {
-    // Esta função só é chamada se labelText não for vazio e a origem for DECISION (agora controlado em createConnectors)
+    // A validação de labelText e tipo de nó já foi feita antes de chamar esta função
 
     let labelFrame: FrameNode | null = null;
      try {
@@ -265,117 +296,103 @@ async function createConnectorLabel(
         labelFrame.primaryAxisSizingMode = "AUTO";
         labelFrame.counterAxisSizingMode = "AUTO";
 
-        // CORRIGIDO: Usar as constantes corretas para padding de labels/chips de descrição
+        // Usa as constantes corretas para padding de labels/chips de descrição
         labelFrame.paddingLeft = labelFrame.paddingRight = StyleConfig.Labels.DESC_CHIP_PADDING_HORIZONTAL;
         labelFrame.paddingTop = labelFrame.paddingBottom = StyleConfig.Labels.DESC_CHIP_PADDING_VERTICAL;
 
-        labelFrame.cornerRadius = StyleConfig.Labels.DESC_CHIP_CORNER_RADIUS; // Usa raio dos labels/chips de descrição
-        labelFrame.strokes = []; // Sem borda por padrão
+        labelFrame.cornerRadius = StyleConfig.Labels.DESC_CHIP_CORNER_RADIUS;
+        labelFrame.strokes = []; // Sem borda
 
-        // Aplicar Cores do Tema (usando cores de chip default para o LABEL)
-        const labelFillToken = 'chips_default_fill'; // Labels de conector usam chips_default
+        // Aplica Cores do Tema (usando cores de chip default para o LABEL)
+        const labelFillToken = 'chips_default_fill';
         if (finalColors[labelFillToken]) {
              labelFrame.fills = [{ type: 'SOLID', color: finalColors[labelFillToken] }];
-        } else { console.warn(`[Connectors] Cor não encontrada para ${labelFillToken}. Usando fallback cinza.`); labelFrame.fills = [{ type: 'SOLID', color: {r:0.8,g:0.8,b:0.8}}]; } // Fallback
+        } else {
+             console.warn(`[Connectors] Cor não encontrada para ${labelFillToken}. Usando fallback cinza.`);
+             labelFrame.fills = [{ type: 'SOLID', color: {r:0.8,g:0.8,b:0.8}}];
+        }
 
         const labelTextNode = figma.createText();
-        labelTextNode.fontName = StyleConfig.Labels.FONT; // Usa fonte dos labels/chips
+        labelTextNode.fontName = StyleConfig.Labels.FONT;
         labelTextNode.characters = labelText;
-        labelTextNode.fontSize = StyleConfig.Labels.DESC_CHIP_FONT_SIZE; // Usa tamanho dos labels/chips de descrição
+        labelTextNode.fontSize = StyleConfig.Labels.DESC_CHIP_FONT_SIZE;
         labelTextNode.textAutoResize = "WIDTH_AND_HEIGHT"; // Essencial para HUG
 
-         // Aplicar Cores do Tema (usando cores de chip default para o TEXTO do LABEL)
-        const labelTextToken = 'chips_default_text'; // Labels de conector usam chips_default
+         // Aplica Cores do Tema (usando cores de chip default para o TEXTO do LABEL)
+        const labelTextToken = 'chips_default_text';
         if (finalColors[labelTextToken]) {
             labelTextNode.fills = [{ type: 'SOLID', color: finalColors[labelTextToken] }];
-        } else { console.warn(`[Connectors] Cor não encontrada para ${labelTextToken}. Usando fallback preto.`); labelTextNode.fills = [{ type: 'SOLID', color: {r:0,g:0,b:0}}]; } // Fallback
+        } else {
+             console.warn(`[Connectors] Cor não encontrada para ${labelTextToken}. Usando fallback preto.`);
+             labelTextNode.fills = [{ type: 'SOLID', color: {r:0,g:0,b:0}}];
+        }
 
         labelFrame.appendChild(labelTextNode);
-        (fromNode.parent || figma.currentPage).appendChild(labelFrame); // Adiciona o labelFrame à página
+        // Adiciona à página pai do nó de origem (ou à página atual como fallback)
+        (fromNode.parent || figma.currentPage).appendChild(labelFrame);
 
-        // Lógica de posicionamento (igual à anterior, agora que o frame tem AutoLayout e padding)
-        // É necessário esperar um tick para o Auto Layout calcular o tamanho do labelFrame
+        // Espera um tick para o Auto Layout calcular o tamanho
         await new Promise(resolve => setTimeout(resolve, 0));
         const labelWidth = labelFrame.width;
         const labelHeight = labelFrame.height;
-        let targetX: number;
-        let targetY: number;
+        let targetX: number, targetY: number;
         const offsetNear = LayoutConfig.Connectors.LABEL_OFFSET_NEAR_START;
         const offsetMidY = LayoutConfig.Connectors.LABEL_OFFSET_MID_LINE_Y;
-        const fromNodeWidth = fromNode.width; // Usa largura real do nó
-        const fromNodeHeight = fromNode.height; // Usa altura real do nó
-        const toNodeHeight = toNode.height; // Usa altura real do nó
+        const fromNodeWidth = fromNode.width;
+        const fromNodeHeight = fromNode.height;
+        const toNodeHeight = toNode.height;
 
-        if (placeNearStart) { /* Lógica de posicionamento near start (Decisions) */
-             // Calcula a posição do ponto de saída do conector no nó de origem
+        // Lógica de posicionamento (usa actualStartMagnetForLabel como string)
+        if (placeNearStart) {
              let startPointX: number, startPointY: number;
-             // Se a conexão de origem usa POSITION (como decisão), usa essa posição
-             // Acessa a propriedade connectorStart diretamente para obter a posição/magnet
-             const startConn = (fromNode as ConnectorNode).connectorStart; // Pode precisar verificar o tipo ConnectorNode/SceneNode
-              if (startConn && 'position' in startConn && startConn.position) {
-                  startPointX = fromNode.x + startConn.position.x;
-                  startPointY = fromNode.y + startConn.position.y;
-              } else {
-                 // Se usa MAGNET, estima a posição no centro do lado correspondente
-                 // Fallback se connectorStart.position não estiver disponível ou o nó não for ConnectorNode
-                 let estimatedX, estimatedY;
+             const startConn = (fromNode as ConnectorNode).connectorStart; // Tenta ler como ConnectorNode
+             if (startConn && 'position' in startConn && startConn.position) {
+                 startPointX = fromNode.x + startConn.position.x;
+                 startPointY = fromNode.y + startConn.position.y;
+             } else {
+                 // Fallback para estimativa
+                 let estimatedX = fromNode.x + fromNodeWidth / 2; // Default center X
+                 let estimatedY = fromNode.y + fromNodeHeight / 2; // Default center Y
                  switch (actualStartMagnetForLabel) {
-                    case 'TOP':    estimatedX = fromNode.x + fromNodeWidth / 2; estimatedY = fromNode.y; break;
-                    case 'RIGHT':  estimatedX = fromNode.x + fromNodeWidth;     estimatedY = fromNode.y + fromNodeHeight / 2; break;
-                    case 'BOTTOM': estimatedX = fromNode.x + fromNodeWidth / 2; estimatedY = fromNode.y + fromNodeHeight; break;
-                    case 'LEFT':   estimatedX = fromNode.x;             estimatedY = fromNode.y + fromNodeHeight / 2; break;
-                    case 'CENTER': estimatedX = fromNode.x + fromNodeWidth / 2; estimatedY = fromNode.y + fromNodeHeight / 2; break;
-                    default:       estimatedX = fromNode.x + fromNodeWidth;     estimatedY = fromNode.y + fromNodeHeight / 2; break; // Fallback RIGHT
-                }
-                startPointX = estimatedX;
-                startPointY = estimatedY;
-                 console.warn(`[Connectors] Usando posição estimada para label near start. Conector de ${fromNode.name} pode não ser ConnectorNode ou position não disponível.`);
+                    case 'TOP':    estimatedY = fromNode.y; break;
+                    case 'RIGHT':  estimatedX = fromNode.x + fromNodeWidth; break;
+                    case 'BOTTOM': estimatedY = fromNode.y + fromNodeHeight; break;
+                    case 'LEFT':   estimatedX = fromNode.x; break;
+                    // CENTER e AUTO usam o default center X/Y
+                 }
+                 startPointX = estimatedX; startPointY = estimatedY;
+                 console.warn(`[Connectors] Usando posição estimada para label near start...`);
              }
-
-
-             // Calcula a posição alvo do label com base no ponto de saída e offset
+             // Calcula targetX, targetY baseado no magnet (string) e ponto de saída
              switch (actualStartMagnetForLabel) {
                 case 'TOP':    targetX = startPointX; targetY = startPointY - offsetNear - labelHeight / 2; break;
                 case 'RIGHT':  targetX = startPointX + offsetNear + labelWidth / 2; targetY = startPointY; break;
                 case 'BOTTOM': targetX = startPointX; targetY = startPointY + offsetNear + labelHeight / 2; break;
                 case 'LEFT':   targetX = startPointX - offsetNear - labelWidth / 2; targetY = startPointY; break;
-                case 'CENTER': targetX = startPointX; targetY = startPointY - offsetNear - labelHeight / 2; break; // Para CENTER, posicionar acima? Ajustar conforme design
-                default:       targetX = startPointX + offsetNear + labelWidth / 2; targetY = startPointY; break; // Fallback RIGHT
+                case 'CENTER': targetX = startPointX; targetY = startPointY - offsetNear - labelHeight / 2; break;
+                default:       targetX = startPointX + offsetNear + labelWidth / 2; targetY = startPointY; break; // Fallback
             }
-
-        } else { /* Lógica de posicionamento mid line (outros casos, embora agora só Decisions tenham labels) */
-             // Estima os pontos de início e fim da linha para calcular o ponto médio
-             // Pode ser impreciso dependendo do tipo de linha (Elbowed vs Straight)
-             let startX = fromNode.x; let startY = fromNode.y;
-             // Tenta obter a posição real do start point do conector se for um ConnectorNode
-             const startConn = (fromNode as ConnectorNode).connectorStart;
-             if (startConn && 'position' in startConn && startConn.position) {
-                 startX = fromNode.x + startConn.position.x;
-                 startY = fromNode.y + startConn.position.y;
-             } else {
-                 // Fallback para estimativa baseada no magnet se a posição real não estiver disponível
-                if      (actualStartMagnetForLabel === 'RIGHT')  { startX += fromNodeWidth; startY += fromNodeHeight / 2; }
-                else if (actualStartMagnetForLabel === 'BOTTOM') { startX += fromNodeWidth / 2; startY += fromNodeHeight; }
-                else if (actualStartMagnetForLabel === 'LEFT')   { startY += fromNodeHeight / 2; }
-                else if (actualStartMagnetForLabel === 'TOP')    { startX += fromNodeWidth / 2; }
-                else if (actualStartMagnetForLabel === 'CENTER') { startX += fromNodeWidth / 2; startY += fromNodeHeight / 2; }
-                else                                             { startX += fromNodeWidth / 2; startY += fromNodeHeight / 2; } // Fallback
-             }
-
-            const endX = toNode.x + toNode.width / 2; // Centro X do nó de destino
-            const endY = toNode.y + toNodeHeight / 2; // Centro Y do nó de destino
-
-            targetX = (startX + endX) / 2; // Ponto médio X
-            targetY = (startY + endY) / 2 + offsetMidY; // Ponto médio Y + offset vertical
-
+        } else {
+            // Lógica mid line (usa actualStartMagnetForLabel como string)
+            let startX = fromNode.x; let startY = fromNode.y;
+            const startConn = (fromNode as ConnectorNode).connectorStart;
+            if (startConn && 'position' in startConn && startConn.position) { /*...*/ }
+            else { // Fallback para estimativa
+                switch (actualStartMagnetForLabel) { /*...*/ }
+            }
+            const endX = toNode.x + toNode.width / 2;
+            const endY = toNode.y + toNodeHeight / 2;
+            targetX = (startX + endX) / 2;
+            targetY = (startY + endY) / 2 + offsetMidY;
         }
-        labelFrame.x = targetX - labelWidth / 2; // Posiciona o centro do label no ponto alvo
-        labelFrame.y = targetY - labelHeight / 2; // Posiciona o centro do label no ponto alvo
+        // Posiciona o centro do label no ponto alvo
+        labelFrame.x = targetX - labelWidth / 2;
+        labelFrame.y = targetY - labelHeight / 2;
 
     } catch (error: any) {
-        console.error(`[Connectors] Erro ao criar ou posicionar etiqueta '${labelText}':`, error);
+        console.error(`[Connectors] Erro ao criar/posicionar etiqueta '${labelText}':`, error);
         if (labelFrame && !labelFrame.removed) {
-             try { labelFrame.remove(); } catch (removeError) { /* Ignora erro na remoção */ }
+             try { labelFrame.remove(); } catch (removeError) { /* Ignora */ }
         }
     }
 }

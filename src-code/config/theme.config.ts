@@ -67,7 +67,7 @@ export function getThemeColors(mode: 'light' | 'dark', accentColorHex: string = 
   // A função generateCustomAccentPalette já retorna o formato { "1": {r,g,b}, ... }
   // generateCustomAccentPalette já usa clampRgb internamente
   const generatedAccentPaletteRgb = generateCustomAccentPalette(accentColorHex, mode);
-  console.log(`[theme.config] Paleta Accent gerada para ${mode} com base em ${accentColorHex}:`, generatedAccentPaletteRgb);
+  // console.log(`[theme.config] Paleta Accent gerada para ${mode} com base em ${accentColorHex}:`, generatedAccentPaletteRgb);
 
 
   // --- c. Combina Primitivas Fixas (convertidas para RGB e grampeadas) + Accent Gerada ---
@@ -83,7 +83,7 @@ export function getThemeColors(mode: 'light' | 'dark', accentColorHex: string = 
               const rgb = hexToRgb(scaleHex[step]);
               currentPrimitivesRgb[scaleName][step] = clampRgb(rgb); // <<< Usa clampRgb aqui
           } catch (e) {
-              console.error(`[theme.config] Erro ao converter HEX fixo ${scaleName}.${step}: ${scaleHex[step as keyof typeof scaleHex]}`, e);
+              // console.error(`[theme.config] Erro ao converter HEX fixo ${scaleName}.${step}: ${scaleHex[step as keyof typeof scaleHex]}`, e);
               currentPrimitivesRgb[scaleName][step] = { r: 0.5, g: 0.5, b: 0.5 }; // Fallback cinza
           }
       }
@@ -115,7 +115,7 @@ export function getThemeColors(mode: 'light' | 'dark', accentColorHex: string = 
           if (rgbColor) {
             finalColors[flattenedTokenName] = rgbColor; // <<< Atribui diretamente o objeto RGB (já grampeado)
           } else {
-            console.warn(`[theme.config] Passo ${step} não encontrado na primitiva RGB ${scaleName} para ${mode} (Token: ${flattenedTokenName})`);
+            // console.warn(`[theme.config] Passo ${step} não encontrado na primitiva RGB ${scaleName} para ${mode} (Token: ${flattenedTokenName})`);
             finalColors[flattenedTokenName] = { r: 0.5, g: 0.5, b: 0.5 }; // Fallback
           }
         } else {
@@ -123,7 +123,7 @@ export function getThemeColors(mode: 'light' | 'dark', accentColorHex: string = 
            finalColors[flattenedTokenName] = { r: 0.5, g: 0.5, b: 0.5 }; // Fallback
         }
       } else if (tokenValue !== "{placeholder}") {
-         console.warn(`[theme.config] Formato de alias inválido para ${flattenedTokenName}: ${tokenValue}`);
+         // console.warn(`[theme.config] Formato de alias inválido para ${flattenedTokenName}: ${tokenValue}`);
          finalColors[flattenedTokenName] = { r: 0.5, g: 0.5, b: 0.5 }; // Fallback
       }
 

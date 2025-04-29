@@ -25,6 +25,7 @@ type ChipVariant = DescChipVariant | NodeTypeVariant;
 
 /**
  * Cria um chip genérico com base na variante, tipo e texto fornecidos.
+ * CORRIGIDO para usar 'entrypoints' como prefixo de token para nós ENTRYPOINT.
  */
 async function _createChip(
     text: string, // O texto a ser exibido no chip
@@ -59,12 +60,22 @@ async function _createChip(
     let fillToken: string | null = null;
     let textToken: string | null = null;
     let iconToken: string | null = null;
+    // Garante que variant seja string antes de chamar toLowerCase
     const variantLower = typeof variant === 'string' ? variant.toLowerCase() : 'default';
 
     if (isNodeType) { // Para chips de tipo de nó (Step, Decision, Entrypoint)
-        fillToken = `${variantLower}_chip-fill`; // Ex: step_chip-fill
-        textToken = `${variantLower}_chip-text`; // Ex: step_chip-text
-        iconToken = `${variantLower}_chip-icon`; // Ex: step_chip-icon
+        // <<< CORREÇÃO AQUI >>>
+        // Define o prefixo correto para buscar os tokens semânticos
+        let tokenPrefix = variantLower; // Default: 'step', 'decision'
+        if (variantLower === 'entrypoint') {
+            tokenPrefix = 'entrypoints'; // Usa o plural definido no theme.config.ts
+        }
+        // <<< FIM DA CORREÇÃO >>>
+
+        // Constrói os nomes dos tokens usando o prefixo correto
+        fillToken = `${tokenPrefix}_chip-fill`; // Ex: step_chip-fill, decision_chip-fill, entrypoints_chip-fill
+        textToken = `${tokenPrefix}_chip-text`; // Ex: step_chip-text, decision_chip-text, entrypoints_chip-text
+        iconToken = `${tokenPrefix}_chip-icon`; // Ex: step_chip-icon, decision_chip-icon, entrypoints_chip-icon
     } else { // Para chips de descrição (Action, Input, Error, Success, Info, Default)
         // Usa a variante como chave para buscar dentro do objeto 'chips'
         let chipKey: keyof typeof semanticTokenDefinitions.chips = 'default'; // Fallback
@@ -82,32 +93,45 @@ async function _createChip(
     if (fillToken && finalColors[fillToken]) {
         chip.fills = [{ type: 'SOLID', color: finalColors[fillToken] }];
     } else {
-        console.warn(`[frames] Cor de Fill não encontrada para token: ${fillToken}. Usando fallback.`);
+        // console.warn(`[frames] Cor de Fill não encontrada para token: ${fillToken}. Usando fallback.`);
         chip.fills = [{ type: 'SOLID', color: { r: 0.8, g: 0.8, b: 0.8 } }]; // Cinza claro fallback
     }
     chip.strokes = []; // Sem borda
 
-    // Adiciona Ícone (apenas para NodeType se disponível)
+    // Adiciona Ícone (apenas para NodeType se disponível e cor encontrada)
     if (isNodeType && iconSvgString && iconToken && finalColors[iconToken]) {
         try {
             const iconNode = figma.createNodeFromSvg(iconSvgString);
             iconNode.name = `${variant} Icon`;
-            iconNode.resize(16, 16);
+            iconNode.resize(16, 16); // Tamanho padrão do ícone
             const iconColor = finalColors[iconToken];
+
+            // Tenta aplicar a cor recursivamente (para SVGs complexos) ou diretamente
             if ('findAll' in iconNode) {
                  const vectorNodes = (iconNode as FrameNode).findAll(n => 'fills' in n) as GeometryMixin[];
                  vectorNodes.forEach(vector => {
-                     vector.fills = [{ type: 'SOLID', color: iconColor }];
-                     vector.strokes = [];
+                    // Verifica se fills é um array antes de atribuir
+                    if (Array.isArray(vector.fills)) {
+                        vector.fills = [{ type: 'SOLID', color: iconColor }];
+                        vector.strokes = []; // Remove borda do ícone
+                    }
                  });
-            } else if ('fills' in iconNode) { // Fallback para SVG simples
+            } else if ('fills' in iconNode && Array.isArray(iconNode.fills)) { // Fallback para SVG simples
                  (iconNode as GeometryMixin).fills = [{ type: 'SOLID', color: iconColor }];
                  (iconNode as GeometryMixin).strokes = [];
             }
             chip.appendChild(iconNode);
         } catch (error) { console.error(`[frames] Erro ao criar ícone SVG para ${variant}:`, error); }
-    } else if (isNodeType && iconSvgString) {
-        console.warn(`[frames] Token/cor do ícone não encontrado: ${iconToken}`);
+    } else if (isNodeType && iconSvgString && iconToken && !finalColors[iconToken]) {
+        // Log específico se a cor do ícone não foi encontrada
+        // console.warn(`[frames] Token/cor do ícone não encontrado: ${iconToken}. Ícone não será colorido.`);
+        // Adiciona o ícone mesmo sem cor (ele usará a cor padrão do SVG)
+         try {
+            const iconNode = figma.createNodeFromSvg(iconSvgString);
+            iconNode.name = `${variant} Icon (Uncolored)`;
+            iconNode.resize(16, 16);
+            chip.appendChild(iconNode);
+        } catch (error) { console.error(`[frames] Erro ao criar ícone SVG (não colorido) para ${variant}:`, error); }
     }
 
     // Adiciona Texto
@@ -119,11 +143,12 @@ async function _createChip(
 
     // Aplica Cor do Texto com fallback
     if (textToken && finalColors[textToken]) {
-         if (Array.isArray(chipTextNode.fills)) { // Verificação de segurança
+         // Verifica se fills é um array antes de atribuir
+         if (Array.isArray(chipTextNode.fills)) {
             chipTextNode.fills = [{ type: 'SOLID', color: finalColors[textToken] }];
          }
     } else {
-        console.warn(`[frames] Cor de Texto não encontrada para token: ${textToken}. Usando fallback.`);
+        // console.warn(`[frames] Cor de Texto não encontrada para token: ${textToken}. Usando fallback.`);
          if (Array.isArray(chipTextNode.fills)) {
             chipTextNode.fills = [{ type: 'SOLID', color: {r:0, g:0, b:0} }]; // Preto fallback
          }
@@ -132,6 +157,7 @@ async function _createChip(
 
     return chip;
 }
+
 
 /**
  * Cria o chip específico para o tipo do nó (STEP, DECISION, ENTRYPOINT).
@@ -156,11 +182,13 @@ async function _createDescLabelChip(label: string, finalColors: Record<string, R
     switch (normalizedLabel) {
         case 'action': variant = 'Action'; break;
         case 'inputs': case 'input': variant = 'Input'; break;
-        case 'error state': case 'error states': case 'error': variant = 'Error'; break;
+        case 'error state': case 'error states': case 'error': case 'error message': case 'error messages': variant = 'Error'; break; // Adicionado error message(s)
         case 'success feedback': case 'success message': case 'success': variant = 'Success'; break;
-        case 'info': case 'message': case 'note': case 'context': case 'instructions': case 'summary': case 'title': case 'highlights': case 'security note': variant = 'Info'; break;
+        case 'info': case 'message': case 'note': case 'context': case 'instructions': case 'summary': case 'title': case 'highlights': case 'security note': case 'prompt': case 'options': case 'motivation': case 'tone': variant = 'Info'; break; // Adicionado prompt, options, etc.
+        case 'validation': variant = 'Default'; standardDisplayText="VALIDATION"; break; // Tratamento especial para Validation como Default
     }
-    if (variant === 'Default') { // Fallback 'includes'
+    // Fallback 'includes' (mantido, mas menos provável de ser necessário com mais casos exatos)
+    if (variant === 'Default' && standardDisplayText === label.trim()) { // Só faz fallback se ainda não achou e não é Validation
         if (normalizedLabel.includes("error")) { variant = 'Error'; }
         else if (normalizedLabel.includes("success")) { variant = 'Success'; }
         else if (normalizedLabel.includes("action")) { variant = 'Action'; }
@@ -168,22 +196,24 @@ async function _createDescLabelChip(label: string, finalColors: Record<string, R
         else if (normalizedLabel.includes("info") || normalizedLabel.includes("message") || normalizedLabel.includes("note")) { variant = 'Info'; }
     }
 
-    // 2. Definir Texto Padrão baseado na Variante Final
-    switch(variant) {
-        case 'Action': standardDisplayText = "ACTION"; break;
-        case 'Input': standardDisplayText = "INPUTS"; break;
-        case 'Error': standardDisplayText = "ERROR"; break;
-        case 'Success': standardDisplayText = "SUCCESS"; break;
-        case 'Info': standardDisplayText = "INFO"; break;
-        default: // Para 'Default'
-            standardDisplayText = label.trim().toUpperCase(); // Mantém original (ou Uppercase)
-            if (variant === 'Default') {
-                 console.warn(`[frames] Rótulo DESC não padronizado: "${label}". Usando estilo Default e texto ${standardDisplayText}.`);
-            }
-            break;
+    // 2. Definir Texto Padrão baseado na Variante Final (se não for validation)
+    if (standardDisplayText === label.trim()) { // Só ajusta se não for validation
+        switch(variant) {
+            case 'Action': standardDisplayText = "ACTION"; break;
+            case 'Input': standardDisplayText = "INPUTS"; break;
+            case 'Error': standardDisplayText = "ERROR"; break;
+            case 'Success': standardDisplayText = "SUCCESS"; break;
+            case 'Info': standardDisplayText = "INFO"; break;
+            default: // Para 'Default' (exceto Validation)
+                standardDisplayText = label.trim().toUpperCase(); // Mantém original (ou Uppercase)
+                if (variant === 'Default') {
+                     // console.warn(`[frames] Rótulo DESC não padronizado: "${label}". Usando estilo Default e texto ${standardDisplayText}.`);
+                }
+                break;
+        }
     }
 
-    console.log(`[frames] Label Input: "${label}", Variante: ${variant}, Texto Exibido: "${standardDisplayText}"`);
+    // console.log(`[frames] Label Input: "${label}", Variante: ${variant}, Texto Exibido: "${standardDisplayText}"`);
 
     // Chama _createChip com texto padronizado e variante correta
     return _createChip(standardDisplayText, 'DescLabel', variant, finalColors);
@@ -207,8 +237,8 @@ async function _createNodeTitleFrame(nodeData: NodeData, finalColors: Record<str
     titleFrame.paddingTop = titleFrame.paddingBottom = 0;
     titleFrame.cornerRadius = 0;
     titleFrame.itemSpacing = 8; // Espaço entre chip e texto
-    titleFrame.primaryAxisAlignItems = "MIN"; // Itens alinhados ao topo
-    titleFrame.counterAxisAlignItems = "MIN"; // Itens alinhados à esquerda
+    titleFrame.primaryAxisAlignItems = "MIN"; // <<< CORRIGIDO de MIN
+    titleFrame.counterAxisAlignItems = "MIN"; // <<< CORRIGIDO de MIN
     titleFrame.fills = [];
 
     // Chip de Tipo (no topo)
@@ -224,17 +254,18 @@ async function _createNodeTitleFrame(nodeData: NodeData, finalColors: Record<str
     titleText.textAutoResize = "HEIGHT";
     titleText.layoutAlign = "STRETCH"; // Ocupa largura
 
-    // Cor do Texto do Título
+    // Cor do Texto do Título (já estava correto para entrypoints)
     let titleTextToken: string;
     switch(type) {
         case 'Decision': titleTextToken = 'decision_title-text'; break;
         case 'Entrypoint': titleTextToken = 'entrypoints_title-text'; break;
-        default: titleTextToken = 'step_title-text'; break;
+        default: titleTextToken = 'step_title-text'; break; // Default to step
     }
+
     if (finalColors[titleTextToken]) {
          if(Array.isArray(titleText.fills)) titleText.fills = [{ type: 'SOLID', color: finalColors[titleTextToken] }];
     } else {
-         console.warn(`[frames] Cor não encontrada para token: ${titleTextToken}`);
+         // console.warn(`[frames] Cor não encontrada para token de título: ${titleTextToken}. Usando fallback preto.`);
          if(Array.isArray(titleText.fills)) titleText.fills = [{ type: 'SOLID', color: {r:0,g:0,b:0} }];
     }
     titleFrame.appendChild(titleText);
@@ -244,7 +275,6 @@ async function _createNodeTitleFrame(nodeData: NodeData, finalColors: Record<str
 
 /**
  * Cria o frame para um item de descrição (Chip + Conteúdo) com layout horizontal.
- * Chip ocupa espaço restante, Conteúdo tem largura fixa.
  */
 async function _createDescItemFrame(field: DescriptionField, finalColors: Record<string, RGB>, parentType: NodeTypeVariant): Promise<FrameNode | null> {
     await nodeCache.loadFont(StyleConfig.Labels.FONT.family, StyleConfig.Labels.FONT.style);
@@ -259,8 +289,8 @@ async function _createDescItemFrame(field: DescriptionField, finalColors: Record
     itemFrame.counterAxisSizingMode = "AUTO"; // Altura HUG
     itemFrame.layoutAlign = "STRETCH";
     itemFrame.itemSpacing = 8; // Espaço entre chip e texto
-    itemFrame.primaryAxisAlignItems = "MIN"; // Começa da esquerda
-    itemFrame.counterAxisAlignItems = "MIN"; // Alinha topos
+    itemFrame.primaryAxisAlignItems = "MIN"; // <<< CORRIGIDO de MIN
+    itemFrame.counterAxisAlignItems = "MIN"; // <<< CORRIGIDO de MIN
     itemFrame.paddingLeft = itemFrame.paddingRight = 0;
     itemFrame.paddingTop = itemFrame.paddingBottom = 0;
     itemFrame.cornerRadius = 0;
@@ -277,6 +307,9 @@ async function _createDescItemFrame(field: DescriptionField, finalColors: Record
     else if (typeof field.content === 'object' && field.content !== null) { contentText = Object.entries(field.content).map(([k, v]) => `${k}: ${v}`).join('\n'); }
     else { contentText = String(field.content ?? ''); }
 
+    // Processa \n no conteúdo para criar quebras de linha reais
+    contentText = contentText.replace(/\\n/g, '\n');
+
     if (contentText.trim()) {
         const content = figma.createText();
         content.name = "Description Content";
@@ -284,23 +317,35 @@ async function _createDescItemFrame(field: DescriptionField, finalColors: Record
         content.fontName = StyleConfig.Nodes.DESCRIPTION_ITEM.CONTENT_FONT;
         content.fontSize = StyleConfig.Nodes.DESCRIPTION_ITEM.CONTENT_FONT_SIZE;
         content.layoutSizingHorizontal = "FIXED"; // Largura Fixa
-        content.resize(258, content.height); // Define largura 258px
+        content.resize(258, content.height); // Define largura 258px - Ajuste se necessário
         content.textAutoResize = "HEIGHT"; // Altura automática
-        content.layoutAlign = "MIN"; // Alinha ao topo
+        content.layoutAlign = "MIN"; // <<< CORRIGIDO de MIN
 
-        // Cor do texto
-        const descTextToken = parentType === 'Entrypoint' ? 'entrypoints_desc-text' : 'step_desc-text';
+        // Cor do texto (Ajustado para buscar token de Entrypoint corretamente)
+        let descTextToken: string;
+         switch(parentType) {
+             case 'Decision': descTextToken = 'decision_desc-text'; break; // Assumindo que Decision usa step como fallback ou tem seu token
+             case 'Entrypoint': descTextToken = 'entrypoints_desc-text'; break;
+             default: descTextToken = 'step_desc-text'; break; // Default to step
+         }
+         // Adiciona fallback se token de description não existir (ex: para Decision)
+         if (!finalColors[descTextToken]) {
+             descTextToken = 'step_desc-text'; // Tenta usar step como fallback geral para descrição
+             // console.warn(`[frames] Token ${parentType}_desc-text não encontrado, usando fallback ${descTextToken}`);
+         }
+
+
         if (finalColors[descTextToken]) {
             if(Array.isArray(content.fills)) content.fills = [{ type: 'SOLID', color: finalColors[descTextToken] }];
         } else {
-            console.warn(`[frames] Cor não encontrada para token: ${descTextToken}`);
+            // console.warn(`[frames] Cor de descrição não encontrada para token: ${descTextToken}. Usando fallback preto.`);
             if(Array.isArray(content.fills)) content.fills = [{ type: 'SOLID', color: {r:0,g:0,b:0}}];
         }
         itemFrame.appendChild(content);
     } else {
+        // Se não há conteúdo, remove o espaçamento entre itens (o chip ocupa tudo)
         itemFrame.itemSpacing = 0;
-        // Se não há conteúdo, talvez não esticar o chip?
-        // descChip.layoutGrow = 0;
+        // Mantém layoutGrow = 1 no chip para ocupar o espaço
     }
 
     return itemFrame;
@@ -317,9 +362,9 @@ async function _createDescBlockFrame(descriptionFields: DescriptionField[], fina
     descBlock.primaryAxisSizingMode = "AUTO"; // HUG V
     descBlock.counterAxisSizingMode = "FIXED"; // FILL H
     descBlock.layoutAlign = "STRETCH";
-    descBlock.itemSpacing = 24; // Espaço entre descItems
-    descBlock.primaryAxisAlignItems = "MIN";
-    descBlock.counterAxisAlignItems = "MIN";
+    descBlock.itemSpacing = 12; // Reduzido espaço entre descItems
+    descBlock.primaryAxisAlignItems = "MIN"; // <<< CORRIGIDO de MIN
+    descBlock.counterAxisAlignItems = "MIN"; // <<< CORRIGIDO de MIN
     descBlock.paddingLeft = descBlock.paddingRight = 0;
     descBlock.paddingTop = descBlock.paddingBottom = 0;
     descBlock.cornerRadius = 0;
@@ -334,9 +379,10 @@ async function _createDescBlockFrame(descriptionFields: DescriptionField[], fina
          }
     }
 
+    // Retorna o bloco apenas se itens foram adicionados
     if (addedItems > 0) return descBlock;
     else {
-        console.warn(`[frames] Nenhum item de descrição válido para ${parentType}. Bloco não será adicionado.`);
+        // console.warn(`[frames] Nenhum item de descrição válido para ${parentType}. Bloco não será adicionado.`);
         if (!descBlock.removed) { try { descBlock.remove(); } catch(e){} }
         return null;
     }
@@ -346,33 +392,37 @@ async function _createDescBlockFrame(descriptionFields: DescriptionField[], fina
 async function _createDivider(finalColors: Record<string, RGB>): Promise<FrameNode> {
     const dividerFrame = figma.createFrame();
     dividerFrame.name = "Divider Container";
-    dividerFrame.layoutMode = "VERTICAL";
-    dividerFrame.primaryAxisSizingMode = "AUTO";
-    dividerFrame.counterAxisSizingMode = "FIXED";
-    dividerFrame.layoutAlign = "STRETCH";
+    dividerFrame.layoutMode = "VERTICAL"; // Mantém vertical para conter a linha
+    dividerFrame.primaryAxisSizingMode = "AUTO"; // Altura mínima definida pela linha
+    dividerFrame.counterAxisSizingMode = "FIXED"; // Ocupa largura total
+    dividerFrame.layoutAlign = "STRETCH"; // Ocupa largura no pai
+    // Ajusta padding para alinhamento visual da linha
     dividerFrame.paddingLeft = 20;
     dividerFrame.paddingRight = 20;
-    dividerFrame.paddingTop = 0;
+    dividerFrame.paddingTop = 0; // Sem padding vertical no container
     dividerFrame.paddingBottom = 0;
     dividerFrame.cornerRadius = 0;
     dividerFrame.itemSpacing = 0;
-    dividerFrame.primaryAxisAlignItems = "CENTER";
-    dividerFrame.counterAxisAlignItems = "CENTER";
-    dividerFrame.fills = [];
+    dividerFrame.primaryAxisAlignItems = "CENTER"; // Centraliza linha verticalmente se houver espaço
+    dividerFrame.counterAxisAlignItems = "CENTER"; // Centraliza linha horizontalmente (não fará diferença com STRETCH)
+    dividerFrame.fills = []; // Sem fundo
 
     const lineNode = figma.createLine();
     lineNode.name = "Divider Line";
-    lineNode.layoutAlign = "STRETCH";
+    lineNode.layoutAlign = "STRETCH"; // Linha ocupa a largura do container (menos padding)
     lineNode.strokeWeight = 1;
 
     const lineColorToken = 'divider_line';
     if (finalColors[lineColorToken]) {
         lineNode.strokes = [{ type: 'SOLID', color: finalColors[lineColorToken] }];
-    } else { console.warn(`[frames] Cor não encontrada para token: ${lineColorToken}`); lineNode.strokes = [{ type: 'SOLID', color: {r:0.8, g:0.8, b:0.8}}]; }
+    } else {
+        // console.warn(`[frames] Cor não encontrada para token: ${lineColorToken}. Usando fallback cinza.`);
+        lineNode.strokes = [{ type: 'SOLID', color: {r:0.8, g:0.8, b:0.8}}];
+    }
 
     dividerFrame.appendChild(lineNode);
     // Garante altura mínima para o frame não colapsar
-    dividerFrame.minHeight = lineNode.strokeWeight;
+    dividerFrame.minHeight = lineNode.strokeWeight; // Altura mínima é a espessura da linha
 
     return dividerFrame;
 }
@@ -396,9 +446,15 @@ export namespace Frames {
         frame.primaryAxisAlignItems = "CENTER";
         frame.counterAxisAlignItems = "CENTER";
         frame.itemSpacing = 0;
-        if (finalColors.node_startend_fill) frame.fills = [{ type: 'SOLID', color: finalColors.node_startend_fill }]; else frame.fills = [];
-        if (finalColors.node_startend_border) {
-            frame.strokes = [{ type: 'SOLID', color: finalColors.node_startend_border }];
+        // Busca cor de fill específica para Start, depois fallback geral, depois transparente
+        const fillToken = 'node_startend_start-fill'; // Nome específico sugerido
+        const fillFallbackToken = 'node_startend_fill';
+        const fillColor = finalColors[fillToken] ?? finalColors[fillFallbackToken] ?? null;
+        if (fillColor) frame.fills = [{ type: 'SOLID', color: fillColor }]; else frame.fills = [];
+
+        const borderToken = 'node_startend_border';
+        if (finalColors[borderToken]) {
+            frame.strokes = [{ type: 'SOLID', color: finalColors[borderToken] }];
             frame.strokeWeight = 1; frame.strokeAlign = "INSIDE";
         } else { frame.strokes = []; }
 
@@ -409,8 +465,11 @@ export namespace Frames {
         titleText.fontSize = style.FONT_SIZE;
         titleText.textAutoResize = "HEIGHT";
         titleText.layoutAlign = "INHERIT";
-        const textColor = finalColors['node_startend_start-text'] ?? finalColors.node_startend_text ?? {r:0,g:0,b:0}; // Fallback preto
+        const textColorToken = 'node_startend_start-text';
+        const textFallbackToken = 'node_startend_text';
+        const textColor = finalColors[textColorToken] ?? finalColors[textFallbackToken] ?? {r:0,g:0,b:0}; // Fallback preto
         if(Array.isArray(titleText.fills)) titleText.fills = [{ type: 'SOLID', color: textColor }];
+
         frame.appendChild(titleText);
         return frame;
     }
@@ -429,9 +488,15 @@ export namespace Frames {
         frame.primaryAxisAlignItems = "CENTER";
         frame.counterAxisAlignItems = "CENTER";
         frame.itemSpacing = 0;
-        if (finalColors.node_startend_fill) frame.fills = [{ type: 'SOLID', color: finalColors.node_startend_fill }]; else frame.fills = [];
-        if (finalColors.node_startend_border) {
-            frame.strokes = [{ type: 'SOLID', color: finalColors.node_startend_border }];
+        // Busca cor de fill específica para End, depois fallback geral, depois transparente
+        const fillToken = 'node_startend_end-fill'; // Nome específico sugerido
+        const fillFallbackToken = 'node_startend_fill';
+        const fillColor = finalColors[fillToken] ?? finalColors[fillFallbackToken] ?? null;
+        if (fillColor) frame.fills = [{ type: 'SOLID', color: fillColor }]; else frame.fills = [];
+
+        const borderToken = 'node_startend_border';
+        if (finalColors[borderToken]) {
+            frame.strokes = [{ type: 'SOLID', color: finalColors[borderToken] }];
             frame.strokeWeight = 1; frame.strokeAlign = "INSIDE";
         } else { frame.strokes = []; }
 
@@ -442,8 +507,11 @@ export namespace Frames {
         titleText.fontSize = style.FONT_SIZE;
         titleText.textAutoResize = "HEIGHT";
         titleText.layoutAlign = "INHERIT";
-        const textColor = finalColors['node_startend_end-text'] ?? finalColors.node_startend_text ?? {r:0,g:0,b:0}; // Fallback preto
+        const textColorToken = 'node_startend_end-text';
+        const textFallbackToken = 'node_startend_text';
+        const textColor = finalColors[textColorToken] ?? finalColors[textFallbackToken] ?? {r:0,g:0,b:0}; // Fallback preto
         if(Array.isArray(titleText.fills)) titleText.fills = [{ type: 'SOLID', color: textColor }];
+
         frame.appendChild(titleText);
         return frame;
     }
@@ -458,20 +526,40 @@ export namespace Frames {
         mainFrame.layoutMode = "VERTICAL";
         mainFrame.primaryAxisSizingMode = "AUTO"; // HUG V
         mainFrame.counterAxisSizingMode = "FIXED"; // Largura Fixa
-        mainFrame.resizeWithoutConstraints(StyleConfig.Nodes.STEP_ENTRYPOINT.WIDTH, 1);
+        mainFrame.resizeWithoutConstraints(StyleConfig.Nodes.STEP_ENTRYPOINT.WIDTH, 1); // Usa mesma largura de STEP
         mainFrame.paddingTop = mainFrame.paddingBottom = 16;
         mainFrame.paddingLeft = mainFrame.paddingRight = 16;
         mainFrame.cornerRadius = StyleConfig.Nodes.DECISION.CORNER_RADIUS; // 8px
-        mainFrame.itemSpacing = 24; // Espaço entre filhos (só tem titleFrame)
+        mainFrame.itemSpacing = 16; // Espaço entre Título e Descrição (se houver)
         mainFrame.primaryAxisAlignItems = "CENTER"; // Alinhamento V
-        mainFrame.counterAxisAlignItems = "MIN"; // Alinhamento H
+        mainFrame.counterAxisAlignItems = "MIN"; // <<< CORRIGIDO de MIN
         mainFrame.clipsContent = true;
 
+        // Aplica cores do tema
         if (finalColors.decision_fill) mainFrame.fills = [{ type: 'SOLID', color: finalColors.decision_fill }]; else mainFrame.fills = [];
         if (finalColors.decision_border) { mainFrame.strokes = [{ type: 'SOLID', color: finalColors.decision_border }]; mainFrame.strokeWeight = 1; } else mainFrame.strokes = [];
 
+        // Adiciona Título
         const titleFrame = await _createNodeTitleFrame(nodeData, finalColors, 'Decision');
         mainFrame.appendChild(titleFrame);
+
+         // Adiciona Descrição (se houver)
+         const descriptionFields = nodeData.description?.fields;
+         if (descriptionFields && Array.isArray(descriptionFields) && descriptionFields.length > 0) {
+             const descBlock = await _createDescBlockFrame(descriptionFields, finalColors, 'Decision');
+              // Adiciona divisor apenas se o bloco de descrição foi criado com sucesso e se há título
+             if (descBlock && titleFrame) {
+                  try {
+                      const divider = await _createDivider(finalColors);
+                      if (divider) mainFrame.appendChild(divider); // Adiciona APÓS o título
+                  } catch(e) { console.error(`[frames] Erro ao criar divisor para decision ${nodeData.id}:`, e); }
+                  mainFrame.appendChild(descBlock); // Adiciona descrição após divisor
+                  mainFrame.itemSpacing = 24; // Aumenta espaçamento se tiver descrição
+             } else if (descBlock) {
+                  mainFrame.appendChild(descBlock); // Adiciona descrição mesmo sem título (caso raro)
+                  mainFrame.itemSpacing = 0;
+             }
+         }
 
         return mainFrame;
     }
@@ -491,11 +579,12 @@ export namespace Frames {
         mainFrame.paddingTop = mainFrame.paddingBottom = 16;
         mainFrame.paddingLeft = mainFrame.paddingRight = 16;
         mainFrame.cornerRadius = StyleConfig.Nodes.STEP_ENTRYPOINT.CORNER_RADIUS; // 8px
-        mainFrame.itemSpacing = 24; // Espaço entre Título, Divisor, Descrição
+        mainFrame.itemSpacing = 24; // Espaço padrão entre Título, Divisor, Descrição
         mainFrame.primaryAxisAlignItems = "CENTER"; // Alinhamento V
-        mainFrame.counterAxisAlignItems = "MIN"; // Alinhamento H
+        mainFrame.counterAxisAlignItems = "MIN"; // <<< CORRIGIDO de MIN
         mainFrame.clipsContent = true;
 
+        // Aplica cores do tema
         if (finalColors.step_fill) mainFrame.fills = [{ type: 'SOLID', color: finalColors.step_fill }]; else mainFrame.fills = [];
         if (finalColors.step_border) { mainFrame.strokes = [{ type: 'SOLID', color: finalColors.step_border }]; mainFrame.strokeWeight = 1; } else mainFrame.strokes = [];
 
@@ -511,9 +600,9 @@ export namespace Frames {
             if (descBlock) {
                  try {
                      const divider = await _createDivider(finalColors);
-                     if (divider) mainFrame.appendChild(divider);
+                     if (divider) mainFrame.appendChild(divider); // Adiciona APÓS o título
                  } catch(e) { console.error(`[frames] Erro ao criar divisor para step ${nodeData.id}:`, e); }
-                 mainFrame.appendChild(descBlock);
+                 mainFrame.appendChild(descBlock); // Adiciona descrição após divisor
             }
         }
 
@@ -524,6 +613,7 @@ export namespace Frames {
     export async function createEntrypointNode(nodeData: NodeData, finalColors: Record<string, RGB>): Promise<FrameNode> {
         await nodeCache.loadFont(StyleConfig.Nodes.TITLE_BLOCK.FONT.family, StyleConfig.Nodes.TITLE_BLOCK.FONT.style);
         await nodeCache.loadFont(StyleConfig.Labels.FONT.family, StyleConfig.Labels.FONT.style);
+         await nodeCache.loadFont(StyleConfig.Nodes.DESCRIPTION_ITEM.CONTENT_FONT.family, StyleConfig.Nodes.DESCRIPTION_ITEM.CONTENT_FONT.style); // Carrega fonte da descrição tbm
 
         const mainFrame = figma.createFrame();
         mainFrame.name = nodeData.name || "Entrypoint";
@@ -534,17 +624,35 @@ export namespace Frames {
         mainFrame.paddingTop = mainFrame.paddingBottom = 16;
         mainFrame.paddingLeft = mainFrame.paddingRight = 16;
         mainFrame.cornerRadius = StyleConfig.Nodes.STEP_ENTRYPOINT.CORNER_RADIUS; // 8px
-        mainFrame.itemSpacing = 0; // Só tem um filho (título)
+        mainFrame.itemSpacing = 24; // Espaço padrão, ajustado se houver descrição
         mainFrame.primaryAxisAlignItems = "CENTER"; // Alinhamento V
-        mainFrame.counterAxisAlignItems = "MIN"; // Alinhamento H
+        mainFrame.counterAxisAlignItems = "MIN"; // <<< CORRIGIDO de MIN
         mainFrame.clipsContent = true;
 
+        // Aplica cores do tema (usando 'entrypoints' como chave)
         if (finalColors.entrypoints_fill) mainFrame.fills = [{ type: 'SOLID', color: finalColors.entrypoints_fill }]; else mainFrame.fills = [];
         if (finalColors.entrypoints_border) { mainFrame.strokes = [{ type: 'SOLID', color: finalColors.entrypoints_border }]; mainFrame.strokeWeight = 1; } else mainFrame.strokes = [];
 
         // Adiciona Título
         const titleFrame = await _createNodeTitleFrame(nodeData, finalColors, 'Entrypoint');
         mainFrame.appendChild(titleFrame);
+
+         // Adiciona Divisor e Descrição (se houver) - Lógica igual ao STEP
+        const descriptionFields = nodeData.description?.fields;
+        if (descriptionFields && Array.isArray(descriptionFields) && descriptionFields.length > 0) {
+            const descBlock = await _createDescBlockFrame(descriptionFields, finalColors, 'Entrypoint');
+            if (descBlock) {
+                 try {
+                     const divider = await _createDivider(finalColors);
+                     if (divider) mainFrame.appendChild(divider);
+                 } catch(e) { console.error(`[frames] Erro ao criar divisor para entrypoint ${nodeData.id}:`, e); }
+                 mainFrame.appendChild(descBlock);
+            }
+        } else {
+             // Se não houver descrição, remove o espaçamento padrão após o título
+             mainFrame.itemSpacing = 0;
+        }
+
 
         return mainFrame;
     }

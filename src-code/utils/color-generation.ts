@@ -49,7 +49,7 @@ export function generateCustomAccentPalette(
   // Cor de fallback caso algo dê errado
   const fallbackColorRgb: RGB = { r: 0.5, g: 0.5, b: 0.5 };
 
-  console.log(`[ColorGen] Iniciando geração da paleta Accent para ${mode} com base em ${accentColorHex}`);
+  // console.log(`[ColorGen] Iniciando geração da paleta Accent para ${mode} com base em ${accentColorHex}`);
 
   // Validação do formato HEX da cor de entrada
   const isValidHex = /^#[0-9A-Fa-f]{6}$/.test(accentColorHex);
@@ -57,7 +57,7 @@ export function generateCustomAccentPalette(
 
   // Se a cor HEX for inválida, usa a paleta 'neutral' como fallback
   if (!color) {
-    console.warn(`[ColorGen] Cor HEX inválida: ${accentColorHex}. Usando escala neutral como fallback.`);
+    // console.warn(`[ColorGen] Cor HEX inválida: ${accentColorHex}. Usando escala neutral como fallback.`);
     // Seleciona a paleta neutral correta (light/dark)
     const neutralPalette = mode === 'dark'
         ? fixedPrimitiveThemeData.darkPrimitives.neutral
@@ -86,7 +86,7 @@ export function generateCustomAccentPalette(
     Object.keys(paletteRgb).sort((a, b) => parseInt(a) - parseInt(b)).forEach(key => {
         paletteHexFallback[key] = rgbToHex(paletteRgb[key]);
     });
-    console.log(`[ColorGen] Paleta Accent FINAL (${mode} - fallback neutral) em HEX:`, paletteHexFallback);
+    // console.log(`[ColorGen] Paleta Accent FINAL (${mode} - fallback neutral) em HEX:`, paletteHexFallback);
 
     return paletteRgb; // Retorna a paleta RGB (neutral neste caso)
   }
@@ -98,9 +98,9 @@ export function generateCustomAccentPalette(
       // Lida com cores cinzas (sem matiz definido)
       if (!lchBase || typeof lchBase.h === 'undefined') {
           lchBase = { mode: 'lch65', l: lchBase?.l ?? (mode === 'light' ? 95 : 15), c: 0, h: 0 }; // Define croma e matiz como 0
-          console.log(`[ColorGen] Cor base é cinza. Usando LCH:`, lchBase);
+          // console.log(`[ColorGen] Cor base é cinza. Usando LCH:`, lchBase);
       } else {
-           console.log(`[ColorGen] Cor base convertida para LCH:`, lchBase);
+           // console.log(`[ColorGen] Cor base convertida para LCH:`, lchBase);
       }
   } catch (e) {
        console.error(`[ColorGen] Erro ao converter ${accentColorHex} para LCH:`, e);
@@ -109,7 +109,7 @@ export function generateCustomAccentPalette(
        // Loga a paleta fallback em formato HEX
        const paletteHexError: Record<string, string> = {};
        Object.keys(paletteRgb).forEach(key => { paletteHexError[key] = rgbToHex(paletteRgb[key]); });
-       console.log(`[ColorGen] Paleta Accent FINAL (${mode} - ERRO LCH) em HEX:`, paletteHexError);
+       // console.log(`[ColorGen] Paleta Accent FINAL (${mode} - ERRO LCH) em HEX:`, paletteHexError);
        return paletteRgb; // Retorna fallback
   }
 
@@ -147,12 +147,12 @@ export function generateCustomAccentPalette(
         if (rgb && typeof rgb.r === 'number') {
             paletteRgb[stepKey] = clampRgb({ r: rgb.r, g: rgb.g, b: rgb.b });
         } else {
-            console.warn(`[ColorGen] Falha ao converter LCH para RGB no passo ${stepKey}. LCH:`, lchColor);
+            // console.warn(`[ColorGen] Falha ao converter LCH para RGB no passo ${stepKey}. LCH:`, lchColor);
             paletteRgb[stepKey] = fallbackColorRgb;
         }
     } catch (e) {
          // Captura erros durante a conversão LCH -> RGB
-         console.error(`[ColorGen] Erro ao converter LCH ${JSON.stringify(lchColor)} para RGB no passo ${stepKey}:`, e);
+         // console.error(`[ColorGen] Erro ao converter LCH ${JSON.stringify(lchColor)} para RGB no passo ${stepKey}:`, e);
          paletteRgb[stepKey] = fallbackColorRgb;
     }
   });
@@ -167,7 +167,7 @@ export function generateCustomAccentPalette(
             paletteHexForLog[key] = rgbToHex(paletteRgb[key]); // Converte e armazena
   });
   // Exibe o objeto HEX no console do plugin
-  console.log(`[ColorGen] Paleta Accent FINAL gerada para ${mode} (${accentColorHex}) em HEX:`, paletteHexForLog);
+  // console.log(`[ColorGen] Paleta Accent FINAL gerada para ${mode} (${accentColorHex}) em HEX:`, paletteHexForLog);
 
   // Retorna a paleta original em formato RGB, que é o esperado pelo resto do código
   return paletteRgb;

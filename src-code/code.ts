@@ -10,6 +10,7 @@ import type { RGB } from './config/theme.config';
 import { getThemeColors, FontsToLoad } from './config/theme.config';
 import * as StyleConfig from './config/styles.config';
 import * as LayoutConfig from "./config/layout.config";
+// import { Layout } from './lib/layout'; // Não usamos mais buildGraph ou calculateLayoutLevels
 import { Frames } from './lib/frames';
 import { Connectors } from './lib/connectors';
 import { getHistory, addHistoryEntry, clearHistory } from './utils/historyStorage';
@@ -20,7 +21,8 @@ const GENERATION_STATUS_KEY = 'iziflow_generation_status';
 // --- Debug Log (com envio para UI) ---
 function debugLog(context: string, message: string, data?: any) {
   const formattedMessage = `[${context}] ${message}`;
-  // console.log(formattedMessage, data || ''); // Descomente para logs verbosos no console do plugin
+  // Comentado para reduzir ruído, descomente se precisar depurar logs específicos
+  // console.log(formattedMessage, data || '');
   try {
     figma.ui.postMessage({
         type: 'debug',
@@ -43,7 +45,7 @@ async function preloadFonts() {
         );
         // debugLog('FontLoader', `Fontes pré-carregadas: ${FontsToLoad.length}`);
     } catch (e: any) {
-        console.error('[FontLoader] Erro ao pré-carregar fontes:', e);
+        console.error('[FontLoader] Erro ao pré-carregar fontes:', e); // Mantém erros
         figma.notify(`Erro ao carregar fontes essenciais: ${e?.message || e}`, { error: true });
     }
      // debugLog('FontLoader', `Pré-carregamento de fontes concluído.`);
@@ -57,13 +59,14 @@ figma.showUI(__html__, { width: 624, height: 500, themeColors: true, title: 'Izi
 // Listener principal
 figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pelo Figma
 
+    // Valida a mensagem DESEMBRULHADA
     if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') {
-        console.warn('[Plugin] Mensagem recebida da UI inválida ou sem propriedade type.', msg);
+        console.warn('[Plugin] Mensagem recebida da UI inválida ou sem propriedade type.', msg); // Usa warn para diferenciar
         return;
     }
 
     const messageType = msg.type as keyof EventTS;
-    const payload = msg;
+    const payload = msg; // msg é o payload desembrulhado { type: ..., data... }
 
     console.log(`[Plugin] Mensagem da UI recebida: ${messageType}`); // Log principal mantido
 
@@ -73,19 +76,22 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
         const generationId = Date.now(); // Usado para associar status
         console.log(`[Flow ID: ${generationId}] Iniciando geração... (Modo: ${mode}, Accent: ${accentColor})`);
 
-        try { // Adicionado try/catch em volta da limpeza/definição inicial do storage
-            // <<< LINHA ADICIONADA AQUI >>>
-            // Limpa o status antigo ANTES de definir como loading
+        try {
+            // <<< Limpa o status antigo ANTES de definir como loading >>>
             await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
             console.log(`[Flow ID: ${generationId}] Chave de status antiga limpa (se existia).`);
 
-            // Define status inicial como 'loading' no clientStorage
+            // <<< Define status inicial como 'loading' no clientStorage >>>
             await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'loading', id: generationId, timestamp: Date.now() }));
             console.log(`[Flow ID: ${generationId}] Status 'loading' salvo no clientStorage.`);
         } catch(storageError) {
             console.error(`[Flow ID: ${generationId}] Erro ao inicializar status no clientStorage:`, storageError);
-            // Decide se continua ou notifica erro aqui. Por ora, tenta continuar.
+            // Notifica a UI sobre o erro de storage inicial (pode não chegar, mas tentamos)
+            figma.ui.postMessage({ type: 'generation-error', message: `Erro interno ao preparar geração (storage).` });
+            figma.notify("Erro interno ao preparar geração.", { error: true });
+            return; // Para a execução se não puder definir o status inicial
         }
+
         let flowDataResult: { nodes: FlowNode[], connections: Connection[] } | null = null;
         let nodeMap: { [id: string]: SceneNode } = {};
         let createdFrames: SceneNode[] = [];
@@ -103,15 +109,16 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
             try {
                  flowDataResult = await parseMarkdownToFlow(markdownInput);
             } catch (parseError: any) {
-                 console.error(`[Flow ID: ${generationId}] Erro no Parsing: ${parseError.message}`, parseError);
+                 const errorMessage = `Erro de Parsing: ${parseError.message}`;
+                 console.error(`[Flow ID: ${generationId}] ${errorMessage}`, parseError);
                  const lineNumberMatch = parseError.message?.match(/linha (\d+)/);
                  const lineNumber = lineNumberMatch ? parseInt(lineNumberMatch[1], 10) : undefined;
                  // <<< Define status ERRO (parse) no clientStorage >>>
-                 await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'error', id: generationId, message: `Erro de Parsing: ${parseError.message}`, timestamp: Date.now() }));
+                 await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'error', id: generationId, message: errorMessage, timestamp: Date.now() }));
                  console.log(`[Flow ID: ${generationId}] Status 'error' (parse) salvo no clientStorage.`);
                  // Tenta enviar a mensagem de erro de parse para UI
                  figma.ui.postMessage({ type: 'parse-error', message: `${parseError.message}`, lineNumber });
-                 return;
+                 return; // Para a execução
             }
 
             // 4. Validar Resultado do Parse
@@ -140,12 +147,12 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
                  let frame: SceneNode | null = null;
                  try {
                      switch (nodeData.type) {
-                        case "START": frame = await Frames.createStartNode(nodeData, finalColors); break;
-                        case "END": frame = await Frames.createEndNode(nodeData, finalColors); break;
-                        case "STEP": frame = await Frames.createStepNode(nodeData, finalColors); break;
-                        case "ENTRYPOINT": frame = await Frames.createEntrypointNode(nodeData, finalColors); break;
-                        case "DECISION": frame = await Frames.createDecisionNode(nodeData, finalColors); break;
-                        default: frame = await Frames.createStepNode(nodeData, finalColors); break;
+                         case "START": frame = await Frames.createStartNode(nodeData, finalColors); break;
+                         case "END": frame = await Frames.createEndNode(nodeData, finalColors); break;
+                         case "STEP": frame = await Frames.createStepNode(nodeData, finalColors); break;
+                         case "ENTRYPOINT": frame = await Frames.createEntrypointNode(nodeData, finalColors); break;
+                         case "DECISION": frame = await Frames.createDecisionNode(nodeData, finalColors); break;
+                         default: frame = await Frames.createStepNode(nodeData, finalColors); break;
                      }
                      if (!frame || frame.removed) throw new Error(`Frame nulo/removido para ${nodeId}.`);
                      await new Promise(resolve => setTimeout(resolve, 50));
@@ -155,16 +162,14 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
                      nodeMap[nodeId] = frame;
                      createdFrames.push(frame);
                  } catch (nodeCreationError: any) {
-                      console.error(`[Flow ID: ${generationId}] FALHA ao criar nó ${nodeId}: ${nodeCreationError?.message}`, nodeCreationError?.stack);
-                      figma.notify(`Erro ao criar nó '${nodeData.name || nodeId}': ${nodeCreationError?.message}`, { error: true });
-                      // Considerar lançar o erro para parar a geração aqui
-                      // throw nodeCreationError;
+                      // Lança o erro para ser pego pelo catch principal e definir o status de erro
+                      throw new Error(`Falha ao criar nó '${nodeData.name || nodeId}': ${nodeCreationError.message}`);
                  }
              }
 
              // 8. Adicionar Nós à Página
              if (createdFrames.length === 0) {
-                 throw new Error("Falha: Nenhum nó foi criado com sucesso.");
+                 throw new Error("Falha: Nenhum nó foi criado com sucesso."); // Será pego pelo catch principal
              }
              createdFrames.forEach(f => figma.currentPage.appendChild(f));
              await new Promise(resolve => setTimeout(resolve, 100));
@@ -180,9 +185,18 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              // 10. Finalização (Agrupar, Centralizar, Zoom)
              const allCreatedNodes = Object.values(nodeMap);
              if (allCreatedNodes.length > 0) {
-                 const nodesToGroup = [...allCreatedNodes];
-                 figma.currentPage.findAll(n => n.type === 'CONNECTOR' && nodesToGroup.some(f => f.id === (n as ConnectorNode).connectorStart?.endpointNodeId || f.id === (n as ConnectorNode).connectorEnd?.endpointNodeId ))
-                    .forEach(conn => nodesToGroup.push(conn));
+                const nodesToGroup = [...allCreatedNodes];
+                // Tenta incluir conectores recém-criados no grupo
+                figma.currentPage.findAll(n => {
+                    if (n.type === 'CONNECTOR') {
+                        const connector = n as ConnectorNode;
+                        // Verifica se os endpoints do conector estão entre os nós criados
+                        return allCreatedNodes.some(f => f.id === connector.connectorStart?.endpointNodeId) &&
+                               allCreatedNodes.some(f => f.id === connector.connectorEnd?.endpointNodeId);
+                    }
+                    return false;
+                }).forEach(conn => nodesToGroup.push(conn));
+
 
                  if (nodesToGroup.length > 0) {
                     const group = figma.group(nodesToGroup, figma.currentPage);
@@ -208,30 +222,31 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'success', id: generationId, timestamp: Date.now() }));
              console.log(`[Flow ID: ${generationId}] Status 'success' salvo no clientStorage.`);
 
-             // Tenta enviar a mensagem (best effort)
+             // Tenta enviar a mensagem (best effort, a UI vai usar o clientStorage para isLoading)
              figma.ui.postMessage({ type: 'generation-success', message: 'Fluxo gerado com sucesso!' });
-             console.log(">>> PLUGIN: Mensagem 'generation-success' ENVIADA para UI (confiabilidade depende do clientStorage agora).");
+             console.log(">>> PLUGIN: Mensagem 'generation-success' ENVIADA para UI (UI usará clientStorage para estado de loading).");
 
              figma.notify("Fluxo gerado com sucesso!", { timeout: 3000 });
              console.log(`[Flow ID: ${generationId}] Geração COMPLETA.`);
 
         } catch (error: any) {
-             // --- ERRO ---
+             // --- ERRO GERAL ---
              console.error(`[Flow ID: ${generationId}] Erro GERAL na geração:`, error);
              const errorMessage = (error instanceof Error) ? error.message : String(error);
-
              // <<< Define status ERRO no clientStorage >>>
-             await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'error', id: generationId, message: errorMessage, timestamp: Date.now() }));
-             console.log(`[Flow ID: ${generationId}] Status 'error' salvo no clientStorage.`);
-
+             try {
+                 await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'error', id: generationId, message: errorMessage, timestamp: Date.now() }));
+                 console.log(`[Flow ID: ${generationId}] Status 'error' salvo no clientStorage.`);
+             } catch (storageError) {
+                  console.error(`[Flow ID: ${generationId}] Erro ao salvar status de ERRO no clientStorage:`, storageError);
+             }
              // Tenta enviar a mensagem de erro (best effort)
              figma.ui.postMessage({ type: 'generation-error', message: `Erro durante geração: ${errorMessage}` });
-             console.log(">>> PLUGIN: Mensagem 'generation-error' ENVIADA para UI (confiabilidade depende do clientStorage agora).");
-
+             console.log(">>> PLUGIN: Mensagem 'generation-error' ENVIADA para UI (UI usará clientStorage para estado de loading).");
              figma.notify(`Erro na geração: ${errorMessage}`, { error: true, timeout: 5000 });
         }
     }
-    // --- Handlers para outras mensagens (histórico, etc.) ---
+    // --- Handlers para outras mensagens ---
     else if (messageType === 'get-history') {
         console.log("[Plugin] Recebido pedido 'get-history'.");
         const history = await getHistory();
@@ -256,6 +271,8 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
                 if (filteredHistory.length < currentHistory.length) {
                     await figma.clientStorage.setAsync('markdownHistory', JSON.stringify(filteredHistory));
                     console.log("[Plugin] Item removido e histórico salvo.");
+                    // Envia o histórico atualizado para a UI após a remoção
+                    figma.ui.postMessage({ type: 'history-data', history: filteredHistory });
                 } else {
                      console.log("[Plugin] Item a ser removido não encontrado no histórico.");
                 }

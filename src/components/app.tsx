@@ -69,6 +69,15 @@ function extractFlowName(markdown: string): string {
     return "Untitled Flow";
 }
 
+// Declaração explícita da API do Figma para clientStorage na UI
+declare const figma: {
+    clientStorage: {
+        getAsync(key: string): Promise<string | undefined>;
+        setAsync(key: string, value: string): Promise<void>;
+        deleteAsync(key: string): Promise<void>;
+    };
+};
+
 export function App() {
   // --- States ---
   const [markdown, setMarkdown] = useState("");
@@ -100,7 +109,8 @@ export function App() {
     console.log("[App Effect] Montado. Pedindo histórico inicial...");
     dispatchTS('get-history');
 
-    // Handlers for specific messages (debug, history) using listenTS
+    // Handlers for specific messages (debug, history, parse-error) using listenTS
+    // (postMessage para estes geralmente é confiável)
     const handleDebug = (payload: EventTS['debug']) => {
        const parsedData = payload.data ? JSON.parse(payload.data) : '';
        console.debug(`[Plugin Debug via UI]: ${payload.message}`, parsedData);
@@ -109,17 +119,18 @@ export function App() {
        console.log("[App Handler] Recebido 'history-data'.");
        if (Array.isArray(payload.history)) {
            setHistory(payload.history);
-           console.log("[App Handler] Estado 'history' atualizado com", payload.history.length, "itens.");
+           // console.log("[App Handler] Estado 'history' atualizado com", payload.history.length, "itens.");
        } else {
            console.error("UI: Formato de histórico inválido recebido:", payload);
            setHistory([]);
        }
     };
-    // Handler for parse errors (can still use postMessage reliably)
     const handleParseError = (payload: EventTS['parse-error']) => {
         console.error("[App Handler] Recebido 'parse-error'. Payload:", payload);
         setError(`Erro de sintaxe ${payload.lineNumber ? `(linha ${payload.lineNumber})` : ''}: ${payload.message}`);
-        setIsLoading(false); // Stop loading on parse error
+        // O polling effect cuidará de setIsLoading(false) se a chave de erro for definida
+        // Mas podemos definir aqui também para uma resposta mais rápida a erros de parse
+        setIsLoading(false);
     };
 
 
@@ -127,7 +138,7 @@ export function App() {
     console.log("[App Effect] Adicionando listeners (Debug, History, ParseError)...");
     const cleanupDebug = listenTS('debug', handleDebug);
     const cleanupHistory = listenTS('history-data', handleHistoryData);
-    const cleanupParseError = listenTS('parse-error', handleParseError); // Listen for parse errors
+    const cleanupParseError = listenTS('parse-error', handleParseError);
 
     // Cleanup function
     return () => {
@@ -142,71 +153,71 @@ export function App() {
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
     let attempts = 0;
-    const maxAttempts = 20; // Stop polling after ~20 seconds
+    const maxAttempts = 30; // Aumentado para 30 segundos
 
     if (isLoading) {
         console.log("[App Polling Effect] Iniciando verificação de status...");
         intervalId = setInterval(async () => {
             attempts++;
-            // Não loga toda tentativa para evitar poluir console
             // console.log(`[App Polling Effect] Verificando clientStorage (tentativa ${attempts})...`);
             try {
-                const statusRaw = await figma.clientStorage.getAsync(GENERATION_STATUS_KEY);
-                // Loga o que foi lido SÓ SE for diferente de undefined (para reduzir ruído)
-                // if (statusRaw !== undefined) {
-                //    console.log("[App Polling Effect] statusRaw lido:", statusRaw, "(Tipo:", typeof statusRaw, ")");
-                // }
+                // Verifica se a API figma e clientStorage estão disponíveis
+                if (typeof figma === 'undefined' || typeof figma.clientStorage === 'undefined') {
+                    console.warn("[App Polling Effect] API Figma ou clientStorage não disponível na UI. Parando polling.");
+                    setError("Não foi possível verificar o status da geração (API Figma indisponível).");
+                    setIsLoading(false);
+                    if (intervalId) clearInterval(intervalId);
+                    return;
+                }
 
+                const statusRaw = await figma.clientStorage.getAsync(GENERATION_STATUS_KEY);
                 if (statusRaw) {
                     let statusData;
                     try {
-                        statusData = JSON.parse(statusRaw); // <<< TENTA FAZER O PARSE
-                        // console.log("[App Polling Effect] Status parseado:", statusData); // Log opcional
+                        statusData = JSON.parse(statusRaw);
+                        // console.log("[App Polling Effect] Status parseado:", statusData);
 
-                        const isRecent = statusData.timestamp && (Date.now() - statusData.timestamp < 30000);
+                        const isRecent = statusData.timestamp && (Date.now() - statusData.timestamp < 45000); // Janela de 45s
 
-                        if (isRecent && (statusData.status === 'success' || statusData.status === 'error')) {
+                        if ((statusData.status === 'success' || statusData.status === 'error') && isRecent) {
                              console.log(`[App Polling Effect] Status final (${statusData.status}) detectado. Parando polling.`);
                              if (statusData.status === 'error') {
                                  setError(statusData.message || "Erro na geração (detalhes no console do plugin).");
                              } else {
                                  setError(null);
-                                 dispatchTS('get-history');
+                                 dispatchTS('get-history'); // Atualiza histórico no sucesso
                              }
                              setIsLoading(false);
                              if(intervalId) clearInterval(intervalId);
-                             await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY); // Limpa após sucesso/erro
-                             console.log("[App Polling Effect] Chave de status limpa após processamento.");
-                        } else if (!isRecent) {
-                             console.warn("[App Polling Effect] Status encontrado é antigo, ignorando e limpando.");
+                             await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
+                             console.log("[App Polling Effect] Chave de status limpa após processamento final.");
+                        } else if (!isRecent && (statusData.status === 'success' || statusData.status === 'error')) {
+                             console.warn("[App Polling Effect] Status final encontrado, mas é antigo. Limpando e parando polling.");
                              if (intervalId) clearInterval(intervalId);
-                             setIsLoading(false);
-                             setError("Status de geração antigo encontrado. Tente novamente.");
+                             setIsLoading(false); // Para o loading
+                             // Não define erro aqui, apenas limpa o status antigo
                              await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
                         }
-                        // else: status 'loading' ou inválido, continua polling
+                        // else: status é 'loading' ou inválido, continua polling
 
-                    } catch (parseError) { // <<< CAPTURA ERRO DO JSON.parse
+                    } catch (parseError) {
                         console.error("[App Polling Effect] Erro ao fazer parse do statusRaw:", parseError, "Valor Raw:", statusRaw);
                         setError("Erro interno ao ler status da geração (parse).");
                         setIsLoading(false);
                         if (intervalId) clearInterval(intervalId);
-                        // Tenta limpar a chave corrompida
-                         try { await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY); } catch {}
+                        try { await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY); } catch {}
                     }
                 }
-                // else: Nenhuma chave encontrada ainda, continua polling...
 
-                // Verifica timeout DENTRO do try principal, mas fora do if(statusRaw)
-                if (attempts >= maxAttempts && isLoading) { // Adiciona verificação isLoading aqui
+                if (attempts >= maxAttempts && isLoading) {
                      console.warn("[App Polling Effect] Máximo de tentativas atingido. Parando polling.");
-                     setError("A geração demorou muito ou falhou. Verifique o console do Figma.");
+                     setError("A geração demorou muito ou o status não foi atualizado. Verifique o console do Figma.");
                      setIsLoading(false);
                      if (intervalId) clearInterval(intervalId);
-                     try { await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY); } catch {} // Limpa chave no timeout
+                     try { await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY); } catch {}
                 }
 
-            } catch (storageError) { // Captura erro do getAsync
+            } catch (storageError) {
                 console.error("[App Polling Effect] Erro ao LER clientStorage:", storageError);
                 setError("Erro ao verificar status da geração (storage).");
                 setIsLoading(false);
@@ -222,42 +233,37 @@ export function App() {
             clearInterval(intervalId);
         }
     };
- }, [isLoading]); // Dependency array: runs when isLoading changes
+ }, [isLoading]);
 
 
   // --- Handlers ---
   const handleSubmit = async () => {
     console.log("[handleSubmit] Iniciado.");
     setError(null);
-    // Set loading true *before* validation
-    console.log("[handleSubmit] Setting isLoading to TRUE.");
-    setIsLoading(true);
+    setIsLoading(true); // Ativa o polling effect
 
     if (!markdown.trim()) {
         setError("O campo Markdown não pode estar vazio.");
-        console.warn("[handleSubmit] Validação falhou: Markdown vazio.");
         setIsLoading(false); return;
     }
     if (!isValidHex(inputValue)) {
         setError("Cor Accent inválida. Use formato HEX (ex: #3860FF).");
-        console.warn("[handleSubmit] Validação falhou: Cor inválida.");
         setIsLoading(false); return;
     }
     const finalAccentColor = accentColor;
 
     try {
-       // <<< Limpa o status antigo ANTES de enviar o pedido >>>
-       // await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
-       console.log("[handleSubmit] Chave de status antiga limpa (se existia).");
+       // Limpa o status antigo ANTES de enviar o pedido (será feito pelo plugin agora)
+       // await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY); // REMOVIDO DAQUI
+       // console.log("[handleSubmit] Chave de status antiga limpa (se existia)."); // Log removido
 
        console.log("[handleSubmit] Enviando para plugin:", { markdown, mode: nodeMode, accentColor: finalAccentColor });
        dispatchTS("generate-flow", { markdown, mode: nodeMode, accentColor: finalAccentColor });
        console.log("[handleSubmit] Mensagem 'generate-flow' enviada.");
-       // isLoading permanece true, o polling effect cuidará de resetar
-    } catch (dispatchError: any) {
-       console.error("[handleSubmit] Erro ao despachar mensagem:", dispatchError);
-       setError(`Erro interno ao enviar dados: ${dispatchError.message}`);
-       setIsLoading(false); // Reseta loading aqui também em caso de erro no dispatch
+    } catch (error: any) { // Captura erros do dispatchTS (muito raro)
+       console.error("[handleSubmit] Erro ao despachar mensagem 'generate-flow':", error);
+       setError(`Erro interno ao enviar pedido: ${error.message}`);
+       setIsLoading(false);
     }
   };
 
@@ -350,7 +356,7 @@ export function App() {
                <Button variant="ghost" size="icon" className="p-0 w-8 h-8" onClick={() => setUiTheme(uiTheme === "dark" ? "light" : "dark")} title={uiTheme === "dark" ? "Mudar para Light Mode (UI)" : "Mudar para Dark Mode (UI)"}>
                    {uiTheme === "dark" ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
                </Button>
-               <Button size="icon" className="p-0 w-8 h-8" title="Configurações" onClick={() => setActiveTab('settings')}>
+               <Button variant="ghost" size="icon" className="p-0 w-8 h-8" title="Configurações" onClick={() => setActiveTab('settings')}>
                    <SettingsIcon className="w-4 h-4" />
                </Button>
            </div>
@@ -369,7 +375,7 @@ export function App() {
             <Textarea
               ref={markdownTextareaRef} value={markdown} onChange={(e) => setMarkdown(e.target.value)}
               placeholder="Paste your IziFlow Markdown here or start typing..."
-              className="flex-grow w-full resize-none font-mono text-xs min-h-[15vh] bg-muted/30 dark:bg-muted/10 border-border" // Adjusted text size
+              className="flex-grow w-full resize-none font-mono text-xs min-h-[15vh] bg-muted/30 dark:bg-muted/10 border-border"
             />
             {/* Customization Section */}
             <div className="flex flex-col gap-2 w-full flex-shrink-0">
@@ -381,7 +387,7 @@ export function App() {
                       Accent Color
                       <Tooltip><TooltipTrigger asChild><InfoIcon className="w-3 h-3 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent side="top" align="center"><p className="text-xs">Define accent color (HEX).</p></TooltipContent></Tooltip>
                   </Label>
-                  <div className="relative flex items-center w-full h-8"> {/* Adjusted height */}
+                  <div className="relative flex items-center w-full h-8">
                       <Input id="accent-color-input" type="text" value={inputValue} onChange={handleInputChange} onBlur={handleInputBlur} className={cn("h-8 w-full pl-7 pr-1 text-xs font-mono", !isValidHex(inputValue) && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30")} maxLength={7} aria-label="Accent color hex value" />
                       <div aria-hidden="true" className="absolute left-1.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-sm border border-input pointer-events-none" style={{ backgroundColor: isValidHex(accentColor) ? accentColor : '#CCCCCC' }} />
                   </div>
@@ -419,6 +425,8 @@ export function App() {
             <h2 className="text-xl font-medium   flex-shrink-0">Flows History</h2>
             <div className="flex-grow w-full min-h-0 border rounded-md overflow-hidden">
                 <ScrollArea className="h-full">
+                    {/* <<< LOG DE DEPURAÇÃO >>> */}
+                    {console.log("[App Render JSX - History Tab] history.length:", history.length, "history:", history)}
                     <Table className="text-xs">
                         <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm">
                             <TableRow>

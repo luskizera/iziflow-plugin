@@ -1,38 +1,40 @@
-# IziFlow v2
+# iziFlow v2
 
-> Plugin Figma/FigJam para automação de fluxos de usuário através de uma sintaxe simples baseada em Markdown.
+> Figma/FigJam plugin for automating user flows through a simple Markdown-based syntax.
 
-> [iziFlow GPT Copilot](https://chatgpt.com/g/g-680800ab82a88191afc106220253ff30-iziflow-assistant) 
+> [iziFlow GPT Copilot](https://chatgpt.com/g/g-680800ab82a88191afc106220253ff30-iziflow-assistant)  
+> Visit [iziTools](https://luski.studio/izitools) for more information.
 
-IziFlow transforma descrições textuais estruturadas de fluxos de usuário em diagramas visuais diretamente no Figma e FigJam, agilizando o processo de design e documentação.
+iziFlow transforms structured textual descriptions of user flows into visual diagrams directly in Figma and FigJam, streamlining the design and documentation process.
 
-## ✨ Destaques
+## ✨ Highlights
 
-*   **Entrada Simplificada:** Defina seus fluxos usando uma sintaxe intuitiva inspirada em Markdown, muito mais legível que JSON.
-*   **Geração Automática:** Converta automaticamente seu texto em nós visuais (Start, End, Step, Decision, Entrypoint) e conectores com layout organizado.
-*   **Consistência Visual:** Aplica estilos padronizados para diferentes tipos de nós e conexões.
-*   **Foco no Designer:** Projetado para simplificar a criação de fluxos, mesmo para quem tem pouca familiaridade com código.
+* **Simplified Input:** Define your flows using an intuitive Markdown-inspired syntax, far more readable than JSON.
+* **Automatic Generation:** Automatically convert your text into visual nodes (Start, End, Step, Decision, Entrypoint) and connectors with an organized layout.
+* **Visual Consistency:** Applies standardized styles for different node types and connections.
+* **Designer-Focused:** Designed to simplify flow creation, even for those with minimal coding experience.
 
-## 🚀 Início Rápido
+## 🚀 Quick Start
 
 ```bash
-# Clone o repositório
+# Clone the repository
 git clone https://github.com/luskizera/iziflowv2.git
 ```
 
-# Instale as dependências
+# Install dependencies
 ```bash
-npm install # ou pnpm install / yarn install
+npm install # or pnpm install / yarn install
 ```
+
 📦 Build
 
-Para criar a versão final para uso:
-# Compila a UI e o código do plugin para produção
+To create the final version for use:
+# Compiles the UI and plugin code for production
 ```bash
 npm run build
 npm run buildcode
 ```
 
-# No Figjam
+# In FigJam
 * Plugins > Development > Import plugin from manifest...
-* Selecione dist/manifest.json
+* Select dist/manifest.json

@@ -1,4 +1,3 @@
-// tsconfig.json (Raiz do Projeto - Confirmar esta versão)
 {
   "compilerOptions": {
     "target": "ES2020",
@@ -25,6 +24,9 @@
       "./node_modules/@types",
       "./node_modules/@figma", // <--- Importante para contexto global do editor
       "./shared/types"
+    ],
+    "types": [
+      "prettier"
     ]
   },
   "include": [

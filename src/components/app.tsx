@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect, type ChangeEvent } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "@/components/providers/theme-provider";
 import { dispatchTS, listenTS } from "@/utils/utils";
 import type { EventTS } from "@shared/types/messaging.types";
@@ -17,17 +16,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
@@ -90,9 +78,6 @@ export function App() {
   const [nodeMode, setNodeMode] = useState<NodeGenerationMode>("light");
   const [history, setHistory] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string>("generator");
-  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
-  const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false);
-  const [itemToRemove, setItemToRemove] = useState<string | null>(null);
 
   console.log('[App Render] isLoading:', isLoading);
 
@@ -314,32 +299,19 @@ export function App() {
          setTimeout(() => markdownTextareaRef.current?.focus(), 0);
     };
 
+    // Remove diretamente sem confirmação
     const handleRemoveItemClick = (markdownItem: string) => {
-        setItemToRemove(markdownItem);
-        setIsRemoveConfirmOpen(true);
+        setHistory(prev => prev.filter(item => item !== markdownItem));
+        dispatchTS('remove-history-entry', { markdown: markdownItem });
     };
 
-    const handleConfirmRemoveItem = () => {
-        if (itemToRemove) {
-            console.log("[History] Confirmado remover item.");
-            setHistory(prev => prev.filter(item => item !== itemToRemove));
-            dispatchTS('remove-history-entry', { markdown: itemToRemove });
-        }
-        setIsRemoveConfirmOpen(false);
-        setItemToRemove(null);
-    }
-
+    // Funções de confirmação removidas (não são mais necessárias)
+    // Limpa diretamente sem confirmação
     const handleClearHistoryClick = () => {
         if (history.length > 0) {
-             setIsClearConfirmOpen(true);
+            setHistory([]);
+            dispatchTS('clear-history-request');
         }
-    };
-
-    const handleConfirmClearHistory = () => {
-        console.log("[History] Confirmado limpar todo o histórico.");
-        setHistory([]);
-        dispatchTS('clear-history-request');
-        setIsClearConfirmOpen(false);
     };
 
   return (
@@ -406,7 +378,6 @@ export function App() {
             </div>
             {/* Error Area & Action Buttons */}
             <div className="w-full mt-auto flex-shrink-0 space-y-1.5 pt-1.5">
-              {error && ( <Alert variant="destructive" className="text-xs px-3 py-1.5"><AlertDescription>{error}</AlertDescription></Alert> )}
               <div className="flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={handleCleanText} title="Clear text area">Clear</Button>
                 <Button size="sm" onClick={handleSubmit} disabled={isLoading || !markdown.trim() || !isValidHex(inputValue)}>
@@ -509,42 +480,7 @@ export function App() {
   </div>
 </footer>
 
-        {/* --- Confirmation Dialogs (Outside Tabs) --- */}
-        {/* Clear History Confirmation */}
-        <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Clear Entire History?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. Are you sure you want to permanently delete all saved flows from the history?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmClearHistory} className={buttonVariants({ variant: "destructive" })}>
-                Clear History
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* Remove Single Item Confirmation */}
-        <AlertDialog open={isRemoveConfirmOpen} onOpenChange={setIsRemoveConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remove Flow from History?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to remove "{itemToRemove ? extractFlowName(itemToRemove) : 'this flow'}" from the history? This cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setItemToRemove(null)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmRemoveItem} className={buttonVariants({ variant: "destructive" })}>
-                Remove
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* ...existing code... */}
 
       </div>
     </TooltipProvider>

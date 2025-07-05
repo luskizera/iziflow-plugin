@@ -98,7 +98,7 @@ export default function Component() {
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
       <TabsContent value="tab-1">
-        <p className="text-muted-foreground pt-1 text-center text-xs">
+        <p className="text-muted-foreground pt-5 text-center text-xs">
           Content for Tab 1
         </p>
       </TabsContent>

@@ -25,9 +25,7 @@
       "./node_modules/@figma", // <--- Importante para contexto global do editor
       "./shared/types"
     ],
-    "types": [
-      "prettier"
-    ]
+    "types": []
   },
   "include": [
     "src",

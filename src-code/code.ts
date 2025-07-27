@@ -13,7 +13,7 @@ import * as LayoutConfig from "./config/layout.config";
 // import { Layout } from './lib/layout'; // Não usamos mais buildGraph ou calculateLayoutLevels
 import { Frames } from './lib/frames';
 import { Connectors } from './lib/connectors';
-import { getHistory, addHistoryEntry, clearHistory } from './utils/historyStorage';
+import { getHistory, addHistoryEntry, clearHistory, removeHistoryEntry } from './utils/historyStorage';
 
 // Chave para o clientStorage (deve ser a mesma na UI)
 const GENERATION_STATUS_KEY = 'iziflow_generation_status';
@@ -58,15 +58,23 @@ figma.showUI(__html__, { width: 624, height: 500, themeColors: true, title: 'Izi
 
 // Listener principal
 figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pelo Figma
+    console.log('[Plugin] Mensagem RAW recebida da UI:', msg);
+
+    // Verifica se a mensagem vem encapsulada em pluginMessage
+    let actualMessage = msg;
+    if (msg && msg.pluginMessage && typeof msg.pluginMessage === 'object') {
+        console.log('[Plugin] Mensagem tem wrapper pluginMessage, extraindo...');
+        actualMessage = msg.pluginMessage;
+    }
 
     // Valida a mensagem DESEMBRULHADA
-    if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') {
-        console.warn('[Plugin] Mensagem recebida da UI inválida ou sem propriedade type.', msg); // Usa warn para diferenciar
+    if (!actualMessage || typeof actualMessage !== 'object' || typeof actualMessage.type !== 'string') {
+        console.warn('[Plugin] Mensagem recebida da UI inválida ou sem propriedade type.', actualMessage); // Usa warn para diferenciar
         return;
     }
 
-    const messageType = msg.type as keyof EventTS;
-    const payload = msg; // msg é o payload desembrulhado { type: ..., data... }
+    const messageType = actualMessage.type as keyof EventTS;
+    const payload = actualMessage; // actualMessage é o payload desembrulhado { type: ..., data... }
 
     console.log(`[Plugin] Mensagem da UI recebida: ${messageType}`); // Log principal mantido
 
@@ -216,7 +224,15 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              }
 
              // --- SUCESSO ---
+             console.log(`[Flow ID: ${generationId}] Tentando adicionar ao histórico...`);
              await addHistoryEntry(payload.markdown);
+             console.log(`[Flow ID: ${generationId}] Adicionado ao histórico com sucesso.`);
+
+             // <<< ATUALIZA A UI COM O NOVO HISTÓRICO >>>
+             const updatedHistory = await getHistory();
+             console.log(`[Flow ID: ${generationId}] Histórico atualizado obtido com ${updatedHistory.length} itens:`, updatedHistory);
+             figma.ui.postMessage({ type: 'history-updated', history: updatedHistory });
+             console.log(`[Flow ID: ${generationId}] Mensagem 'history-updated' enviada para UI.`);
 
              // <<< Define status SUCESSO no clientStorage >>>
              await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'success', id: generationId, timestamp: Date.now() }));
@@ -246,42 +262,29 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              figma.notify(`Erro na geração: ${errorMessage}`, { error: true, timeout: 5000 });
         }
     }
-    // --- Handlers para outras mensagens ---
+    // --- Handlers para o Histórico ---
     else if (messageType === 'get-history') {
         console.log("[Plugin] Recebido pedido 'get-history'.");
         const history = await getHistory();
-        console.log("[Plugin] Enviando 'history-data' com", history.length, "itens.");
-        figma.ui.postMessage({ type: 'history-data', history: history });
+        console.log(`[Plugin] Enviando 'history-updated' com ${history.length} itens.`);
+        figma.ui.postMessage({ type: 'history-updated', history: history });
    }
    else if (messageType === 'clear-history-request') {
         console.log("[Plugin] Recebido pedido 'clear-history-request'.");
         await clearHistory();
-        const updatedHistory = await getHistory();
-        console.log("[Plugin] Enviando histórico vazio após limpeza.");
-        figma.ui.postMessage({ type: 'history-data', history: updatedHistory });
+        const updatedHistory = await getHistory(); // Deve retornar []
+        figma.ui.postMessage({ type: 'history-updated', history: updatedHistory });
         figma.notify("Histórico limpo.", { timeout: 2000 });
    }
    else if (messageType === 'remove-history-entry') {
-        const { markdown: markdownToRemove } = payload;
-        if (typeof markdownToRemove === 'string') {
-            console.log(`[Plugin] Recebido pedido 'remove-history-entry'.`);
-            try {
-                const currentHistory = await getHistory();
-                const filteredHistory = currentHistory.filter(item => item !== markdownToRemove);
-                if (filteredHistory.length < currentHistory.length) {
-                    await figma.clientStorage.setAsync('markdownHistory', JSON.stringify(filteredHistory));
-                    console.log("[Plugin] Item removido e histórico salvo.");
-                    // Envia o histórico atualizado para a UI após a remoção
-                    figma.ui.postMessage({ type: 'history-data', history: filteredHistory });
-                } else {
-                     console.log("[Plugin] Item a ser removido não encontrado no histórico.");
-                }
-            } catch (error) {
-                 console.error("[Plugin] Erro ao remover item do histórico:", error);
-                 figma.notify("Erro ao remover item do histórico.", { error: true });
-            }
+        const { id: idToRemove } = payload;
+        if (typeof idToRemove === 'string') {
+            console.log(`[Plugin] Recebido pedido para remover item com ID: ${idToRemove}`);
+            await removeHistoryEntry(idToRemove);
+            const updatedHistory = await getHistory();
+            figma.ui.postMessage({ type: 'history-updated', history: updatedHistory });
         } else {
-             console.warn("[Plugin] Payload inválido para 'remove-history-entry'.", payload);
+             console.warn("[Plugin] Payload inválido para 'remove-history-entry', ID não encontrado.", payload);
         }
    }
    else if (messageType === 'closePlugin') {

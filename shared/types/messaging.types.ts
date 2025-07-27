@@ -1,4 +1,6 @@
 // shared/types/messaging.types.ts
+import type { HistoryEntry } from './flow.types';
+
 export interface EventTS {
   'generate-flow': {
     markdown: string;
@@ -12,7 +14,8 @@ export interface EventTS {
   closePlugin: {};
   'get-history': {};
   'history-data': { history: string[] };
+  'history-updated': { history: HistoryEntry[] };
   // 'add-history-entry': { markdown: string }; // Note: Plugin adds internally now
   'clear-history-request': {};
-  'remove-history-entry': { markdown: string }; // <<< ADD THIS LINE
+  'remove-history-entry': { id: string };
 }

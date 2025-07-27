@@ -32,7 +32,8 @@ export const listenTS = <Key extends keyof EventTS>(
   listenOnce = false
 ) => {
   const func = (event: MessageEvent<any>) => {
-    const messageData = event.data;
+    // Extrai a mensagem real de dentro do wrapper do Figma.
+    const messageData = event.data.pluginMessage;
 
     if (
         messageData &&
@@ -40,6 +41,7 @@ export const listenTS = <Key extends keyof EventTS>(
         typeof messageData.type === 'string' &&
         messageData.type === eventName
     ) {
+      // Desestrutura o payload da mensagem desembrulhada.
       const { type, ...payload } = messageData;
       callback(payload as EventTS[Key]);
       if (listenOnce) {

@@ -73,3 +73,13 @@ export interface FlowData {
   connections?: Connection[];
   flows?: Flow[];
 }
+
+/**
+ * Representa uma entrada no histórico de fluxos.
+ */
+export interface HistoryEntry {
+  id: string;          // Gerado com UUID ou timestamp + aleatório
+  name: string;        // Um nome curto para o fluxo, extraído do markdown
+  markdown: string;    // O conteúdo completo do fluxo em markdown
+  createdAt: string;   // Data de criação em formato ISO string
+}

@@ -15,3 +15,5 @@ code.js
 repomix.config.json
 iziflow-repomix.xml
 GEMINI.md
+CLAUDE.md
+.claude/

@@ -1,7 +1,14 @@
 // src-code/lib/connectors.ts
 /// <reference types="@figma/plugin-typings" />
 
-import type { NodeData, Connection } from '@shared/types/flow.types';
+import type { 
+  NodeData, 
+  Connection, 
+  BifurcationAnalysis, 
+  BifurcationContext,
+  CurvedConnectorConfig,
+  Point2D
+} from '../../shared/types/flow.types';
 import type { RGB } from '../config/theme.config'; // Importa tipo RGB
 import * as LayoutConfig from '../config/layout.config'; // Configurações de layout (sem tipos problemáticos agora)
 import * as StyleConfig from '../config/styles.config'; // Configurações de estilo (sem tipos problemáticos agora)
@@ -31,6 +38,109 @@ interface DeterminedConnectorConfig {
 
 // --- Função Principal ---
 export namespace Connectors {
+    /**
+     * Cria conectores com suporte a bifurcações
+     */
+    export async function createBifurcatedConnectors(
+        connections: Array<Connection>,
+        bifurcations: BifurcationAnalysis[],
+        nodeMap: { [id: string]: SceneNode },
+        nodeDataMap: { [id: string]: NodeData },
+        finalColors: Record<string, RGB>
+    ): Promise<void> {
+        // Construir mapa de contexto de bifurcações
+        const bifurcationContextMap = buildBifurcationContextMap(bifurcations);
+        
+        console.log(`[Bifurcated Connectors] Criando conectores com ${bifurcations.length} bifurcações detectadas`);
+        
+        // Carregar fonte para labels
+        try {
+            await nodeCache.loadFont(StyleConfig.Labels.FONT.family, StyleConfig.Labels.FONT.style);
+        } catch (e: any) {
+            console.error("[Bifurcated Connectors] Erro ao carregar fonte para etiquetas:", e);
+            figma.notify(`Erro ao carregar fonte para etiquetas: ${e?.message || e}`, { error: true });
+        }
+
+        // Análise de conexões
+        const outgoingPrimaryCounts: { [nodeId: string]: number } = {};
+        const nodeOutgoingPrimaryConnections: { [nodeId: string]: Array<Connection> } = {};
+        const incomingPrimaryCounts: { [nodeId: string]: number } = {};
+        
+        connections.forEach(conn => {
+            if (!conn.secondary) {
+                outgoingPrimaryCounts[conn.from] = (outgoingPrimaryCounts[conn.from] || 0) + 1;
+                if (!nodeOutgoingPrimaryConnections[conn.from]) nodeOutgoingPrimaryConnections[conn.from] = [];
+                nodeOutgoingPrimaryConnections[conn.from].push(conn);
+                incomingPrimaryCounts[conn.to] = (incomingPrimaryCounts[conn.to] || 0) + 1;
+            }
+        });
+
+        const labelCreationPromises: Promise<void>[] = [];
+
+        // Processar conexões com contexto de bifurcação
+        for (const conn of connections) {
+            const fromNode = nodeMap[conn.from];
+            const toNode = nodeMap[conn.to];
+            const fromNodeData = nodeDataMap[conn.from];
+            const toNodeData = nodeDataMap[conn.to];
+
+            if (!fromNode || !toNode || !fromNodeData || !toNodeData) {
+                console.warn(`[Bifurcated Connectors] Nó/dados ausentes para conexão: ${conn.from} -> ${conn.to}. Pulando.`);
+                continue;
+            }
+
+            // Determinar contexto de bifurcação
+            const bifurcationContext = bifurcationContextMap.get(conn.from);
+            
+            // Usar configuração específica para bifurcações
+            const config = determineBifurcatedConnectorConfig(
+                conn, 
+                fromNode, 
+                fromNodeData, 
+                toNodeData,
+                bifurcationContext,
+                incomingPrimaryCounts[conn.to] || 0, 
+                nodeOutgoingPrimaryConnections
+            );
+
+            // Criar conector
+            const connector = figma.createConnector();
+            const fromNodeName = fromNodeData.name || conn.from;
+            const toNodeName = toNodeData.name || conn.to;
+            connector.name = `Bifurcated Connector: ${fromNodeName} -> ${toNodeName}`;
+
+            connector.connectorLineType = config.lineType as ConnectorLineType;
+
+            // Anexar endpoints
+            attachConnectorEndpoints(connector, fromNode.id, toNode.id, config.startConnection, config.endMagnet);
+
+            // Aplicar estilos
+            applyConnectorStyle(connector, config.styleBase, config.isSecondary);
+
+            // Criar labels para decisões
+            const labelText = conn.conditionLabel || conn.condition;
+            if (labelText && labelText.trim() !== '' && fromNodeData.type === 'DECISION') {
+                labelCreationPromises.push(
+                    createBifurcatedConnectorLabel(labelText, fromNode, toNode, config, bifurcationContext, finalColors)
+                        .catch(err => {
+                            console.error(`[Bifurcated Connectors] Falha ao criar etiqueta para ${conn.from}->${conn.to}:`, err);
+                            const errorMessage = (err instanceof Error) ? err.message : String(err);
+                            figma.notify(`Erro ao criar etiqueta '${labelText}': ${errorMessage}`, { error: true });
+                        })
+                );
+            }
+        }
+
+        // Aguardar criação de todas as labels
+        try {
+            await Promise.all(labelCreationPromises);
+            console.log("[Bifurcated Connectors] Criação de conectores bifurcados e etiquetas concluída.");
+        } catch (overallError: any) {
+            console.error("[Bifurcated Connectors] Erro inesperado durante criação das etiquetas:", overallError);
+            figma.notify(`Ocorreu um erro durante a criação das etiquetas: ${overallError?.message || overallError}`, { error: true });
+        }
+    }
+
     export async function createConnectors(
         connections: Array<Connection>,
         // Usamos SceneNode que é um tipo mais genérico e disponível
@@ -395,4 +505,452 @@ async function createConnectorLabel(
              try { labelFrame.remove(); } catch (removeError) { /* Ignora */ }
         }
     }
+}
+
+// --- Funções para Sistema de Bifurcação ---
+
+/**
+ * Constrói mapa de contexto de bifurcações para acesso rápido
+ */
+function buildBifurcationContextMap(bifurcations: BifurcationAnalysis[]): Map<string, BifurcationContext> {
+    const contextMap = new Map<string, BifurcationContext>();
+    
+    bifurcations.forEach(bifurcation => {
+        // Criar contexto para nó de decisão
+        const context: BifurcationContext = {
+            upperBranchNodes: bifurcation.branches.upper,
+            lowerBranchNodes: bifurcation.branches.lower,
+            isConvergencePoint: false
+        };
+        
+        contextMap.set(bifurcation.decisionNodeId, context);
+        
+        // Marcar nó de convergência se existir
+        if (bifurcation.convergenceNodeId) {
+            const convergenceContext: BifurcationContext = {
+                upperBranchNodes: bifurcation.branches.upper,
+                lowerBranchNodes: bifurcation.branches.lower,
+                isConvergencePoint: true
+            };
+            contextMap.set(bifurcation.convergenceNodeId, convergenceContext);
+        }
+    });
+    
+    return contextMap;
+}
+
+/**
+ * Determina configuração de conector específica para bifurcações
+ */
+function determineBifurcatedConnectorConfig(
+    conn: Connection,
+    fromNode: SceneNode,
+    fromNodeData: NodeData,
+    toNodeData: NodeData,
+    bifurcationContext: BifurcationContext | undefined,
+    incomingPrimaryCountToTarget: number,
+    nodeOutgoingPrimaryConnections: { [nodeId: string]: Array<Connection> }
+): DeterminedConnectorConfig {
+    
+    const isDecisionOrigin = fromNodeData.type === 'DECISION';
+    const isSecondary = conn.secondary === true;
+    const isConvergingPrimary = incomingPrimaryCountToTarget > 1 && !isSecondary;
+    
+    // Se não há contexto de bifurcação, usar lógica padrão
+    if (!bifurcationContext || !isDecisionOrigin) {
+        return determineConnectorConfig(
+            conn, 
+            fromNode, 
+            fromNodeData, 
+            incomingPrimaryCountToTarget, 
+            nodeOutgoingPrimaryConnections
+        );
+    }
+    
+    // Configuração específica para bifurcações
+    const styleBase: ConnectorStyleBaseConfig = isSecondary ? 
+        StyleConfig.Connectors.SECONDARY : StyleConfig.Connectors.PRIMARY;
+    
+    // Determinar se é ramo superior ou inferior
+    const isUpperBranch = bifurcationContext.upperBranchNodes.includes(conn.to);
+    const isLowerBranch = bifurcationContext.lowerBranchNodes.includes(conn.to);
+    
+    let startConnection: { magnet?: string; position?: { x: number; y: number } } = {};
+    let finalEndMagnet: string = LayoutConfig.Connectors.DEFAULT_END_MAGNET;
+    let finalStartMagnetForLabel: string;
+    
+    if (isUpperBranch) {
+        // Ramo superior - sai pela parte superior do nó
+        finalStartMagnetForLabel = LayoutConfig.Bifurcation.DECISION_TOP_BRANCH_MAGNET;
+        startConnection = { magnet: finalStartMagnetForLabel };
+        console.log(`[Bifurcated Connectors] Conexão ${conn.from} -> ${conn.to}: Ramo SUPERIOR (${finalStartMagnetForLabel})`);
+    } else if (isLowerBranch) {
+        // Ramo inferior - sai pela parte inferior do nó
+        finalStartMagnetForLabel = LayoutConfig.Bifurcation.DECISION_BOTTOM_BRANCH_MAGNET;
+        startConnection = { magnet: finalStartMagnetForLabel };
+        console.log(`[Bifurcated Connectors] Conexão ${conn.from} -> ${conn.to}: Ramo INFERIOR (${finalStartMagnetForLabel})`);
+    } else {
+        // Fallback para lógica padrão
+        finalStartMagnetForLabel = LayoutConfig.Connectors.DEFAULT_PRIMARY_START_MAGNET;
+        startConnection = { magnet: finalStartMagnetForLabel };
+        console.warn(`[Bifurcated Connectors] Conexão ${conn.from} -> ${conn.to}: Não encontrada em bifurcação, usando padrão`);
+    }
+    
+    // Configurar entrada para convergência
+    if (bifurcationContext.isConvergencePoint) {
+        finalEndMagnet = LayoutConfig.Bifurcation.CONVERGENCE_ENTRY_MAGNET;
+    }
+    
+    return {
+        styleBase: {
+            ...styleBase,
+            END_CAP: styleBase.END_CAP
+        },
+        startConnection,
+        endMagnet: finalEndMagnet,
+        lineType: LayoutConfig.Connectors.DECISION_PRIMARY_LINE_TYPE,
+        placeLabelNearStart: true, // Labels perto do início para bifurcações
+        actualStartMagnetForLabel: finalStartMagnetForLabel,
+        isSecondary
+    };
+}
+
+/**
+ * Cria label para conector bifurcado com posicionamento otimizado
+ */
+async function createBifurcatedConnectorLabel(
+    labelText: string,
+    fromNode: SceneNode,
+    toNode: SceneNode,
+    config: DeterminedConnectorConfig,
+    bifurcationContext: BifurcationContext | undefined,
+    finalColors: Record<string, RGB>
+): Promise<void> {
+    
+    // Se não há contexto de bifurcação, usar função padrão
+    if (!bifurcationContext) {
+        return createConnectorLabel(
+            labelText, 
+            fromNode, 
+            toNode, 
+            config.actualStartMagnetForLabel, 
+            config.placeLabelNearStart, 
+            finalColors
+        );
+    }
+    
+    let labelFrame: FrameNode | null = null;
+    try {
+        labelFrame = figma.createFrame();
+        labelFrame.name = `Bifurcated Condition: ${labelText}`;
+        labelFrame.layoutMode = "HORIZONTAL";
+        labelFrame.primaryAxisSizingMode = "AUTO";
+        labelFrame.counterAxisSizingMode = "AUTO";
+        
+        // Configuração padrão do frame
+        labelFrame.paddingLeft = labelFrame.paddingRight = StyleConfig.Labels.DESC_CHIP_PADDING_HORIZONTAL;
+        labelFrame.paddingTop = labelFrame.paddingBottom = StyleConfig.Labels.DESC_CHIP_PADDING_VERTICAL;
+        labelFrame.cornerRadius = StyleConfig.Labels.DESC_CHIP_CORNER_RADIUS;
+        labelFrame.strokes = [];
+        
+        // Aplicar cores
+        const labelFillToken = 'chips_default_fill';
+        if (finalColors[labelFillToken]) {
+            labelFrame.fills = [{ type: 'SOLID', color: finalColors[labelFillToken] }];
+        } else {
+            labelFrame.fills = [{ type: 'SOLID', color: {r:0.8,g:0.8,b:0.8}}];
+        }
+        
+        // Criar texto
+        const labelTextNode = figma.createText();
+        labelTextNode.fontName = StyleConfig.Labels.FONT;
+        labelTextNode.characters = labelText;
+        labelTextNode.fontSize = StyleConfig.Labels.DESC_CHIP_FONT_SIZE;
+        labelTextNode.textAutoResize = "WIDTH_AND_HEIGHT";
+        
+        // Aplicar cor do texto
+        const labelTextToken = 'chips_default_text';
+        if (finalColors[labelTextToken]) {
+            labelTextNode.fills = [{ type: 'SOLID', color: finalColors[labelTextToken] }];
+        } else {
+            labelTextNode.fills = [{ type: 'SOLID', color: {r:0,g:0,b:0}}];
+        }
+        
+        labelFrame.appendChild(labelTextNode);
+        (fromNode.parent || figma.currentPage).appendChild(labelFrame);
+        
+        // Aguardar cálculo de layout
+        await new Promise(resolve => setTimeout(resolve, 0));
+        
+        // Posicionamento específico para bifurcações
+        const labelWidth = labelFrame.width;
+        const labelHeight = labelFrame.height;
+        const offsetNear = LayoutConfig.Connectors.LABEL_OFFSET_NEAR_START;
+        
+        let targetX: number, targetY: number;
+        
+        // Posicionamento baseado no magnet de saída
+        switch (config.actualStartMagnetForLabel) {
+            case 'TOP':
+                targetX = fromNode.x + fromNode.width / 2;
+                targetY = fromNode.y - offsetNear - labelHeight / 2;
+                break;
+            case 'BOTTOM':
+                targetX = fromNode.x + fromNode.width / 2;
+                targetY = fromNode.y + fromNode.height + offsetNear + labelHeight / 2;
+                break;
+            case 'RIGHT':
+                targetX = fromNode.x + fromNode.width + offsetNear + labelWidth / 2;
+                targetY = fromNode.y + fromNode.height / 2;
+                break;
+            case 'LEFT':
+                targetX = fromNode.x - offsetNear - labelWidth / 2;
+                targetY = fromNode.y + fromNode.height / 2;
+                break;
+            default:
+                targetX = fromNode.x + fromNode.width + offsetNear + labelWidth / 2;
+                targetY = fromNode.y + fromNode.height / 2;
+                break;
+        }
+        
+        // Centralizar o label no ponto alvo
+        labelFrame.x = targetX - labelWidth / 2;
+        labelFrame.y = targetY - labelHeight / 2;
+        
+    } catch (error: any) {
+        console.error(`[Bifurcated Connectors] Erro ao criar/posicionar etiqueta bifurcada '${labelText}':`, error);
+        if (labelFrame && !labelFrame.removed) {
+            try { labelFrame.remove(); } catch (removeError) { /* Ignora */ }
+        }
+    }
+}
+
+// --- Sistema de Convergência Elegante ---
+
+/**
+ * Cria conectores curvos para convergência elegante de bifurcações
+ */
+export async function createCurvedConvergenceConnector(
+    config: CurvedConnectorConfig,
+    fromNodeId: string,
+    toNodeId: string,
+    finalColors: Record<string, RGB>
+): Promise<ConnectorNode> {
+    console.log(`[Curved Convergence] Criando conector curvo ${config.isUpperBranch ? 'superior' : 'inferior'} (${fromNodeId} -> ${toNodeId})`);
+    
+    const connector = figma.createConnector();
+    connector.name = `Curved Convergence: ${fromNodeId} -> ${toNodeId} (${config.isUpperBranch ? 'Upper' : 'Lower'})`;
+    
+    try {
+        // Configurar geometria curva
+        if (config.useMultipleSegments) {
+            await applyMultiSegmentCurve(connector, config, fromNodeId, toNodeId);
+        } else {
+            await applyNativeCurve(connector, config, fromNodeId, toNodeId);
+        }
+        
+        // Aplicar estilo de convergência
+        applyConvergenceStyle(connector, finalColors);
+        
+        console.log(`[Curved Convergence] Conector curvo criado com sucesso`);
+        return connector;
+        
+    } catch (error: any) {
+        console.error(`[Curved Convergence] Erro ao criar conector curvo:`, error);
+        figma.notify(`Erro ao criar conector curvo: ${error?.message || error}`, { error: true });
+        
+        // Fallback para conector reto
+        connector.connectorLineType = "ELBOWED";
+        connector.connectorStart = { endpointNodeId: fromNodeId, magnet: "RIGHT" as ConnectorMagnet };
+        connector.connectorEnd = { endpointNodeId: toNodeId, magnet: "LEFT" as ConnectorMagnet };
+        
+        return connector;
+    }
+}
+
+/**
+ * Aplica geometria curva usando múltiplos segmentos (método de fallback)
+ */
+async function applyMultiSegmentCurve(
+    connector: ConnectorNode,
+    config: CurvedConnectorConfig,
+    fromNodeId: string,
+    toNodeId: string
+): Promise<void> {
+    const geometry = config.geometry;
+    const path = config.isUpperBranch ? geometry.upperPath : geometry.lowerPath;
+    
+    // Calcular pontos ao longo da curva Bézier
+    const points = calculateBezierPoints(path, config.segmentCount || 8);
+    
+    // Configurar endpoints
+    connector.connectorStart = { 
+        endpointNodeId: fromNodeId, 
+        magnet: "RIGHT" as ConnectorMagnet 
+    };
+    
+    connector.connectorEnd = { 
+        endpointNodeId: toNodeId, 
+        magnet: "LEFT" as ConnectorMagnet 
+    };
+    
+    // Configurar tipo de linha baseado na suavização
+    if (config.smoothingFactor && config.smoothingFactor > 0.5) {
+        connector.connectorLineType = "ELBOWED"; // Mais suave
+    } else {
+        connector.connectorLineType = "STRAIGHT"; // Mais direto
+    }
+    
+    console.log(`[Curved Convergence] Aplicada curva de ${points.length} segmentos`);
+}
+
+/**
+ * Tenta aplicar curva nativa do Figma (se disponível)
+ */
+async function applyNativeCurve(
+    connector: ConnectorNode,
+    config: CurvedConnectorConfig,
+    fromNodeId: string,
+    toNodeId: string
+): Promise<void> {
+    // A API atual do Figma não suporta curvas Bézier nativas para conectores
+    // Esta função serve como placeholder para futuras implementações
+    
+    console.warn(`[Curved Convergence] Curvas nativas não suportadas, usando fallback de múltiplos segmentos`);
+    return applyMultiSegmentCurve(connector, config, fromNodeId, toNodeId);
+}
+
+/**
+ * Calcula pontos discretos ao longo de uma curva Bézier quadrática
+ */
+function calculateBezierPoints(path: any, segmentCount: number): Point2D[] {
+    const points: Point2D[] = [];
+    const { startPoint, controlPoint, endPoint } = path;
+    
+    for (let i = 0; i <= segmentCount; i++) {
+        const t = i / segmentCount;
+        
+        // Fórmula de Bézier quadrática: B(t) = (1-t)²P₀ + 2(1-t)tP₁ + t²P₂
+        const x = Math.pow(1 - t, 2) * startPoint.x +
+                  2 * (1 - t) * t * controlPoint.x +
+                  Math.pow(t, 2) * endPoint.x;
+                  
+        const y = Math.pow(1 - t, 2) * startPoint.y +
+                  2 * (1 - t) * t * controlPoint.y +
+                  Math.pow(t, 2) * endPoint.y;
+        
+        points.push({ x, y });
+    }
+    
+    return points;
+}
+
+/**
+ * Aplica estilo específico para conectores de convergência
+ */
+function applyConvergenceStyle(connector: ConnectorNode, finalColors: Record<string, RGB>): void {
+    try {
+        // Configurações específicas para convergência
+        connector.strokeWeight = StyleConfig.Connectors.PRIMARY.STROKE_WEIGHT * 1.2; // Ligeiramente mais grosso
+        connector.dashPattern = []; // Linha sólida
+        connector.connectorEndStrokeCap = "ARROW_LINES" as ConnectorStrokeCap;
+        
+        // Cor específica para convergência (pode usar uma cor diferenciada)
+        const convergenceColorToken = 'connectors_convergence';
+        if (finalColors[convergenceColorToken]) {
+            connector.strokes = [{ 
+                type: "SOLID", 
+                color: finalColors[convergenceColorToken] 
+            }];
+        } else {
+            // Fallback: usar cor primária com transparência reduzida
+            connector.strokes = [{ 
+                type: "SOLID", 
+                color: { r: 0.2, g: 0.2, b: 0.2 } // Cinza escuro
+            }];
+        }
+        
+        console.log(`[Curved Convergence] Estilo de convergência aplicado`);
+        
+    } catch (error: any) {
+        console.error(`[Curved Convergence] Erro ao aplicar estilo:`, error);
+        // Fallback para estilo padrão
+        connector.strokes = [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }];
+    }
+}
+
+/**
+ * Cria múltiplos conectores de convergência para uma bifurcação
+ */
+export async function createConvergenceConnectors(
+    configs: CurvedConnectorConfig[],
+    fromNodeIds: string[],
+    toNodeId: string,
+    finalColors: Record<string, RGB>
+): Promise<ConnectorNode[]> {
+    const connectors: ConnectorNode[] = [];
+    
+    console.log(`[Curved Convergence] Criando ${configs.length} conectores de convergência para ${toNodeId}`);
+    
+    for (let i = 0; i < configs.length; i++) {
+        const config = configs[i];
+        const fromNodeId = fromNodeIds[i];
+        
+        if (!fromNodeId) {
+            console.warn(`[Curved Convergence] ID de nó de origem não fornecido para índice ${i}`);
+            continue;
+        }
+        
+        try {
+            const connector = await createCurvedConvergenceConnector(
+                config, 
+                fromNodeId, 
+                toNodeId, 
+                finalColors
+            );
+            
+            connectors.push(connector);
+            
+        } catch (error: any) {
+            console.error(`[Curved Convergence] Erro ao criar conector ${i}:`, error);
+            figma.notify(`Erro ao criar conector de convergência ${i + 1}: ${error?.message || error}`, { error: true });
+        }
+    }
+    
+    console.log(`[Curved Convergence] ${connectors.length} conectores de convergência criados`);
+    return connectors;
+}
+
+/**
+ * Função auxiliar para determinar se uma conexão é parte de convergência
+ */
+export function isConvergenceConnection(
+    connection: Connection,
+    bifurcations: BifurcationAnalysis[]
+): boolean {
+    for (const bifurcation of bifurcations) {
+        if (!bifurcation.convergenceNodeId) continue;
+        
+        // Verificar se a conexão termina no nó de convergência
+        if (connection.to === bifurcation.convergenceNodeId) {
+            // Verificar se a origem está em um dos ramos
+            const isFromUpperBranch = bifurcation.branches.upper.includes(connection.from);
+            const isFromLowerBranch = bifurcation.branches.lower.includes(connection.from);
+            
+            return isFromUpperBranch || isFromLowerBranch;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Aplica suavização inteligente baseada no ângulo de convergência
+ */
+function calculateSmartSmoothingFactor(convergenceAngle: number): number {
+    // Ângulos mais agudos precisam de mais suavização
+    if (convergenceAngle < 30) return 0.9;
+    if (convergenceAngle < 60) return 0.7;
+    if (convergenceAngle < 90) return 0.5;
+    return 0.3; // Ângulos obtusos precisam de menos suavização
 }

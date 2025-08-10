@@ -138,3 +138,45 @@ export interface ConflictResolution {
   affectedNodes: string[];
   suggestedResolution: 'EXPAND_SPACING' | 'RELOCATE_NODES' | 'ADJUST_LANES';
 }
+
+// --- Tipos para Sistema de Convergência ---
+
+/**
+ * Representa um ponto 2D no sistema de coordenadas.
+ */
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
+/**
+ * Configuração para cálculo de curvas Bézier.
+ */
+export interface BezierPathConfig {
+  startPoint: Point2D;
+  controlPoint: Point2D;
+  endPoint: Point2D;
+  tension?: number; // Tensão da curva (0-1), padrão 0.5
+}
+
+/**
+ * Geometria calculada para convergência de ramos.
+ */
+export interface ConvergenceGeometry {
+  upperPath: BezierPathConfig;
+  lowerPath: BezierPathConfig;
+  convergenceAngle: number; // Ângulo ideal de convergência em graus
+  upperControlPoint: Point2D; // Ponto de controle para ramo superior
+  lowerControlPoint: Point2D; // Ponto de controle para ramo inferior
+}
+
+/**
+ * Configuração para criação de conectores curvos.
+ */
+export interface CurvedConnectorConfig {
+  geometry: ConvergenceGeometry;
+  isUpperBranch: boolean;
+  useMultipleSegments: boolean; // True se API do Figma não suportar curvas nativas
+  segmentCount?: number; // Número de segmentos para simular curva (padrão 8)
+  smoothingFactor?: number; // Fator de suavização (0-1), padrão 0.7
+}

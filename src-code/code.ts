@@ -10,7 +10,7 @@ import type { RGB } from './config/theme.config';
 import { getThemeColors, FontsToLoad } from './config/theme.config';
 import * as StyleConfig from './config/styles.config';
 import * as LayoutConfig from "./config/layout.config";
-// import { Layout } from './lib/layout'; // Não usamos mais buildGraph ou calculateLayoutLevels
+import { Layout } from './lib/layout';
 import { Frames } from './lib/frames';
 import { Connectors } from './lib/connectors';
 import { getHistory, addHistoryEntry, clearHistory, removeHistoryEntry } from './utils/historyStorage';
@@ -51,7 +51,291 @@ async function preloadFonts() {
      // debugLog('FontLoader', `Pré-carregamento de fontes concluído.`);
 }
 
-// --- Função calculateLayoutLevels REMOVIDA ---
+// --- Sistema de Layout Bifurcado ---
+
+/**
+ * Gera fluxo com layout bifurcado
+ */
+async function generateFlowWithBifurcatedLayout(
+    flowNodes: FlowNode[],
+    flowConnections: Connection[],
+    finalColors: Record<string, RGB>
+): Promise<{ nodeMap: { [id: string]: SceneNode }, createdFrames: SceneNode[] }> {
+    
+    // 1. Análise estrutural
+    const bifurcations = Layout.detectBinaryDecisions(flowNodes, flowConnections);
+    const nodeLaneMap = Layout.calculateVerticalLanes(bifurcations, flowNodes);
+    
+    console.log(`[Bifurcated Layout] Detectadas ${bifurcations.length} bifurcações`);
+    console.log(`[Bifurcated Layout] Mapa de lanes:`, Object.fromEntries(nodeLaneMap));
+    
+    // 2. Calcular posições para todos os nós
+    const nodePositions = calculateBifurcatedPositions(
+        flowNodes, 
+        flowConnections,
+        bifurcations, 
+        nodeLaneMap
+    );
+    
+    // 3. Criar nós com posições calculadas
+    const nodeMap: { [id: string]: SceneNode } = {};
+    const createdFrames: SceneNode[] = [];
+    const nodeDataMap: { [id: string]: NodeData } = {};
+    flowNodes.forEach(node => { nodeDataMap[node.id] = node; });
+    
+    for (const nodeData of flowNodes) {
+        let frame: SceneNode | null = null;
+        try {
+            frame = await createNodeByType(nodeData, finalColors);
+            if (!frame || frame.removed) {
+                throw new Error(`Frame nulo/removido para ${nodeData.id}.`);
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            const position = nodePositions.get(nodeData.id)!;
+            frame.x = position.x;
+            frame.y = position.y;
+            
+            nodeMap[nodeData.id] = frame;
+            createdFrames.push(frame);
+            
+        } catch (nodeCreationError: any) {
+            throw new Error(`Falha ao criar nó '${nodeData.name || nodeData.id}': ${nodeCreationError.message}`);
+        }
+    }
+    
+    // 4. Adicionar nós à página
+    if (createdFrames.length === 0) {
+        throw new Error("Falha: Nenhum nó foi criado com sucesso.");
+    }
+    createdFrames.forEach(f => figma.currentPage.appendChild(f));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 5. Criar conectores com lógica bifurcada
+    if (Object.keys(nodeMap).length > 0 && flowConnections?.length > 0) {
+        await createBifurcatedConnectors(flowConnections, bifurcations, nodeMap, nodeDataMap, finalColors);
+    }
+    
+    return { nodeMap, createdFrames };
+}
+
+/**
+ * Função auxiliar para criar nó por tipo
+ */
+async function createNodeByType(nodeData: NodeData, finalColors: Record<string, RGB>): Promise<SceneNode> {
+    switch (nodeData.type) {
+        case "START": return await Frames.createStartNode(nodeData, finalColors);
+        case "END": return await Frames.createEndNode(nodeData, finalColors);
+        case "STEP": return await Frames.createStepNode(nodeData, finalColors);
+        case "ENTRYPOINT": return await Frames.createEntrypointNode(nodeData, finalColors);
+        case "DECISION": return await Frames.createDecisionNode(nodeData, finalColors);
+        default: return await Frames.createStepNode(nodeData, finalColors);
+    }
+}
+
+/**
+ * Calcula posições bifurcadas para todos os nós
+ */
+function calculateBifurcatedPositions(
+    nodes: FlowNode[],
+    connections: Connection[],
+    bifurcations: import('@shared/types/flow.types').BifurcationAnalysis[],
+    nodeLaneMap: Map<string, number>
+): Map<string, import('@shared/types/flow.types').LayoutPosition> {
+    const positions = new Map<string, import('@shared/types/flow.types').LayoutPosition>();
+    const horizontalSpacing = LayoutConfig.Nodes.HORIZONTAL_SPACING;
+    const laneHeight = LayoutConfig.VerticalLanes.LANE_HEIGHT;
+    
+    let currentX = 100;
+    const centerY = figma.viewport.center.y;
+    
+    // Processar nós em ordem topológica
+    const sortedNodes = Layout.topologicalSort(nodes, connections);
+    
+    for (const node of sortedNodes) {
+        const laneIndex = nodeLaneMap.get(node.id) || 0;
+        const y = centerY + (laneIndex * laneHeight);
+        
+        // Ajustar X baseado em bifurcações
+        const x = calculateXPosition(node, currentX, bifurcations, nodeLaneMap);
+        
+        positions.set(node.id, { x, y, laneIndex });
+        
+        // Avançar posição horizontal apenas para nós na lane central
+        if (laneIndex === 0) {
+            currentX = x + 400 + horizontalSpacing; // 400 = largura típica do nó
+        }
+    }
+    
+    // Aplicar gerenciamento vertical para resolver conflitos
+    console.log(`[Bifurcated Layout] Aplicando gerenciamento vertical...`);
+    
+    // Criar mapas de dimensões dos nós (estimativas)
+    const nodeWidths = new Map<string, number>();
+    const nodeHeights = new Map<string, number>();
+    
+    nodes.forEach(node => {
+        // Estimativas baseadas no tipo de nó
+        let width = 400, height = 100; // Valores padrão
+        
+        switch (node.type) {
+            case 'START':
+            case 'END':
+                width = 120;
+                height = 50;
+                break;
+            case 'DECISION':
+                width = 350;
+                height = 120;
+                break;
+            case 'ENTRYPOINT':
+                width = 450;
+                height = 130;
+                break;
+            case 'STEP':
+                width = 400;
+                height = 100;
+                break;
+        }
+        
+        nodeWidths.set(node.id, width);
+        nodeHeights.set(node.id, height);
+    });
+    
+    // Aplicar gerenciamento vertical
+    const managedPositions = Layout.manageVerticalLayout(
+        positions,
+        bifurcations,
+        nodeWidths,
+        nodeHeights
+    );
+    
+    console.log(`[Bifurcated Layout] Posições finais calculadas para ${managedPositions.size} nós`);
+    return managedPositions;
+}
+
+/**
+ * Calcula posição X inteligente baseada em bifurcações
+ */
+function calculateXPosition(
+    node: FlowNode,
+    baseX: number,
+    bifurcations: import('@shared/types/flow.types').BifurcationAnalysis[],
+    nodeLaneMap: Map<string, number>
+): number {
+    const laneIndex = nodeLaneMap.get(node.id) || 0;
+    
+    // Para nós na lane central, usa posição base
+    if (laneIndex === 0) {
+        return baseX;
+    }
+    
+    // Para nós em lanes laterais, adiciona offset horizontal
+    const horizontalOffset = LayoutConfig.Bifurcation.HORIZONTAL_OFFSET_FOR_BRANCHES;
+    
+    // Procurar a bifurcação que contém este nó
+    for (const bifurcation of bifurcations) {
+        const isInUpperBranch = bifurcation.branches.upper.includes(node.id);
+        const isInLowerBranch = bifurcation.branches.lower.includes(node.id);
+        
+        if (isInUpperBranch || isInLowerBranch) {
+            return baseX + horizontalOffset;
+        }
+    }
+    
+    return baseX;
+}
+
+/**
+ * Cria conectores considerando bifurcações
+ */
+async function createBifurcatedConnectors(
+    connections: Connection[],
+    bifurcations: import('@shared/types/flow.types').BifurcationAnalysis[],
+    nodeMap: { [id: string]: SceneNode },
+    nodeDataMap: { [id: string]: NodeData },
+    finalColors: Record<string, RGB>
+): Promise<void> {
+    await Connectors.createBifurcatedConnectors(connections, bifurcations, nodeMap, nodeDataMap, finalColors);
+}
+
+/**
+ * Gera fluxo com layout linear (fallback)
+ */
+async function generateFlowWithLinearLayout(
+    flowNodes: FlowNode[],
+    flowConnections: Connection[],
+    finalColors: Record<string, RGB>
+): Promise<{ nodeMap: { [id: string]: SceneNode }, createdFrames: SceneNode[] }> {
+    const nodeMap: { [id: string]: SceneNode } = {};
+    const createdFrames: SceneNode[] = [];
+    
+    let currentX = 100;
+    const startY = figma.viewport.center.y;
+    const horizontalSpacing = LayoutConfig.Nodes.HORIZONTAL_SPACING;
+    const nodeDataMap: { [id: string]: NodeData } = {};
+    flowNodes.forEach(node => { nodeDataMap[node.id] = node; });
+
+    for (const nodeData of flowNodes) {
+        let frame: SceneNode | null = null;
+        try {
+            frame = await createNodeByType(nodeData, finalColors);
+            if (!frame || frame.removed) throw new Error(`Frame nulo/removido para ${nodeData.id}.`);
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+            frame.x = currentX;
+            frame.y = startY - frame.height / 2;
+            currentX += frame.width + horizontalSpacing;
+            nodeMap[nodeData.id] = frame;
+            createdFrames.push(frame);
+        } catch (nodeCreationError: any) {
+            throw new Error(`Falha ao criar nó '${nodeData.name || nodeData.id}': ${nodeCreationError.message}`);
+        }
+    }
+
+    if (createdFrames.length === 0) {
+        throw new Error("Falha: Nenhum nó foi criado com sucesso.");
+    }
+    createdFrames.forEach(f => figma.currentPage.appendChild(f));
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    if (Object.keys(nodeMap).length > 0 && flowConnections?.length > 0) {
+        await Connectors.createConnectors(flowConnections, nodeMap, nodeDataMap, finalColors);
+    }
+
+    return { nodeMap, createdFrames };
+}
+
+/**
+ * Função principal que escolhe o layout apropriado
+ */
+async function generateFlowWithSmartLayout(
+    flowNodes: FlowNode[],
+    flowConnections: Connection[],
+    finalColors: Record<string, RGB>
+): Promise<{ nodeMap: { [id: string]: SceneNode }, createdFrames: SceneNode[] }> {
+    
+    try {
+        // Tentar layout bifurcado se habilitado e aplicável
+        if (LayoutConfig.Bifurcation.ENABLED) {
+            const bifurcations = Layout.detectBinaryDecisions(flowNodes, flowConnections);
+            
+            if (bifurcations.length > 0) {
+                console.log(`[Smart Layout] Usando layout bifurcado (${bifurcations.length} bifurcações detectadas)`);
+                return await generateFlowWithBifurcatedLayout(flowNodes, flowConnections, finalColors);
+            }
+        }
+        
+        // Fallback para layout linear original
+        console.log(`[Smart Layout] Usando layout linear (fallback)`);
+        return await generateFlowWithLinearLayout(flowNodes, flowConnections, finalColors);
+        
+    } catch (error) {
+        console.warn('[Smart Layout] Layout bifurcado falhou, usando linear:', error);
+        return await generateFlowWithLinearLayout(flowNodes, flowConnections, finalColors);
+    }
+}
 
 // --- UI e Listener principal ---
 figma.showUI(__html__, { width: 624, height: 500, themeColors: true, title: 'IziFlow Plugin' });
@@ -139,58 +423,15 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              // 5. Carregar Fontes
              await preloadFonts();
 
-             // 6. Construir Mapa de Dados
-             const nodeDataMap: { [id: string]: NodeData } = {};
-             flowNodes.forEach(node => { nodeDataMap[node.id] = node; });
+             // 6. Geração com Layout Inteligente (Bifurcado ou Linear)
+             console.log(`[Flow ID: ${generationId}] Iniciando geração com layout inteligente...`);
+             const layoutResult = await generateFlowWithSmartLayout(flowNodes, flowConnections, finalColors);
+             nodeMap = layoutResult.nodeMap;
+             createdFrames = layoutResult.createdFrames;
+             
+             console.log(`[Flow ID: ${generationId}] Layout concluído. Nós criados: ${createdFrames.length}`);
 
-             // 7. Layout Sequencial Horizontal e Criação/Posicionamento de Nós
-             console.log(`[Flow ID: ${generationId}] Criando e posicionando nós sequencialmente...`);
-             nodeMap = {}; createdFrames = [];
-             let currentX = 100;
-             const startY = figma.viewport.center.y;
-             const horizontalSpacing = LayoutConfig.Nodes.HORIZONTAL_SPACING;
-
-             for (const nodeData of flowNodes) {
-                 const nodeId = nodeData.id;
-                 let frame: SceneNode | null = null;
-                 try {
-                     switch (nodeData.type) {
-                         case "START": frame = await Frames.createStartNode(nodeData, finalColors); break;
-                         case "END": frame = await Frames.createEndNode(nodeData, finalColors); break;
-                         case "STEP": frame = await Frames.createStepNode(nodeData, finalColors); break;
-                         case "ENTRYPOINT": frame = await Frames.createEntrypointNode(nodeData, finalColors); break;
-                         case "DECISION": frame = await Frames.createDecisionNode(nodeData, finalColors); break;
-                         default: frame = await Frames.createStepNode(nodeData, finalColors); break;
-                     }
-                     if (!frame || frame.removed) throw new Error(`Frame nulo/removido para ${nodeId}.`);
-                     await new Promise(resolve => setTimeout(resolve, 50));
-                     frame.x = currentX;
-                     frame.y = startY - frame.height / 2;
-                     currentX += frame.width + horizontalSpacing;
-                     nodeMap[nodeId] = frame;
-                     createdFrames.push(frame);
-                 } catch (nodeCreationError: any) {
-                      // Lança o erro para ser pego pelo catch principal e definir o status de erro
-                      throw new Error(`Falha ao criar nó '${nodeData.name || nodeId}': ${nodeCreationError.message}`);
-                 }
-             }
-
-             // 8. Adicionar Nós à Página
-             if (createdFrames.length === 0) {
-                 throw new Error("Falha: Nenhum nó foi criado com sucesso."); // Será pego pelo catch principal
-             }
-             createdFrames.forEach(f => figma.currentPage.appendChild(f));
-             await new Promise(resolve => setTimeout(resolve, 100));
-             console.log(`[Flow ID: ${generationId}] Nós adicionados à página: ${createdFrames.length}`);
-
-             // 9. Criar Conexões
-             if (Object.keys(nodeMap).length > 0 && flowConnections?.length > 0) {
-                 await Connectors.createConnectors(flowConnections, nodeMap, nodeDataMap, finalColors);
-             } else {
-                 console.log(`[Flow ID: ${generationId}] Pulando criação de conexões.`);
-             }
-
-             // 10. Finalização (Agrupar, Centralizar, Zoom)
+             // 7. Finalização (Agrupar, Centralizar, Zoom)
              const allCreatedNodes = Object.values(nodeMap);
              if (allCreatedNodes.length > 0) {
                 const nodesToGroup = [...allCreatedNodes];

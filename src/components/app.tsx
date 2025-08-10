@@ -10,12 +10,10 @@ import type { HistoryEntry } from "@shared/types/flow.types"; // Importa o novo 
 import {
   SunIcon,
   MoonIcon,
-  SettingsIcon,
   InfoIcon,
   Trash2Icon,
   MoreHorizontalIcon,
   PlayIcon,
-  XIcon,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -483,7 +481,7 @@ export function App() {
               Create Flow
             </TabsTrigger>
             <TabsTrigger
-              value="settings"
+              value="history"
               className="flex-1 px-3 py-1 h-7 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               History
@@ -619,7 +617,7 @@ export function App() {
 
           {/* --- History Tab Content (Table View) --- */}
           <TabsContent
-            value="settings"
+            value="history"
             className="flex flex-col flex-grow p-3 gap-6 overflow-hidden data-[state=inactive]:hidden"
           >
             <div className="flex flex-col flex-grow w-full items-start gap-2">

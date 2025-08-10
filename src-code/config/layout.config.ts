@@ -30,3 +30,24 @@ export const Nodes = {
     HORIZONTAL_SPACING: 300,
     VERTICAL_SPACING: 0,
 };
+
+// --- Configuração de Sistema de Bifurcação ---
+export const Bifurcation = {
+    ENABLED: true, // Flag global para habilitar/desabilitar
+    VERTICAL_SPACING_BETWEEN_BRANCHES: 150, // Espaço vertical entre ramos
+    HORIZONTAL_OFFSET_FOR_BRANCHES: 100, // Offset horizontal antes da bifurcação
+    MIN_NODES_FOR_BIFURCATION: 2, // Mínimo de saídas para considerar bifurcação
+    MAX_NODES_FOR_BIFURCATION: 2, // Máximo (inicialmente apenas binárias)
+    
+    // Configurações de magnetos específicas para bifurcação
+    DECISION_TOP_BRANCH_MAGNET: "TOP",
+    DECISION_BOTTOM_BRANCH_MAGNET: "BOTTOM",
+    CONVERGENCE_ENTRY_MAGNET: "LEFT",
+};
+
+// --- Configuração de Faixas Verticais ---
+export const VerticalLanes = {
+    LANE_HEIGHT: 200, // Altura de cada "faixa" vertical
+    LANE_SPACING: 50, // Espaço adicional entre faixas
+    CENTER_LANE_INDEX: 0, // Índice da faixa central (linha principal)
+};

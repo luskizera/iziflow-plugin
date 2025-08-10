@@ -83,3 +83,58 @@ export interface HistoryEntry {
   markdown: string;    // O conteúdo completo do fluxo em markdown
   createdAt: string;   // Data de criação em formato ISO string
 }
+
+// --- Tipos para Sistema de Bifurcação ---
+
+/**
+ * Configuração para sistema de bifurcação.
+ */
+export interface BifurcationConfig {
+  enabled: boolean;
+  verticalSpacing: number;
+  horizontalOffset: number;
+}
+
+/**
+ * Posição no layout com informação de faixa vertical.
+ */
+export interface LayoutPosition {
+  x: number;
+  y: number;
+  laneIndex: number; // Nova propriedade para controle vertical
+}
+
+/**
+ * Análise estrutural de uma bifurcação no fluxo.
+ */
+export interface BifurcationAnalysis {
+  decisionNodeId: string;
+  branches: {
+    upper: string[]; // IDs dos nós no ramo superior
+    lower: string[]; // IDs dos nós no ramo inferior
+  };
+  convergenceNodeId?: string; // Onde os ramos se reconectam
+}
+
+/**
+ * Contexto de bifurcação para configuração de conectores.
+ */
+export interface BifurcationContext {
+  upperBranchNodes: string[];
+  lowerBranchNodes: string[];
+  isConvergencePoint: boolean;
+}
+
+/**
+ * Tipos de resolução de conflitos verticais.
+ */
+export type ConflictType = 'HORIZONTAL_OVERLAP' | 'LANE_COLLISION' | 'VERTICAL_SPACING';
+
+/**
+ * Resolução de conflitos no layout vertical.
+ */
+export interface ConflictResolution {
+  type: ConflictType;
+  affectedNodes: string[];
+  suggestedResolution: 'EXPAND_SPACING' | 'RELOCATE_NODES' | 'ADJUST_LANES';
+}

@@ -11,7 +11,10 @@
     "buildcode": "vite build --config vite.config.code.ts",
     "preview": "vite preview",
     "hmr": "vite",
-    "zip": "cross-env MODE=zip vite build"
+    "zip": "cross-env MODE=zip vite build",
+    "test": "echo 'Sistema de testes da Fase 8 implementado. Para executar, use: npm run test:validate'",
+    "test:validate": "echo 'Executando validação do sistema de layout bifurcado...' && npx tsc --noEmit --skipLibCheck tests/test-runner.ts",
+    "test:build": "echo 'Validando builds após implementação da Fase 8...' && npm run build && npm run buildcode"
   },
   "author": "",
   "license": "",

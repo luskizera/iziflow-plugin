@@ -308,7 +308,7 @@ async function generateFlowWithLinearLayout(
 }
 
 /**
- * Função principal que escolhe o layout apropriado
+ * Função principal que escolhe o layout apropriado com sistema de preferências robusto
  */
 async function generateFlowWithSmartLayout(
     flowNodes: FlowNode[],
@@ -316,25 +316,69 @@ async function generateFlowWithSmartLayout(
     finalColors: Record<string, RGB>
 ): Promise<{ nodeMap: { [id: string]: SceneNode }, createdFrames: SceneNode[] }> {
     
+    let userPreferences: import('@shared/types/flow.types').LayoutPreferences;
+    
     try {
-        // Tentar layout bifurcado se habilitado e aplicável
-        if (LayoutConfig.Bifurcation.ENABLED) {
-            const bifurcations = Layout.detectBinaryDecisions(flowNodes, flowConnections);
-            
-            if (bifurcations.length > 0) {
-                console.log(`[Smart Layout] Usando layout bifurcado (${bifurcations.length} bifurcações detectadas)`);
+        // Carregar preferências do usuário
+        userPreferences = await LayoutConfig.UserPreferences.load();
+        console.log('[Smart Layout] Preferências carregadas:', userPreferences);
+        
+        // Aplicar preferências às configurações globais
+        LayoutConfig.UserPreferences.applyToLayout(userPreferences);
+        
+    } catch (prefError) {
+        console.warn('[Smart Layout] Erro ao carregar preferências, usando padrões:', prefError);
+        userPreferences = LayoutConfig.DefaultPreferences;
+    }
+    
+    // Sistema de fallback robusto com múltiplos níveis
+    const fallbackLevels = [
+        {
+            name: 'Bifurcado Completo',
+            condition: userPreferences.enableBifurcation && userPreferences.autoDetectDecisions,
+            execute: async () => {
+                const bifurcations = Layout.detectBinaryDecisions(flowNodes, flowConnections);
+                if (bifurcations.length > 0) {
+                    console.log(`[Smart Layout] Nível 1: Usando layout bifurcado (${bifurcations.length} bifurcações)`);
+                    return await generateFlowWithBifurcatedLayout(flowNodes, flowConnections, finalColors);
+                }
+                throw new Error('Nenhuma bifurcação detectada');
+            }
+        },
+        {
+            name: 'Bifurcado Forçado',
+            condition: userPreferences.enableBifurcation && !userPreferences.fallbackToLinear,
+            execute: async () => {
+                console.log('[Smart Layout] Nível 2: Forçando layout bifurcado mesmo sem detecção automática');
                 return await generateFlowWithBifurcatedLayout(flowNodes, flowConnections, finalColors);
             }
+        },
+        {
+            name: 'Linear Padrão',
+            condition: true, // Sempre disponível como último recurso
+            execute: async () => {
+                console.log('[Smart Layout] Nível 3: Usando layout linear (fallback final)');
+                return await generateFlowWithLinearLayout(flowNodes, flowConnections, finalColors);
+            }
         }
-        
-        // Fallback para layout linear original
-        console.log(`[Smart Layout] Usando layout linear (fallback)`);
-        return await generateFlowWithLinearLayout(flowNodes, flowConnections, finalColors);
-        
-    } catch (error) {
-        console.warn('[Smart Layout] Layout bifurcado falhou, usando linear:', error);
-        return await generateFlowWithLinearLayout(flowNodes, flowConnections, finalColors);
+    ];
+    
+    // Executar fallbacks em sequência
+    for (const level of fallbackLevels) {
+        if (level.condition) {
+            try {
+                const result = await level.execute();
+                console.log(`[Smart Layout] Sucesso com ${level.name}`);
+                return result;
+            } catch (error) {
+                console.warn(`[Smart Layout] ${level.name} falhou:`, error);
+                continue;
+            }
+        }
     }
+    
+    // Se todos os níveis falharem, erro crítico
+    throw new Error('Todos os sistemas de layout falharam. Verifique a integridade dos dados de entrada.');
 }
 
 // --- UI e Listener principal ---
@@ -527,6 +571,48 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
         } else {
              console.warn("[Plugin] Payload inválido para 'remove-history-entry', ID não encontrado.", payload);
         }
+   }
+   // --- Handlers para Configurações de Layout (Fase 7) ---
+   else if (messageType === 'get-layout-preferences') {
+       console.log("[Plugin] Recebido pedido 'get-layout-preferences'.");
+       try {
+           const preferences = await LayoutConfig.UserPreferences.load();
+           figma.ui.postMessage({ type: 'layout-preferences-updated', preferences: preferences });
+       } catch (error) {
+           console.error("[Plugin] Erro ao carregar preferências:", error);
+           figma.ui.postMessage({ type: 'layout-preferences-error', message: 'Erro ao carregar preferências de layout' });
+       }
+   }
+   else if (messageType === 'set-layout-preferences') {
+       console.log("[Plugin] Recebido pedido 'set-layout-preferences'.");
+       const { preferences } = payload;
+       if (preferences && typeof preferences === 'object') {
+           try {
+               await LayoutConfig.UserPreferences.save(preferences);
+               LayoutConfig.UserPreferences.applyToLayout(preferences);
+               figma.ui.postMessage({ type: 'layout-preferences-updated', preferences: preferences });
+               figma.notify("Preferências de layout salvas com sucesso!", { timeout: 2000 });
+           } catch (error) {
+               console.error("[Plugin] Erro ao salvar preferências:", error);
+               figma.ui.postMessage({ type: 'layout-preferences-error', message: 'Erro ao salvar preferências de layout' });
+               figma.notify("Erro ao salvar preferências de layout.", { error: true });
+           }
+       } else {
+           console.warn("[Plugin] Preferências inválidas recebidas:", preferences);
+           figma.ui.postMessage({ type: 'layout-preferences-error', message: 'Dados de preferências inválidos' });
+       }
+   }
+   else if (messageType === 'reset-layout-preferences') {
+       console.log("[Plugin] Recebido pedido 'reset-layout-preferences'.");
+       try {
+           const resetPreferences = await LayoutConfig.UserPreferences.reset();
+           figma.ui.postMessage({ type: 'layout-preferences-updated', preferences: resetPreferences });
+           figma.notify("Preferências de layout resetadas para padrões.", { timeout: 2000 });
+       } catch (error) {
+           console.error("[Plugin] Erro ao resetar preferências:", error);
+           figma.ui.postMessage({ type: 'layout-preferences-error', message: 'Erro ao resetar preferências' });
+           figma.notify("Erro ao resetar preferências de layout.", { error: true });
+       }
    }
    else if (messageType === 'closePlugin') {
        figma.closePlugin();

@@ -180,3 +180,17 @@ export interface CurvedConnectorConfig {
   segmentCount?: number; // Número de segmentos para simular curva (padrão 8)
   smoothingFactor?: number; // Fator de suavização (0-1), padrão 0.7
 }
+
+// --- Interface de Configuração da Fase 7 ---
+
+/**
+ * Preferências de layout do usuário para sistema inteligente.
+ */
+export interface LayoutPreferences {
+  enableBifurcation: boolean; // Habilitar layout bifurcado
+  verticalSpacing: number; // Espaçamento vertical entre ramos
+  curvedConnectors: boolean; // Usar conectores curvos nas convergências
+  autoDetectDecisions: boolean; // Detectar automaticamente decisões binárias
+  fallbackToLinear: boolean; // Sempre usar fallback linear em caso de erro
+  performanceMode: boolean; // Modo de performance (menos efeitos visuais)
+}

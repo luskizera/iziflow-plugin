@@ -1,5 +1,5 @@
 // shared/types/messaging.types.ts
-import type { HistoryEntry } from './flow.types';
+import type { HistoryEntry, LayoutPreferences } from './flow.types';
 
 export interface EventTS {
   'generate-flow': {
@@ -18,4 +18,11 @@ export interface EventTS {
   // 'add-history-entry': { markdown: string }; // Note: Plugin adds internally now
   'clear-history-request': {};
   'remove-history-entry': { id: string };
+  
+  // Layout Preferences Events (Fase 7)
+  'get-layout-preferences': {};
+  'set-layout-preferences': { preferences: LayoutPreferences };
+  'reset-layout-preferences': {};
+  'layout-preferences-updated': { preferences: LayoutPreferences };
+  'layout-preferences-error': { message: string };
 }

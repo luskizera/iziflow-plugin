@@ -51,3 +51,74 @@ export const VerticalLanes = {
     LANE_SPACING: 50, // Espaço adicional entre faixas
     CENTER_LANE_INDEX: 0, // Índice da faixa central (linha principal)
 };
+
+// --- Configuração de Preferências de Usuário (Fase 7) ---
+import type { LayoutPreferences } from '@shared/types/flow.types';
+
+// Chave para clientStorage
+const LAYOUT_PREFERENCES_KEY = 'iziflow_layout_preferences';
+
+// Configurações padrão
+export const DefaultPreferences: LayoutPreferences = {
+    enableBifurcation: true,
+    verticalSpacing: 150,
+    curvedConnectors: false, // Desabilitado por padrão até implementação completa
+    autoDetectDecisions: true,
+    fallbackToLinear: true,
+    performanceMode: false
+};
+
+// --- Sistema de Gerenciamento de Preferências ---
+export namespace UserPreferences {
+    
+    /**
+     * Carrega as preferências do usuário do clientStorage.
+     */
+    export async function load(): Promise<LayoutPreferences> {
+        try {
+            const stored = await figma.clientStorage.getAsync(LAYOUT_PREFERENCES_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                // Merge com configurações padrão para garantir compatibilidade
+                return { ...DefaultPreferences, ...parsed };
+            }
+        } catch (error) {
+            console.warn('[UserPreferences] Erro ao carregar preferências, usando padrões:', error);
+        }
+        return DefaultPreferences;
+    }
+    
+    /**
+     * Salva as preferências do usuário no clientStorage.
+     */
+    export async function save(preferences: LayoutPreferences): Promise<void> {
+        try {
+            await figma.clientStorage.setAsync(LAYOUT_PREFERENCES_KEY, JSON.stringify(preferences));
+            console.log('[UserPreferences] Preferências salvas com sucesso:', preferences);
+        } catch (error) {
+            console.error('[UserPreferences] Erro ao salvar preferências:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Aplica preferências às configurações globais.
+     */
+    export function applyToLayout(preferences: LayoutPreferences): void {
+        // Aplicar preferências às configurações existentes
+        Bifurcation.ENABLED = preferences.enableBifurcation;
+        Bifurcation.VERTICAL_SPACING_BETWEEN_BRANCHES = preferences.verticalSpacing;
+        VerticalLanes.LANE_HEIGHT = preferences.verticalSpacing + 50; // Base + padding
+        
+        console.log('[UserPreferences] Configurações aplicadas ao layout:', preferences);
+    }
+    
+    /**
+     * Reseta preferências para os valores padrão.
+     */
+    export async function reset(): Promise<LayoutPreferences> {
+        await save(DefaultPreferences);
+        applyToLayout(DefaultPreferences);
+        return DefaultPreferences;
+    }
+}

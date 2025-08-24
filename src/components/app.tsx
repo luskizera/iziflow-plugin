@@ -35,12 +35,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type NodeGenerationMode = "light" | "dark";
 
@@ -73,6 +76,12 @@ export function App() {
   const [nodeMode, setNodeMode] = useState<NodeGenerationMode>("light");
   const [history, setHistory] = useState<HistoryEntry[]>([]); // << MUDANÇA: Usa HistoryEntry[]
   const [activeTab, setActiveTab] = useState<string>("generator");
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [actionToConfirm, setActionToConfirm] = useState<{
+    action: () => void;
+    title: string;
+    description: string;
+  } | null>(null);
 
   console.log(
     "[App Render] isLoading:",
@@ -370,15 +379,24 @@ export function App() {
     setTimeout(() => markdownTextareaRef.current?.focus(), 0);
   };
 
-  // << MUDANÇA: Envia o ID para o backend
-  const handleRemoveItemClick = (idToRemove: string) => {
-    dispatchTS("remove-history-entry", { id: idToRemove });
+  const handleRemoveItemClick = (entry: HistoryEntry) => {
+    setActionToConfirm({
+      action: () => dispatchTS("remove-history-entry", { id: entry.id }),
+      title: `Delete "${entry.name}"?`,
+      description:
+        "This will permanently delete this flow from your history. This action cannot be undone.",
+    });
+    setIsConfirmDialogOpen(true);
   };
 
-  // << MUDANÇA: Apenas envia a mensagem
   const handleClearHistoryClick = () => {
     if (history.length > 0) {
-      dispatchTS("clear-history-request");
+      setActionToConfirm({
+        action: () => dispatchTS("clear-history-request"),
+        title: "Delete all history?",
+        description: `Are you sure you want to delete all ${history.length} entries? This action cannot be undone.`,
+      });
+      setIsConfirmDialogOpen(true);
     }
   };
 
@@ -629,13 +647,13 @@ export function App() {
                   <Table className="text-xs">
                     <TableHeader className="top-0 bg-muted/80 backdrop-blur-sm">
                       <TableRow>
-                        <TableHead className="w-[60%] h-8 px-3 font-medium">
+                        <TableHead className="w-[50%] h-8 px-3 font-medium">
                           Flow name
                         </TableHead>
                         <TableHead className="w-[25%] h-8 px-3 font-medium">
                           Date
                         </TableHead>
-                        <TableHead className="w-[15%] text-right h-8 px-3 font-medium">
+                        <TableHead className="w-[25%] text-right h-8 px-3 font-medium">
                           Actions
                         </TableHead>
                       </TableRow>
@@ -654,37 +672,48 @@ export function App() {
                               {new Date(entry.createdAt).toLocaleDateString()}
                             </TableCell>
                             <TableCell className="py-1 px-3 text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                  >
-                                    <MoreHorizontalIcon className="h-3.5 w-3.5" />
-                                    <span className="sr-only">Actions</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onSelect={() =>
-                                      handleLoadFromHistory(entry)
-                                    }
-                                    className="text-xs gap-1.5"
-                                  >
-                                    <PlayIcon className="w-3 h-3" /> Load Flow
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onSelect={() =>
-                                      handleRemoveItemClick(entry.id)
-                                    }
-                                    className="text-xs text-destructive focus:text-destructive focus:bg-destructive/10 gap-1.5"
-                                  >
-                                    <Trash2Icon className="w-3 h-3" /> Remove
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <div className="flex items-center justify-end gap-2">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() =>
+                                        handleLoadFromHistory(entry)
+                                      }
+                                      title="Load Flow"
+                                    >
+                                      <PlayIcon className="h-3.5 w-3.5" />
+                                      <span className="sr-only">
+                                        Load Flow
+                                      </span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Load Flow</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 text-destructive hover:text-destructive"
+                                      onClick={() =>
+                                        handleRemoveItemClick(entry)
+                                      }
+                                      title="Remove Flow"
+                                    >
+                                      <Trash2Icon className="h-3.5 w-3.5" />
+                                      <span className="sr-only">Remove</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Remove Flow</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -767,7 +796,34 @@ export function App() {
           </div>
         </footer>
 
-        {/* ...existing code... */}
+        <AlertDialog
+          open={isConfirmDialogOpen}
+          onOpenChange={setIsConfirmDialogOpen}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{actionToConfirm?.title}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {actionToConfirm?.description}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setActionToConfirm(null)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (actionToConfirm) {
+                    actionToConfirm.action();
+                    setActionToConfirm(null);
+                  }
+                }}
+              >
+                Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </TooltipProvider>
   );

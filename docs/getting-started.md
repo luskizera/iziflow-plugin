@@ -1,107 +1,115 @@
-## Sobre
-IziFlow é um plugin para Figma e FigJam que automatiza a criação de fluxos de usuário a partir de uma **descrição textual simples usando a sintaxe IziFlow Markdown**.
+## About
 
-## Documentação Principal
-- **[Sintaxe IziFlow Markdown](docs/markdown-syntax.md)** <--- **COMECE AQUI!**
-- [Workflow de Uso](docs/workflow.md)
-- [Arquitetura](docs/architecture.md)
-- [Estrutura dos Nós Gerados](docs/components.md) (Detalhes técnicos dos elementos criados)
-- [Assistente IA (GPT)](docs/ai-instructions.md) (Instruções para usar o GPT para ajudar a definir fluxos)
+IziFlow is a Figma and FigJam plugin that automates user flow creation from a **simple textual description using the IziFlow Markdown syntax**.
 
-# Guia Rápido para Desenvolvedores
+## Main Documentation
 
-Esta seção é para quem deseja contribuir com o desenvolvimento do IziFlow.
+- **[IziFlow Markdown Syntax](docs/markdown-syntax.md)** <--- **START HERE!**
+- [Usage Workflow](docs/workflow.md)
+- [Architecture](docs/architecture.md)
+- [Generated Node Structure](docs/components.md) (Technical details of created elements)
+- [AI Assistant (GPT)](docs/ai-instructions.md) (Instructions for using GPT to define flows)
 
-## Instalação (Desenvolvimento)
+# Quick Guide for Developers
 
-1.  Clone o repositório do IziFlow.
-2.  Navegue até a pasta do projeto no seu terminal.
-3.  Instale as dependências:
+This section is for anyone who wants to contribute to IziFlow’s development.
+
+## Installation (Development)
+
+1.  Clone the IziFlow repository.
+2.  Open your terminal and navigate to the project folder.
+3.  Install dependencies:
     ```bash
-    npm install # ou pnpm install / yarn install
+    npm install # or pnpm install / yarn install
     ```
 
-## Pré-requisitos (Desenvolvimento)
+## Prerequisites (Development)
 
-- Node.js (versão recomendada no `package.json` ou superior, ex: 18+)
-- Gerenciador de pacotes: NPM, PNPM ou Yarn
-- Figma Desktop App instalado (necessário para rodar e testar plugins localmente)
-- Conta Figma (gratuita ou paga) com permissões de desenvolvedor habilitadas (se aplicável).
+- Node.js (recommended version listed in `package.json`, e.g., 18+)
+- Package manager: NPM, PNPM, or Yarn
+- Figma Desktop App installed (required to run and test plugins locally)
+- Figma account (free or paid) with developer permissions enabled (if applicable)
 
-## Desenvolvimento Local
+## Local Development
 
-Para rodar o plugin localmente durante o desenvolvimento, você precisa de dois processos rodando em terminais separados:
+To run the plugin locally while developing, you’ll need two processes running in separate terminals:
 
-1.  **Compilar a UI (React/Vite) em modo watch:**
+1.  **Compile the UI (React/Vite) in watch mode:**
     ```bash
     npm run dev
     ```
-    Isso compila a interface do usuário e a recarrega automaticamente (HMR) quando você faz alterações nos arquivos dentro da pasta `src/`.
+    This compiles the user interface and automatically reloads it (HMR) whenever you make changes inside the `src/` folder.
 
-2.  **Compilar o Código do Plugin (Figma API/TypeScript) em modo watch:**
+2.  **Compile the Plugin Code (Figma API/TypeScript) in watch mode:**
     ```bash
     npm run devcode
     ```
-    Isso compila o código que interage com a API do Figma (dentro de `src-code/`) sempre que você salva uma alteração. **Nota:** Alterações aqui exigem que você recarregue o plugin manualmente dentro do Figma.
+    This compiles the code that interacts with the Figma API (inside `src-code/`) whenever you save a change.  
+    **Note:** Changes here require you to manually reload the plugin inside Figma.
 
-O modo de desenvolvimento oferece:
-- Hot Module Replacement (HMR) para a UI.
-- Recompilação automática do código do plugin ao salvar.
-- Source maps para facilitar o debugging no console do Figma/Navegador.
-- Logs do console (`console.log`) preservados.
+### Development mode includes:
+- Hot Module Replacement (HMR) for the UI
+- Automatic recompilation of plugin code upon saving
+- Source maps for easier debugging via Figma/Navigator console
+- Preserved `console.log` outputs
 
-## Build de Produção
+## Production Build
 
-Para criar a versão final otimizada do plugin para distribuição:
+To generate the final optimized version of the plugin for distribution:
 
-1.  **Compilar a UI:**
+1.  **Build the UI:**
     ```bash
     npm run build
     ```
-2.  **Compilar o Código do Plugin:**
+2.  **Build the Plugin Code:**
     ```bash
     npm run buildcode
     ```
-3.  **Empacotar para Distribuição:**
+3.  **Package for Distribution:**
     ```bash
     npm run zip
     ```
-    Este comando geralmente combina os artefatos compilados (UI e código do plugin) com o `manifest.json` em um arquivo `.zip` dentro da pasta `/zip`, pronto para ser publicado na Comunidade Figma ou distribuído.
+    This command combines the compiled assets (UI + plugin code) and the `manifest.json` into a `.zip` file inside the `/zip` folder — ready to be published to the Figma Community or shared privately.
 
-## Scripts Disponíveis
+## Available Scripts
 
-| Comando         | Descrição                                                    |
-| :-------------- | :----------------------------------------------------------- |
-| `npm run dev`     | Compila a UI em modo watch (desenvolvimento)               |
-| `npm run devcode` | Compila o código do plugin em modo watch (desenvolvimento) |
-| `npm run build`   | Gera build de produção da UI                                 |
-| `npm run buildcode`| Gera build de produção do código do plugin                   |
-| `npm run zip`     | Cria o arquivo ZIP final para distribuição na pasta `/zip` |
+| Command            | Description                                                |
+| :----------------- | :--------------------------------------------------------- |
+| `npm run dev`      | Compiles the UI in watch mode (development)                |
+| `npm run devcode`  | Compiles the plugin code in watch mode (development)       |
+| `npm run build`    | Builds the UI for production                               |
+| `npm run buildcode`| Builds the plugin code for production                      |
+| `npm run zip`      | Generates the final ZIP file for distribution in `/zip`    |
 
-## Adicionando ao Figma (Modo de Desenvolvimento)
+## Adding to Figma (Development Mode)
 
-1.  Certifique-se de que os processos `dev` e `devcode` estejam rodando.
-2.  Abra o Figma Desktop App.
-3.  Vá para o menu principal: Plugins > Development > Import plugin from manifest…
-4.  Navegue até a pasta do seu projeto IziFlow e selecione o arquivo `manifest.json` (geralmente localizado na pasta `dist/` ou `.tmp/` após a compilação inicial, verifique sua config de build).
-5.  O plugin "IziFlow V2" (ou o nome no seu manifest) aparecerá na lista de plugins em desenvolvimento e poderá ser executado no Figma/FigJam.
+1.  Make sure both `dev` and `devcode` processes are running.
+2.  Open the Figma Desktop App.
+3.  Go to the main menu: **Plugins > Development > Import plugin from manifest…**
+4.  Navigate to your IziFlow project folder and select the `manifest.json` file (usually found in the `dist/` or `.tmp/` folder after the first build — check your build config).
+5.  The “IziFlow V2” plugin (or your manifest name) will appear in your development plugins list, ready to run inside Figma or FigJam.
 
-### Desenvolvimento no Figma
+### Developing Inside Figma
 
-- **Recarregar Plugin:** Use `Ctrl/Cmd + Alt + P` para rapidamente fechar e reabrir o plugin após fazer alterações no código de `src-code/` (que foi recompilado pelo `npm run devcode`).
-- **Abrir Console:** Use `Ctrl/Cmd + Alt + I` (ou vá em Plugins > Development > Open Console) para ver `console.log`s do seu código do plugin (`src-code/`). Para ver logs da UI (`src/`), você geralmente precisa inspecionar a própria janela/iframe do plugin no navegador ou DevTools do Figma.
+- **Reload Plugin:** Press `Ctrl/Cmd + Alt + P` to quickly close and reopen the plugin after editing `src-code/` (recompiled by `npm run devcode`).
+- **Open Console:** Press `Ctrl/Cmd + Alt + I` (or go to *Plugins > Development > Open Console*) to view `console.log` outputs from your plugin code (`src-code/`).  
+  For UI logs (`src/`), inspect the plugin window/iframe via browser DevTools or Figma’s internal DevTools.
 
-## Estrutura do Projeto
-Use code with caution.
-shared/ # Tipos, Schemas, Utils compartilhados entre UI e Plugin
-src/ # Código fonte da UI (React, CSS, Assets)
-src-code/ # Código do Plugin (Interação com API Figma, Lógica Core)
-docs/ # Documentação do projeto
-.tmp/ # Pasta temporária para builds de desenvolvimento/intermediários
-dist/ # Pasta para build final (antes do zip) - pode variar
-zip/ # Pasta onde o .zip final é gerado (configurável)
-## Próximos Passos
+## Project Structure
 
-- Aprenda a **[Sintaxe IziFlow Markdown](docs/markdown-syntax.md)**.
-- Entenda o [Workflow de Uso](docs/workflow.md).
-- Explore a [Arquitetura](docs/architecture.md) detalhada do projeto.
+```
+
+shared/     # Types, Schemas, and Utilities shared between UI and Plugin
+src/        # UI source code (React, CSS, Assets)
+src-code/   # Plugin code (Figma API interactions, Core Logic)
+docs/       # Project documentation
+.tmp/       # Temporary development/intermediate builds
+dist/       # Final build output (pre-zip) - may vary
+
+```
+
+## Next Steps
+
+- Learn the **[IziFlow Markdown Syntax](docs/markdown-syntax.md)**.
+- Understand the [Usage Workflow](docs/workflow.md).
+- Explore the project’s detailed [Architecture](docs/architecture.md).

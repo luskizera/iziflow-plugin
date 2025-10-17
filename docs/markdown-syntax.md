@@ -1,102 +1,110 @@
-# 📜 Sintaxe IziFlow Markdown
+# 📜 IziFlow Markdown syntax
 
-Este documento descreve a sintaxe Markdown simplificada utilizada pelo plugin IziFlow para definir a estrutura de fluxos de usuário. Ao escrever seu fluxo neste formato, o plugin pode interpretá-lo e gerar automaticamente o diagrama visual correspondente no Figma ou FigJam.
+This document describes the simplified Markdown syntax used by the IziFlow plugin to define user flow structures. When written in this format, the plugin can interpret and automatically generate the corresponding visual diagram in Figma or FigJam.
 
-## 📝 Estrutura Básica
+## 📝 Basic structure
 
-Um arquivo IziFlow Markdown é composto por:
+An IziFlow Markdown file consists of:
 
-1.  Um título opcional para o fluxo.
-2.  Definições de Nós (`NODE`).
-3.  Definições de Conexões (`CONN`).
-4.  Comentários (linhas que começam com `#`).
-5.  Linhas em branco (ignoradas).
+1.  An optional title for the flow  
+2.  Node definitions (`NODE`)  
+3.  Connection definitions (`CONN`)  
+4.  Comments (lines starting with `#`)  
+5.  Blank lines (ignored)  
 
-**Observações:**
+**Notes:**
 
-*   As definições de `META` e `DESC` devem estar **indentadas** sob o `NODE` ao qual se referem.
-*   A ordem geral é definir todos os `NODE`s primeiro, seguidos por todas as `CONN`s, mas o parser é flexível e pode lidar com `CONN`s intercaladas, embora a organização visual no Markdown ajude na legibilidade humana.
+* `META` and `DESC` definitions must be **indented** under their corresponding `NODE`.  
+* The general convention is to define all `NODE`s first, followed by `CONN`s — however, the parser is flexible and supports interleaving. Keeping them grouped improves human readability.
 
-## 🧱 Definição de Nós (`NODE`)
+## 🧱 Node definition (`NODE`)
 
-Cada linha que define um nó começa com a palavra-chave `NODE`, seguida por:
+Each node line starts with the keyword `NODE`, followed by:
 
-1.  Um `[id_do_no]` único (sem espaços, caracteres especiais, etc. - use `snake_case` ou `kebab-case`).
-2.  O `[TIPO_DO_NO]` (em maiúsculas): `START`, `END`, `STEP`, `DECISION`, `ENTRYPOINT`.
-3.  O `"[Nome do Nó]"`. Este é o texto principal que aparecerá no nó. Deve estar entre aspas duplas (`"`).
+1. A unique `[node_id]` (no spaces or special characters — use `snake_case` or `kebab-case`).  
+2. The `[NODE_TYPE]` in uppercase: `START`, `END`, `STEP`, `DECISION`, or `ENTRYPOINT`.  
+3. The `"[Node Name]"` — the main label that appears visually on the node, enclosed in double quotes.
 
-**Sintaxe:**
+**Syntax:**
 ```markdown
-NODE [id_do_no] [TIPO_DO_NO] "[Nome do Nó]"
-NODE start_process START "Início do Fluxo"
-NODE user_input STEP "Preencher Formulário"
-NODE check_status DECISION "Status Válido?"
-NODE process_complete END "Fim do Processo"
+NODE [node_id] [NODE_TYPE] "[Node Name]"
+NODE start_process START "Flow Start"
+NODE user_input STEP "Fill Form"
+NODE check_status DECISION "Valid Status?"
+NODE process_complete END "Process Complete"
+````
+
+## 📦 Metadata (`META`)
+
+You can add metadata to any node to provide additional context (e.g., category, owner, or version).
+Each metadata line must be indented under the `NODE` and start with `META`, followed by:
+
+1. The [key]
+2. A colon (:)
+3. The [value]
+
+**Syntax:**
+
+```markdown
+META [key]: [value]
 ```
 
-## 📦 Metadados (META)
-
-Você pode adicionar metadados a um nó para fornecer contexto adicional (categoria, responsável, etc.). Cada metadado deve estar em uma nova linha, indentada sob o NODE, começando com META, seguida por:
-
-1. A [chave] do metadado.
-2. Dois pontos (:).
-3. O [valor] do metadado.
-
-Sintaxe:
-```markdown
-META [chave]: [valor]
-```
-
-Exemplo:
+**Example:**
 
 ```markdown
-NODE user_login ENTRYPOINT "Tela de Login"
+NODE user_login ENTRYPOINT "Login Screen"
     META category: Authentication
     META createdBy: Alice
     META version: 1.2
 ```
 
-## 📄 Descrição Detalhada (DESC)
+## 📄 Detailed description (`DESC`)
 
-Para nós dos tipos STEP, DECISION, e ENTRYPOINT, você pode adicionar blocos de descrição detalhando ações, inputs, regras, etc. Cada item de descrição deve estar em uma nova linha, indentada sob o NODE, começando com DESC, seguida por:
+For nodes of type `STEP`, `DECISION`, and `ENTRYPOINT`, you can add detailed description blocks to explain actions, inputs, rules, etc.
+Each description line must be indented under the `NODE` and start with `DESC`, followed by:
 
-1. O [Rótulo] da descrição (ex: Action, Inputs, Validation, Feedback).
-2. Dois pontos (:).
-3. O [Conteúdo] da descrição.
+1. The [Label] of the description (e.g., Action, Inputs, Validation, Feedback)
+2. A colon (:)
+3. The [Content] of the description
 
-O [Conteúdo] pode conter texto simples ou múltiplas linhas separadas por \n. O parser irá preservar a quebra de linha.
+The [Content] can include plain text or multiple lines separated by `\n`. The parser preserves line breaks when rendering.
 
-Sintaxe:
+**Syntax:**
+
 ```markdown
-DESC [Rótulo]: [Conteúdo]
+DESC [Label]: [Content]
 ```
-Exemplo:
+
+**Example:**
 
 ```markdown
 NODE shipping_address STEP "Enter Shipping Address"
     META category: Checkout Form
     DESC Title: Shipping Details
     DESC Inputs: Full Name\nStreet Address\nCity\nPostcode\nCountry
-    DESC Validation: All fields required, postcode format validation.
+    DESC Validation: All fields required; postcode format validation.
     DESC Option: Save address for future use? (Checkbox)
 ```
 
-No exemplo acima, o conteúdo após "Inputs:" será interpretado como uma única string contendo "\n", que o plugin renderizará com quebras de linha.
+In this example, everything after “Inputs:” will be interpreted as a single string containing `\n`, which the plugin renders with line breaks.
 
-## 🔗 Definição de Conexões (CONN)
+## 🔗 Connection definition (`CONN`)
 
-Cada linha que define uma conexão começa com a palavra-chave CONN, seguida por:
-1. O [id_do_no_origem].
-2. Uma seta ->.
-3. O [id_do_no_destino].
-4. Opcionalmente, uma "[Etiqueta da Condição]". Este texto aparecerá no conector. Deve estar entre aspas duplas (").
-5. Opcionalmente, a flag [SECONDARY] para marcar a conexão como secundária (altera o estilo visual).
+Each connection line starts with the keyword `CONN`, followed by:
 
-Sintaxe:
+1. The [source_node_id]
+2. An arrow (`->`)
+3. The [target_node_id]
+4. Optionally, a `"[Condition Label]"` — text displayed on the connector, enclosed in double quotes.
+5. Optionally, the `[SECONDARY]` flag — marks the connection as secondary (changes visual style).
+
+**Syntax:**
+
 ```markdown
-CONN [id_do_no_origem] -> [id_do_no_destino] "[Etiqueta da Condição]" [SECONDARY]
+CONN [source_node_id] -> [target_node_id] "[Condition Label]" [SECONDARY]
 ```
-Exemplo:
+
+**Example:**
 
 ```markdown
 CONN review_cart -> shipping_address "Proceed to Shipping"
@@ -104,14 +112,16 @@ CONN payment_options -> cc_details "Selects Credit Card"
 CONN payment_options -> paypal_redirect "Selects PayPal" [SECONDARY]
 CONN cc_details -> order_confirmation
 ```
-Note que a etiqueta da condição e a flag [SECONDARY] são opcionais.
 
-## # Comentários
-Exemplo:
+The condition label and `[SECONDARY]` flag are both optional.
+
+## 💬 Comments
+
+Example:
+
 ```markdown
-# Este é um comentário sobre o fluxo
-NODE start START "Iniciar"
-# Esta é a primeira etapa visível
-NODE welcome_screen ENTRYPOINT "Tela de Boas-Vindas"
-CONN start -> welcome_screen # Conecta início com a tela inicial
-```
+# This is a comment about the flow
+NODE start START "Start"
+# First visible step
+NODE welcome_screen ENTRYPOINT "Welcome Screen"
+CONN start -> welcome_screen # Connects start to the first screen

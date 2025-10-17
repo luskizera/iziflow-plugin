@@ -17,3 +17,5 @@ iziflow-repomix.xml
 GEMINI.md
 CLAUDE.md
 .claude/
+tests/
+.codellm/

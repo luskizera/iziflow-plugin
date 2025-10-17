@@ -758,7 +758,7 @@ export function App() {
               asChild
             >
               <a
-                href="https://chatgpt.com/g/g-680800ab82a88191afc106220253ff30-iziflow-assistant"
+                href="https://chatgpt.com/g/g-68f197c021088191a6571b78ac38482d-iziflow-assistant"
                 target="_blank"
                 rel="noopener noreferrer"
               >

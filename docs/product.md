@@ -1,11 +1,11 @@
 # IziFlow – the automation plugin for user flows
 
-IziFlow is a next-gen Figma and FigJam plugin that **redefines how user flows are created** through smart automation. Designed for designers and product teams, it turns **simple Markdown text** into structured, visually consistent flow diagrams in seconds.
+IziFlow is a next-gen FigJam plugin that **redefines how user flows are created** through smart automation. Designed for designers and product teams, it turns **simple Markdown text** into structured, visually consistent flow diagrams in seconds.
 
 ## Overview
 
 ### Main goal
-To automate and standardize the creation of user flows in Figma/FigJam — cutting time, removing repetitive work, and ensuring visual consistency through an **intuitive text-based input**.
+To automate and standardize the creation of user flows in FigJam — cutting time, removing repetitive work, and ensuring visual consistency through an **intuitive text-based input**.
 
 ### Target audience
 - UI/UX designers  
@@ -43,24 +43,11 @@ To automate and standardize the creation of user flows in Figma/FigJam — cutti
 
 ## Technical requirements
 
-### Figma / FigJam
+### FigJam
 - Figma account (free or paid).  
 - Editing permissions in the target file.  
 - Works on Figma Desktop App or compatible browsers.  
 
 ### System
 - Stable internet connection (especially for AI features).  
-- Sufficient system performance to run Figma/FigJam smoothly.  
-
-## Current limitations
-- Visual customization is limited to default node styles.  
-- No support for generating multiple flows from a single Markdown input (each run creates a new one).  
-- Importing hand-drawn flows directly from Figma/FigJam is not supported.  
-- Exporting visual flows to other formats (besides Figma) not yet available.  
-
-## Roadmap (examples)
-- Graphical interface for manual creation (alternative to Markdown).  
-- Customizable visual themes for generated nodes.  
-- Library of pre-made Markdown flow templates.  
-- Integrations with tools like Notion or Jira.  
-- Smarter auto-layout algorithm.  
+- Sufficient system performance to run FigJam smoothly.  

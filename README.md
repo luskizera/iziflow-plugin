@@ -2,7 +2,7 @@
 
 ![IziFlow Example](docs/assets/iziFlow-banner.png)
 
-Create user flows in Figma by simply describing them in natural language with IziFlow, a plugin for Figma and FigJam.
+Create user flows in FigJam by simply describing them in natural language with IziFlow, a plugin for FigJam.
 
 IziFlow automates the creation of user flow diagrams through an AI-powered interview process. Our specialized AI assistant conducts a guided conversation to understand your company, users, and flow requirements, then generates professional visual diagrams instantly. No syntax learning required - the AI handles everything from interview to final markdown generation.
 

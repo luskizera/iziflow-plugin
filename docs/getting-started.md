@@ -1,6 +1,6 @@
 ## About
 
-IziFlow is a Figma and FigJam plugin that automates user flow creation from a **simple textual description using the IziFlow Markdown syntax**.
+IziFlow is a FigJam plugin that automates user flow creation from a **simple textual description using the IziFlow Markdown syntax**.
 
 ## Main Documentation
 
@@ -87,7 +87,7 @@ To generate the final optimized version of the plugin for distribution:
 2.  Open the Figma Desktop App.
 3.  Go to the main menu: **Plugins > Development > Import plugin from manifest…**
 4.  Navigate to your IziFlow project folder and select the `manifest.json` file (usually found in the `dist/` or `.tmp/` folder after the first build — check your build config).
-5.  The “IziFlow V2” plugin (or your manifest name) will appear in your development plugins list, ready to run inside Figma or FigJam.
+5.  The “IziFlow V2” plugin (or your manifest name) will appear in your development plugins list, ready to run inside FigJam.
 
 ### Developing Inside Figma
 

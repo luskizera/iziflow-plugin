@@ -21,3 +21,6 @@ tests/
 .codellm/
 AGENTS.md
 iziflow-plugin.code-workspace
+.gemini-ignore
+
+iziflow-plugin.code-workspace

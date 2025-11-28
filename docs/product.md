@@ -1,6 +1,6 @@
 # IziFlow – the automation plugin for user flows
 
-IziFlow is a next-gen FigJam plugin that **redefines how user flows are created** through smart automation. Designed for designers and product teams, it turns **simple Markdown text** into structured, visually consistent flow diagrams in seconds.
+IziFlow is a next-gen FigJam plugin that **redefines how user flows are created** through smart automation. Designed for designers and product teams, it turns **structured YAML input** into visually consistent flow diagrams in seconds.
 
 ## Overview
 
@@ -23,10 +23,10 @@ To automate and standardize the creation of user flows in FigJam — cutting tim
 
 ## Key features
 
-### ✍️ Simple Markdown input
-- Define nodes (`NODE`), descriptions (`DESC`), metadata (`META`), and connections (`CONN`) using clean, human-readable syntax.  
-- **Syntax validation:** Get instant feedback on structure errors.  
-- See the **[IziFlow Markdown Syntax](docs/markdown-syntax.md)** for full details.  
+### ✍️ Simple YAML input
+- Define `metadata` (including `name`, layout algorithm, default unit = 300px, spacing), `nodes`, and `connections` using readable YAML.  
+- **Syntax validation:** Get instant feedback on structure errors via the YAML parser.  
+- See the **[IziFlow YAML Syntax](docs/markdown-syntax.md)** for full details.  
 
 ### 🔄 Smart automation
 - **Auto layout generation:** Automatically arranges nodes on the canvas.  
@@ -39,7 +39,7 @@ To automate and standardize the creation of user flows in FigJam — cutting tim
 - **Connection styles:** Differentiates primary and secondary connections (`[SECONDARY]`).  
 
 ### 🤖 AI assistant (optional)
-- Use the IziFlow Copilot (GPT-powered) to automatically generate Markdown structure through guided prompts — just copy the result into the plugin.  
+- Use the IziFlow Copilot (GPT-powered) to automatically generate ready-to-paste YAML (with metadata, anchors, offsets) through guided prompts — just copy the result into the plugin.  
 
 ## Technical requirements
 

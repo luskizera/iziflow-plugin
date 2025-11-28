@@ -1,10 +1,10 @@
 ## About
 
-IziFlow is a FigJam plugin that automates user flow creation from a **simple textual description using the IziFlow Markdown syntax**.
+IziFlow is a FigJam plugin that automates user flow creation from a **structured YAML description (IziFlow YAML syntax)**.
 
 ## Main Documentation
 
-- **[IziFlow Markdown Syntax](docs/markdown-syntax.md)** <--- **START HERE!**
+- **[IziFlow YAML Syntax](docs/markdown-syntax.md)** <--- **START HERE!**
 - [Usage Workflow](docs/workflow.md)
 - [Architecture](docs/architecture.md)
 - [Generated Node Structure](docs/components.md) (Technical details of created elements)
@@ -110,6 +110,6 @@ dist/       # Final build output (pre-zip) - may vary
 
 ## Next Steps
 
-- Learn the **[IziFlow Markdown Syntax](docs/markdown-syntax.md)**.
+- Learn the **[IziFlow YAML Syntax](docs/markdown-syntax.md)**.
 - Understand the [Usage Workflow](docs/workflow.md).
 - Explore the project’s detailed [Architecture](docs/architecture.md).

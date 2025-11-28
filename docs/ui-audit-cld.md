@@ -150,7 +150,7 @@ App
 │   │   ├── TabsTrigger: "Create Flow"
 │   │   └── TabsTrigger: "History"
 │   ├── TabsContent: "generator"
-│   │   ├── Textarea (Markdown input)
+│   │   ├── Textarea (YAML input; state name `markdown` kept for compatibility)
 │   │   ├── Customization Section
 │   │   │   ├── Accent Color Input
 │   │   │   └── Node Theme Tabs (Light/Dark)
@@ -169,7 +169,7 @@ App
 **Local State (React.useState):**
 
 ```typescript
-const [markdown, setMarkdown] = useState("");                    // Markdown input
+const [markdown, setMarkdown] = useState("");                    // YAML input (legacy state name)
 const [error, setError] = useState<string | null>(null);          // Error messages
 const [isLoading, setIsLoading] = useState(false);               // Loading state
 const [accentColor, setAccentColor] = useState<string>("#3860FF"); // Accent color
@@ -306,7 +306,7 @@ All UI components are built on **Radix UI** primitives with custom Tailwind styl
 |-----------|------|-----------------|---------|-------|
 | Button | `button.tsx` | `@radix-ui/react-slot` | Interactive buttons with variants | 60 |
 | Tabs | `tabs.tsx` | `@radix-ui/react-tabs` | Tabbed navigation interface | 54 |
-| Textarea | `textarea.tsx` | Native `<textarea>` | Markdown input field | ~40 |
+| Textarea | `textarea.tsx` | Native `<textarea>` | YAML input field (keeps `markdown` state for now) | ~40 |
 | Input | `input.tsx` | Native `<input>` | Text inputs (color picker) | ~35 |
 | Label | `label.tsx` | `@radix-ui/react-label` | Form labels with a11y | ~30 |
 | Tooltip | `tooltip.tsx` | `@radix-ui/react-tooltip` | Contextual help tooltips | ~60 |
@@ -1125,7 +1125,7 @@ The project includes Zod (`^3.24.2`) but validation only exists in:
 // Current: No validation
 const handleSubmit = () => {
   if (!markdown.trim()) {
-    setError("Markdown cannot be empty");
+    setError("O campo YAML não pode estar vazio.");
     return;
   }
   dispatchTS('generate-flow', { markdown, mode, accentColor });
@@ -1136,9 +1136,9 @@ import { z } from 'zod';
 
 const GenerateFlowSchema = z.object({
   markdown: z.string()
-    .min(10, "Markdown too short")
-    .max(50000, "Markdown too long")
-    .refine(text => text.includes('NODE'), "Must contain at least one NODE"),
+    .min(10, "YAML too short")
+    .max(50000, "YAML too long")
+    .refine(text => text.includes('metadata:'), "Must contain a metadata block"),
   mode: z.enum(['light', 'dark']),
   accentColor: z.string()
     .regex(/^#[0-9A-F]{6}$/i, "Invalid hex color")
@@ -1185,13 +1185,11 @@ import { z } from 'zod';
 export const ColorSchema = z.string()
   .regex(/^#[0-9A-F]{6}$/i, "Must be valid hex color (#RRGGBB)");
 
-export const MarkdownSchema = z.string()
-  .min(10, "Markdown must be at least 10 characters")
-  .max(50000, "Markdown too large (max 50KB)")
-  .refine(
-    text => text.match(/NODE\s+\S+\s+(START|END|STEP|DECISION|ENTRYPOINT)/),
-    "Must contain at least one valid NODE definition"
-  );
+export const YamlInputSchema = z.string()
+  .min(10, "YAML must be at least 10 characters")
+  .max(50000, "YAML too large (max 50KB)")
+  .refine(text => text.includes('metadata:'), "Must contain the metadata block")
+  .refine(text => text.includes('nodes:'), "Must contain node definitions");
 
 export const NodeModeSchema = z.enum(['light', 'dark']);
 ```
@@ -1203,7 +1201,7 @@ import { z } from 'zod';
 
 const MessageSchemas = {
   'generate-flow': z.object({
-    markdown: MarkdownSchema,
+    markdown: YamlInputSchema,
     mode: NodeModeSchema,
     accentColor: ColorSchema
   }),

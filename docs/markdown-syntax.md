@@ -1,127 +1,119 @@
-# 📜 IziFlow Markdown syntax
+# 📜 IziFlow YAML syntax
 
-This document describes the simplified Markdown syntax used by the IziFlow plugin to define user flow structures. When written in this format, the plugin can interpret and automatically generate the corresponding visual diagram in Figma or FigJam.
+The IziFlow plugin now consumes a single structured input: **YAML**. A valid flow always contains `metadata`, `nodes`, and `connections`. The parser enforces this schema and converts it into the internal layout engine (default unit = **300px**, default horizontal spacing = **1u** when not provided).
 
-## 📝 Basic structure
+Use this document to craft flows manually or to understand what the IziFlow Copilot is generating for you.
 
-An IziFlow Markdown file consists of:
+---
 
-1.  An optional title for the flow  
-2.  Node definitions (`NODE`)  
-3.  Connection definitions (`CONN`)  
-4.  Comments (lines starting with `#`)  
-5.  Blank lines (ignored)  
+## ⚙️ Metadata
 
-**Notes:**
-
-* `META` and `DESC` definitions must be **indented** under their corresponding `NODE`.  
-* The general convention is to define all `NODE`s first, followed by `CONN`s — however, the parser is flexible and supports interleaving. Keeping them grouped improves human readability.
-
-## 🧱 Node definition (`NODE`)
-
-Each node line starts with the keyword `NODE`, followed by:
-
-1. A unique `[node_id]` (no spaces or special characters — use `snake_case` or `kebab-case`).  
-2. The `[NODE_TYPE]` in uppercase: `START`, `END`, `STEP`, `DECISION`, or `ENTRYPOINT`.  
-3. The `"[Node Name]"` — the main label that appears visually on the node, enclosed in double quotes.
-
-**Syntax:**
-```markdown
-NODE [node_id] [NODE_TYPE] "[Node Name]"
-NODE start_process START "Flow Start"
-NODE user_input STEP "Fill Form"
-NODE check_status DECISION "Valid Status?"
-NODE process_complete END "Process Complete"
-````
-
-## 📦 Metadata (`META`)
-
-You can add metadata to any node to provide additional context (e.g., category, owner, or version).
-Each metadata line must be indented under the `NODE` and start with `META`, followed by:
-
-1. The [key]
-2. A colon (:)
-3. The [value]
-
-**Syntax:**
-
-```markdown
-META [key]: [value]
+```yaml
+metadata:
+  name: Checkout Flow            # Used in the UI history
+  layout:
+    algorithm: auto              # only supported algorithm
+    unit: 300                    # 1u = 300px when omitted
+    first_node_position: center  # required
+    spacing:
+      horizontal: 1u             # default fallback if omitted
+      vertical: 0.75u            # default fallback if omitted
 ```
 
-**Example:**
+**Required fields**
+- `metadata.name`: string that labels history entries (trimmed automatically)
+- `layout.algorithm`: currently must be `auto`
+- `layout.unit`: numeric base unit in pixels (defaults to 300 when not supplied in UI fallback)
+- `layout.first_node_position`: must be `center`
 
-```markdown
-NODE user_login ENTRYPOINT "Login Screen"
-    META category: Authentication
-    META createdBy: Alice
-    META version: 1.2
+**Optional fields**
+- `spacing.horizontal`: accepts raw numbers, `<value>u`, or `<value>px` (defaults to `1u`)
+- `spacing.vertical`: defaults to `0.75u`
+
+> 📝 Tip: keep `unit` = 300 for consistent spacing across flows unless a coarser/finer grid is needed.
+
+---
+
+## 🧱 Nodes
+
+Nodes are defined under the `nodes` map. The key is the node ID.
+
+```yaml
+nodes:
+  welcome_screen:
+    type: ENTRYPOINT            # ENTRYPOINT | STEP | DECISION | END
+    name: Welcome
+    description: Hero copy
+    content: |
+      Action: Introduce the experience
+      CTA: Start now
+    position:
+      anchor: entrypoint        # optional relative positioning
+      offset:
+        x: 1.2u
+        y: 0
+      exit: right               # connector magnets (top|right|bottom|left)
 ```
 
-## 📄 Detailed description (`DESC`)
+Supported fields:
+- `type` (required): `ENTRYPOINT`, `STEP`, `DECISION`, or `END`
+- `name` (required)
+- `description` (optional short text)
+- `content` (optional multiline body using `|` for formatting)
+- `position` (optional): anchor another node and provide offsets in `u`, `px`, or raw numbers. Entry/exit magnets plug into connector logic.
 
-For nodes of type `STEP`, `DECISION`, and `ENTRYPOINT`, you can add detailed description blocks to explain actions, inputs, rules, etc.
-Each description line must be indented under the `NODE` and start with `DESC`, followed by:
+START nodes are implicit; don’t declare them in YAML.
 
-1. The [Label] of the description (e.g., Action, Inputs, Validation, Feedback)
-2. A colon (:)
-3. The [Content] of the description
+---
 
-The [Content] can include plain text or multiple lines separated by `\n`. The parser preserves line breaks when rendering.
+## 🔗 Connections
 
-**Syntax:**
+Connections describe directed edges.
 
-```markdown
-DESC [Label]: [Content]
+```yaml
+connections:
+  - from: welcome_screen
+    to: choose_auth
+    label: Continue
+    style:
+      line_type: ELBOWED
+      exit: right
+      entry: left
+  - from: choose_auth
+    to: login_form
+    label: Login
 ```
 
-**Example:**
+Supported fields:
+- `from` / `to` (required)
+- `label` (optional, mirrored to the connector label + `conditionLabel` field)
+- `style.line_type`: `STRAIGHT` or `ELBOWED`
+- `style.exit` / `style.entry`: magnets to fine-tune elbows
 
-```markdown
-NODE shipping_address STEP "Enter Shipping Address"
-    META category: Checkout Form
-    DESC Title: Shipping Details
-    DESC Inputs: Full Name\nStreet Address\nCity\nPostcode\nCountry
-    DESC Validation: All fields required; postcode format validation.
-    DESC Option: Save address for future use? (Checkbox)
-```
+The parser validates references to ensure every node exists.
 
-In this example, everything after “Inputs:” will be interpreted as a single string containing `\n`, which the plugin renders with line breaks.
+---
 
-## 🔗 Connection definition (`CONN`)
+## 🧲 Layout Defaults & Hints
 
-Each connection line starts with the keyword `CONN`, followed by:
+- If `spacing.horizontal` is omitted, the parser resolves it to `1u` (matching the declared unit).
+- The fallback layout resolver (used when metadata is missing) now assumes `unit = 300`, ensuring consistent auto-layout even when YAML is partially filled.
+- Manual anchors + offsets allow precise placement; when no hints are supplied the bifurcated layout keeps nodes centered relative to their predecessors.
 
-1. The [source_node_id]
-2. An arrow (`->`)
-3. The [target_node_id]
-4. Optionally, a `"[Condition Label]"` — text displayed on the connector, enclosed in double quotes.
-5. Optionally, the `[SECONDARY]` flag — marks the connection as secondary (changes visual style).
+---
 
-**Syntax:**
+## 📚 Examples
 
-```markdown
-CONN [source_node_id] -> [target_node_id] "[Condition Label]" [SECONDARY]
-```
+Reference flows converted to YAML live in `docs/flows-examples/`:
+- `flow-example-checkout.yaml`
+- `flow-example-file-upload.yaml`
+- `flow-example-password-reset.yaml`
+- `sample-flow.yaml` (full demo with anchors, offsets, and magnets)
 
-**Example:**
+---
 
-```markdown
-CONN review_cart -> shipping_address "Proceed to Shipping"
-CONN payment_options -> cc_details "Selects Credit Card"
-CONN payment_options -> paypal_redirect "Selects PayPal" [SECONDARY]
-CONN cc_details -> order_confirmation
-```
+## 🧠 Copilot Integration
 
-The condition label and `[SECONDARY]` flag are both optional.
+The IziFlow Copilot GPT now emits YAML with the structure above. Make sure the assistant sets `metadata.name` for every flow to keep the plugin’s history list readable. When users paste YAML into the UI the parser enforces everything described here—no Markdown is accepted.
 
-## 💬 Comments
-
-Example:
-
-```markdown
-# This is a comment about the flow
-NODE start START "Start"
-# First visible step
-NODE welcome_screen ENTRYPOINT "Welcome Screen"
-CONN start -> welcome_screen # Connects start to the first screen
+Need a migration reference from the legacy Markdown format? See the “Migration from Markdown” appendix in `docs/improve-plan/iziflow-yaml-syntax.md` for a step-by-step mapping.

@@ -46,14 +46,14 @@ This section details the purpose, scope, main exports, and usage of various sour
 *   **[connectors.ts](./modules/src-code-lib-connectors.md)**: Handles the creation and styling of connector lines and their labels between nodes.
 *   **[frames.ts](./modules/src-code-lib-frames.md)**: Responsible for creating the visual Figma frames for different types of flow nodes.
 *   **[layout.ts](./modules/src-code-lib-layout.md)**: Provides utility functions for graph building and level sorting, foundational for node positioning.
-*   **[markdownParser.ts](./modules/src-code-lib-markdownParser.md)**: Parses the custom Markdown-like syntax into a structured flow diagram definition.
+*   **[yamlParser.ts](./modules/src-code-lib-yamlParser.md)**: Parses the IziFlow YAML syntax (metadata + nodes + connections) into flow structures and layout hints.
 
 #### Utilities (`src-code/utils/`)
 
 *   **[code-utils.ts](./modules/src-code-utils-code-utils.md)**: Utilities for messaging between plugin backend and UI, and client storage interaction.
 *   **[color-generation.ts](./modules/src-code-utils-color-generation.md)**: Functions for color manipulation and dynamic accent palette generation.
 *   **[hexToRgb.ts](./modules/src-code-utils-hexToRgb.md)**: Utility to convert HEX color strings to RGB objects.
-*   **[historyStorage.ts](./modules/src-code-utils-historyStorage.md)**: Manages a history of Markdown inputs using Figma's client storage.
+*   **[historyStorage.ts](./modules/src-code-utils-historyStorage.md)**: Manages a history of YAML inputs (persisting `metadata.name`) using Figma's client storage.
 *   **[layoutManager.ts](./modules/src-code-utils-layoutManager.md)**: Singleton class to manage and queue layout-related tasks for Figma nodes.
 *   **[logger.ts](./modules/src-code-utils-logger.md)**: Provides a simple logger for consistent console output with different levels.
 *   **[nodeCache.ts](./modules/src-code-utils-nodeCache.md)**: Singleton class for loading fonts and queuing asynchronous tasks.

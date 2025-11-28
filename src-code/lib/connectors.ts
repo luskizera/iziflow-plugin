@@ -13,6 +13,7 @@ import type { RGB } from '../config/theme.config'; // Importa tipo RGB
 import * as LayoutConfig from '../config/layout.config'; // Configurações de layout (sem tipos problemáticos agora)
 import * as StyleConfig from '../config/styles.config'; // Configurações de estilo (sem tipos problemáticos agora)
 import { nodeCache } from '../utils/nodeCache';
+import { calculateExitEntryPoints } from './positionCalculator';
 
 // --- Interfaces Internas (Tipos Removidos/Alterados para string) ---
 interface ConnectorStyleBaseConfig {
@@ -96,6 +97,7 @@ export namespace Connectors {
             const config = determineBifurcatedConnectorConfig(
                 conn, 
                 fromNode, 
+                toNode,
                 fromNodeData, 
                 toNodeData,
                 bifurcationContext,
@@ -109,7 +111,7 @@ export namespace Connectors {
             const toNodeName = toNodeData.name || conn.to;
             connector.name = `Bifurcated Connector: ${fromNodeName} -> ${toNodeName}`;
 
-            connector.connectorLineType = config.lineType as ConnectorLineType;
+            connector.connectorLineType = config.lineType as any;
 
             // Anexar endpoints
             attachConnectorEndpoints(connector, fromNode.id, toNode.id, config.startConnection, config.endMagnet);
@@ -177,6 +179,7 @@ export namespace Connectors {
             const fromNode = nodeMap[conn.from];
             const toNode = nodeMap[conn.to];
             const fromNodeData = nodeDataMap[conn.from];
+            const toNodeData = nodeDataMap[conn.to];
 
             // Valida se os nós existem no mapa
             if (!fromNode || !toNode || !fromNodeData) {
@@ -186,7 +189,15 @@ export namespace Connectors {
 
             // Determina a configuração do conector (layout, tipo, magnets)
             // Agora usa a função que aceita/retorna strings onde os tipos falhavam
-            const config = determineConnectorConfig(conn, fromNode, fromNodeData, incomingPrimaryCounts[conn.to] || 0, nodeOutgoingPrimaryConnections);
+            const config = determineConnectorConfig(
+                conn,
+                fromNode,
+                toNode,
+                fromNodeData,
+                toNodeData || fromNodeData,
+                incomingPrimaryCounts[conn.to] || 0,
+                nodeOutgoingPrimaryConnections
+            );
 
             // Cria o nó conector
             const connector = figma.createConnector();
@@ -195,7 +206,7 @@ export namespace Connectors {
             connector.name = `Connector: ${fromNodeName} -> ${toNodeName}`;
 
             // Define o tipo da linha (a API aceita a string, faz cast opcional para clareza)
-            connector.connectorLineType = config.lineType as ConnectorLineType;
+            connector.connectorLineType = config.lineType as any;
 
             // Anexa os pontos de início e fim do conector
             attachConnectorEndpoints(connector, fromNode.id, toNode.id, config.startConnection, config.endMagnet);
@@ -240,7 +251,9 @@ export namespace Connectors {
 function determineConnectorConfig(
     conn: Connection,
     fromNode: SceneNode,
+    toNode: SceneNode,
     fromNodeData: NodeData,
+    toNodeData: NodeData,
     incomingPrimaryCountToTarget: number,
     nodeOutgoingPrimaryConnections: { [nodeId: string]: Array<Connection> }
 ): DeterminedConnectorConfig { // Retorna a interface com tipos string onde necessário
@@ -318,6 +331,15 @@ function determineConnectorConfig(
         placeLabelNearStart = false;
     }
 
+    const resolvedMagnets = resolveConnectorMagnets(conn, fromNode, toNode, fromNodeData, toNodeData);
+    if (resolvedMagnets) {
+        finalEndMagnet = resolvedMagnets.endMagnet;
+        finalStartMagnetForLabel = resolvedMagnets.startMagnet;
+        if (resolvedMagnets.forceMagnet || !startConnection.position) {
+            startConnection = { magnet: resolvedMagnets.startMagnet };
+        }
+    }
+
     // Retorna o objeto de configuração
     return {
         // Recria o objeto styleBase com o tipo correto para END_CAP, se necessário
@@ -374,10 +396,10 @@ function attachConnectorEndpoints(
             connector.connectorStart = { endpointNodeId: fromNodeId, position: startConnection.position };
         } else {
             // A API aceita a string do magnet, faz cast para o tipo esperado
-            connector.connectorStart = { endpointNodeId: fromNodeId, magnet: (startConnection.magnet ?? "AUTO") as ConnectorMagnet };
+            connector.connectorStart = { endpointNodeId: fromNodeId, magnet: (startConnection.magnet ?? "AUTO") as any };
         }
         // A API aceita a string do magnet, faz cast
-        connector.connectorEnd = { endpointNodeId: toNodeId, magnet: (endMagnet ?? "AUTO") as ConnectorMagnet };
+        connector.connectorEnd = { endpointNodeId: toNodeId, magnet: (endMagnet ?? "AUTO") as any };
     } catch (e: any) {
          console.error(`[Connectors] Erro ao anexar conector ${connector.name}:`, e);
          figma.notify(`Erro ao conectar nós (${fromNodeId} -> ${toNodeId}): ${e?.message || e}`, { error: true });
@@ -545,6 +567,7 @@ function buildBifurcationContextMap(bifurcations: BifurcationAnalysis[]): Map<st
 function determineBifurcatedConnectorConfig(
     conn: Connection,
     fromNode: SceneNode,
+    toNode: SceneNode,
     fromNodeData: NodeData,
     toNodeData: NodeData,
     bifurcationContext: BifurcationContext | undefined,
@@ -560,8 +583,10 @@ function determineBifurcatedConnectorConfig(
     if (!bifurcationContext || !isDecisionOrigin) {
         return determineConnectorConfig(
             conn, 
-            fromNode, 
+            fromNode,
+            toNode,
             fromNodeData, 
+            toNodeData,
             incomingPrimaryCountToTarget, 
             nodeOutgoingPrimaryConnections
         );
@@ -601,7 +626,7 @@ function determineBifurcatedConnectorConfig(
         finalEndMagnet = LayoutConfig.Bifurcation.CONVERGENCE_ENTRY_MAGNET;
     }
     
-    return {
+    const config: DeterminedConnectorConfig = {
         styleBase: {
             ...styleBase,
             END_CAP: styleBase.END_CAP
@@ -612,6 +637,49 @@ function determineBifurcatedConnectorConfig(
         placeLabelNearStart: true, // Labels perto do início para bifurcações
         actualStartMagnetForLabel: finalStartMagnetForLabel,
         isSecondary
+    };
+
+    const resolvedMagnets = resolveConnectorMagnets(conn, fromNode, toNode, fromNodeData, toNodeData);
+    if (resolvedMagnets) {
+        config.endMagnet = resolvedMagnets.endMagnet;
+        config.actualStartMagnetForLabel = resolvedMagnets.startMagnet;
+        if (resolvedMagnets.forceMagnet || !startConnection.position) {
+            config.startConnection = { magnet: resolvedMagnets.startMagnet };
+        }
+    }
+
+    return config;
+}
+
+function resolveConnectorMagnets(
+    conn: Connection,
+    fromNode: SceneNode,
+    toNode: SceneNode,
+    fromNodeData: NodeData,
+    toNodeData: NodeData
+): { startMagnet: string; endMagnet: string; forceMagnet: boolean } | null {
+    const explicitExit = conn.exitMagnet || fromNodeData.layoutHint?.exitPoint;
+    const explicitEntry = conn.entryMagnet || toNodeData?.layoutHint?.entryPoint;
+
+    const fromCenter = {
+        x: fromNode.x + fromNode.width / 2,
+        y: fromNode.y + fromNode.height / 2
+    };
+    const toCenter = {
+        x: toNode.x + toNode.width / 2,
+        y: toNode.y + toNode.height / 2
+    };
+
+    const offset = {
+        x: toCenter.x - fromCenter.x,
+        y: toCenter.y - fromCenter.y
+    };
+
+    const calculated = calculateExitEntryPoints(offset, explicitExit, explicitEntry);
+    return {
+        startMagnet: calculated.exit.toUpperCase(),
+        endMagnet: calculated.entry.toUpperCase(),
+        forceMagnet: Boolean(explicitExit || explicitEntry)
     };
 }
 
@@ -761,8 +829,8 @@ export async function createCurvedConvergenceConnector(
         
         // Fallback para conector reto
         connector.connectorLineType = "ELBOWED";
-        connector.connectorStart = { endpointNodeId: fromNodeId, magnet: "RIGHT" as ConnectorMagnet };
-        connector.connectorEnd = { endpointNodeId: toNodeId, magnet: "LEFT" as ConnectorMagnet };
+        connector.connectorStart = { endpointNodeId: fromNodeId, magnet: "RIGHT" as any };
+        connector.connectorEnd = { endpointNodeId: toNodeId, magnet: "LEFT" as any };
         
         return connector;
     }
@@ -786,12 +854,12 @@ async function applyMultiSegmentCurve(
     // Configurar endpoints
     connector.connectorStart = { 
         endpointNodeId: fromNodeId, 
-        magnet: "RIGHT" as ConnectorMagnet 
+        magnet: "RIGHT" as any 
     };
-    
+
     connector.connectorEnd = { 
         endpointNodeId: toNodeId, 
-        magnet: "LEFT" as ConnectorMagnet 
+        magnet: "LEFT" as any 
     };
     
     // Configurar tipo de linha baseado na suavização

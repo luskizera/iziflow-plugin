@@ -116,9 +116,13 @@ async function _createChip(
                         vector.strokes = []; // Remove borda do ícone
                     }
                  });
-            } else if ('fills' in iconNode && Array.isArray(iconNode.fills)) { // Fallback para SVG simples
-                 (iconNode as GeometryMixin).fills = [{ type: 'SOLID', color: iconColor }];
-                 (iconNode as GeometryMixin).strokes = [];
+            } else if ('fills' in iconNode) { // Fallback para SVG simples
+                 const geometryNode = iconNode as GeometryMixin;
+                 const fills = (geometryNode as any).fills;
+                 if (Array.isArray(fills)) {
+                     geometryNode.fills = [{ type: 'SOLID', color: iconColor }];
+                     geometryNode.strokes = [];
+                 }
             }
             chip.appendChild(iconNode);
         } catch (error) { console.error(`[frames] Erro ao criar ícone SVG para ${variant}:`, error); }

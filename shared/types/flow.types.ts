@@ -34,6 +34,19 @@ export interface FlowNode {
     // Você pode adicionar outras propriedades aqui no futuro se precisar
     // title?: string;
   };
+  /**
+   * Conteúdo textual adicional importado de YAML.
+   */
+  content?: string;
+  /**
+   * Hint de layout opcional usado pelo parser YAML para posicionar nós.
+   */
+  layoutHint?: {
+    anchorId?: string;
+    offset?: { x: number; y: number };
+    exitPoint?: 'top' | 'right' | 'bottom' | 'left';
+    entryPoint?: 'top' | 'right' | 'bottom' | 'left';
+  };
 }
 
 /**
@@ -52,6 +65,12 @@ export interface Connection {
   /** Usado nos seus exemplos JSON para a etiqueta da conexão. */
   conditionLabel?: string; // Mantido/Adicionado
   secondary?: boolean;
+  /** Rótulo genérico usado por YAML. */
+  label?: string;
+  /** Controle fino de conectores e estilos vindos do YAML. */
+  exitMagnet?: 'top' | 'right' | 'bottom' | 'left';
+  entryMagnet?: 'top' | 'right' | 'bottom' | 'left';
+  lineType?: 'STRAIGHT' | 'ELBOWED';
 }
 
 /**

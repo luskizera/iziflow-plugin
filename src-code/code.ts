@@ -3,7 +3,7 @@
 
 // Imports de Utilitários e Tipos
 import { nodeCache } from './utils/nodeCache';
-import { parseMarkdownToFlow } from './lib/markdownParser';
+import { parseYAMLToFlow, type ParsedLayoutConfig } from './lib/yamlParser';
 import type { NodeData, Connection, FlowNode } from '@shared/types/flow.types';
 import type { EventTS } from '@shared/types/messaging.types';
 import type { RGB } from './config/theme.config';
@@ -14,9 +14,26 @@ import { Layout } from './lib/layout';
 import { Frames } from './lib/frames';
 import { Connectors } from './lib/connectors';
 import { getHistory, addHistoryEntry, clearHistory, removeHistoryEntry } from './utils/historyStorage';
+import { calculateAbsolutePositions, type LayoutSpacingConfig } from './lib/positionCalculator';
 
 // Chave para o clientStorage (deve ser a mesma na UI)
 const GENERATION_STATUS_KEY = 'iziflow_generation_status';
+
+type FlowParseResult = {
+    nodes: FlowNode[];
+    connections: Connection[];
+    layoutConfig?: ParsedLayoutConfig;
+};
+
+function resolveLayoutConfig(layoutConfig?: LayoutSpacingConfig): LayoutSpacingConfig {
+    return layoutConfig ?? {
+        unit: 200,
+        spacing: {
+            horizontal: LayoutConfig.Nodes.HORIZONTAL_SPACING,
+            vertical: LayoutConfig.VerticalLanes.LANE_HEIGHT,
+        },
+    };
+}
 
 // --- Debug Log (com envio para UI) ---
 function debugLog(context: string, message: string, data?: any) {
@@ -51,6 +68,19 @@ async function preloadFonts() {
      // debugLog('FontLoader', `Pré-carregamento de fontes concluído.`);
 }
 
+/**
+ * Processa o input textual assumindo exclusivamente a sintaxe YAML.
+ */
+async function processFlowInput(input: string): Promise<FlowParseResult> {
+    const sanitized = input.trim();
+    if (!sanitized) {
+        throw new Error('Entrada YAML inválida ou vazia.');
+    }
+
+    console.log('[Flow Parser] Formato forçado: yaml');
+    return parseYAMLToFlow(sanitized);
+}
+
 // --- Sistema de Layout Bifurcado ---
 
 /**
@@ -59,9 +89,11 @@ async function preloadFonts() {
 async function generateFlowWithBifurcatedLayout(
     flowNodes: FlowNode[],
     flowConnections: Connection[],
-    finalColors: Record<string, RGB>
+    finalColors: Record<string, RGB>,
+    layoutConfig?: LayoutSpacingConfig
 ): Promise<{ nodeMap: { [id: string]: SceneNode }, createdFrames: SceneNode[] }> {
     
+    const resolvedLayout = resolveLayoutConfig(layoutConfig);
     // 1. Análise estrutural
     const bifurcations = Layout.detectBinaryDecisions(flowNodes, flowConnections);
     const nodeLaneMap = Layout.calculateVerticalLanes(bifurcations, flowNodes);
@@ -74,7 +106,8 @@ async function generateFlowWithBifurcatedLayout(
         flowNodes, 
         flowConnections,
         bifurcations, 
-        nodeLaneMap
+        nodeLaneMap,
+        resolvedLayout
     );
     
     // 3. Criar nós com posições calculadas
@@ -141,30 +174,45 @@ function calculateBifurcatedPositions(
     nodes: FlowNode[],
     connections: Connection[],
     bifurcations: import('@shared/types/flow.types').BifurcationAnalysis[],
-    nodeLaneMap: Map<string, number>
+    nodeLaneMap: Map<string, number>,
+    layoutConfig: LayoutSpacingConfig
 ): Map<string, import('@shared/types/flow.types').LayoutPosition> {
     const positions = new Map<string, import('@shared/types/flow.types').LayoutPosition>();
-    const horizontalSpacing = LayoutConfig.Nodes.HORIZONTAL_SPACING;
-    const laneHeight = LayoutConfig.VerticalLanes.LANE_HEIGHT;
-    
-    let currentX = 100;
-    const centerY = figma.viewport.center.y;
-    
-    // Processar nós em ordem topológica
+    const viewportCenter = figma.viewport.center;
+    const horizontalSpacing = layoutConfig.spacing.horizontal || LayoutConfig.Nodes.HORIZONTAL_SPACING;
+    const laneHeight = layoutConfig.spacing.vertical || LayoutConfig.VerticalLanes.LANE_HEIGHT;
+    const manualPositions = calculateAbsolutePositions(nodes, viewportCenter, layoutConfig);
+    const manualNodeIds = new Set<string>();
+    const typicalNodeWidth = 400;
+
+    manualPositions.forEach((pos, nodeId) => {
+        if (pos.calculationMode === 'manual') {
+            const laneIndex = nodeLaneMap.get(nodeId) || 0;
+            positions.set(nodeId, { x: pos.x, y: pos.y, laneIndex });
+            manualNodeIds.add(nodeId);
+        }
+    });
+
+    let currentX = viewportCenter.x;
+    const centerY = viewportCenter.y;
     const sortedNodes = Layout.topologicalSort(nodes, connections);
     
     for (const node of sortedNodes) {
         const laneIndex = nodeLaneMap.get(node.id) || 0;
+        if (manualNodeIds.has(node.id)) {
+            const manualPos = positions.get(node.id);
+            if (manualPos && laneIndex === 0) {
+                currentX = manualPos.x + typicalNodeWidth + horizontalSpacing;
+            }
+            continue;
+        }
+
         const y = centerY + (laneIndex * laneHeight);
-        
-        // Ajustar X baseado em bifurcações
         const x = calculateXPosition(node, currentX, bifurcations, nodeLaneMap);
-        
         positions.set(node.id, { x, y, laneIndex });
-        
-        // Avançar posição horizontal apenas para nós na lane central
+
         if (laneIndex === 0) {
-            currentX = x + 400 + horizontalSpacing; // 400 = largura típica do nó
+            currentX = x + typicalNodeWidth + horizontalSpacing;
         }
     }
     
@@ -210,6 +258,13 @@ function calculateBifurcatedPositions(
         nodeWidths,
         nodeHeights
     );
+
+    manualNodeIds.forEach(nodeId => {
+        const manualPos = positions.get(nodeId);
+        if (manualPos) {
+            managedPositions.set(nodeId, manualPos);
+        }
+    });
     
     console.log(`[Bifurcated Layout] Posições finais calculadas para ${managedPositions.size} nós`);
     return managedPositions;
@@ -266,14 +321,16 @@ async function createBifurcatedConnectors(
 async function generateFlowWithLinearLayout(
     flowNodes: FlowNode[],
     flowConnections: Connection[],
-    finalColors: Record<string, RGB>
+    finalColors: Record<string, RGB>,
+    layoutConfig?: LayoutSpacingConfig
 ): Promise<{ nodeMap: { [id: string]: SceneNode }, createdFrames: SceneNode[] }> {
     const nodeMap: { [id: string]: SceneNode } = {};
     const createdFrames: SceneNode[] = [];
     
-    let currentX = 100;
+    const resolvedLayout = resolveLayoutConfig(layoutConfig);
+    let currentX = figma.viewport.center.x;
     const startY = figma.viewport.center.y;
-    const horizontalSpacing = LayoutConfig.Nodes.HORIZONTAL_SPACING;
+    const horizontalSpacing = resolvedLayout.spacing.horizontal;
     const nodeDataMap: { [id: string]: NodeData } = {};
     flowNodes.forEach(node => { nodeDataMap[node.id] = node; });
 
@@ -284,7 +341,7 @@ async function generateFlowWithLinearLayout(
             if (!frame || frame.removed) throw new Error(`Frame nulo/removido para ${nodeData.id}.`);
             
             await new Promise(resolve => setTimeout(resolve, 50));
-            frame.x = currentX;
+            frame.x = currentX - frame.width / 2;
             frame.y = startY - frame.height / 2;
             currentX += frame.width + horizontalSpacing;
             nodeMap[nodeData.id] = frame;
@@ -313,7 +370,8 @@ async function generateFlowWithLinearLayout(
 async function generateFlowWithSmartLayout(
     flowNodes: FlowNode[],
     flowConnections: Connection[],
-    finalColors: Record<string, RGB>
+    finalColors: Record<string, RGB>,
+    layoutConfig?: LayoutSpacingConfig
 ): Promise<{ nodeMap: { [id: string]: SceneNode }, createdFrames: SceneNode[] }> {
     
     let userPreferences: import('@shared/types/flow.types').LayoutPreferences;
@@ -340,7 +398,7 @@ async function generateFlowWithSmartLayout(
                 const bifurcations = Layout.detectBinaryDecisions(flowNodes, flowConnections);
                 if (bifurcations.length > 0) {
                     console.log(`[Smart Layout] Nível 1: Usando layout bifurcado (${bifurcations.length} bifurcações)`);
-                    return await generateFlowWithBifurcatedLayout(flowNodes, flowConnections, finalColors);
+                    return await generateFlowWithBifurcatedLayout(flowNodes, flowConnections, finalColors, layoutConfig);
                 }
                 throw new Error('Nenhuma bifurcação detectada');
             }
@@ -350,7 +408,7 @@ async function generateFlowWithSmartLayout(
             condition: userPreferences.enableBifurcation && !userPreferences.fallbackToLinear,
             execute: async () => {
                 console.log('[Smart Layout] Nível 2: Forçando layout bifurcado mesmo sem detecção automática');
-                return await generateFlowWithBifurcatedLayout(flowNodes, flowConnections, finalColors);
+                return await generateFlowWithBifurcatedLayout(flowNodes, flowConnections, finalColors, layoutConfig);
             }
         },
         {
@@ -358,7 +416,7 @@ async function generateFlowWithSmartLayout(
             condition: true, // Sempre disponível como último recurso
             execute: async () => {
                 console.log('[Smart Layout] Nível 3: Usando layout linear (fallback final)');
-                return await generateFlowWithLinearLayout(flowNodes, flowConnections, finalColors);
+                return await generateFlowWithLinearLayout(flowNodes, flowConnections, finalColors, layoutConfig);
             }
         }
     ];
@@ -408,7 +466,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
 
     // --- Handler para 'generate-flow' ---
     if (messageType === 'generate-flow') {
-        const { markdown: markdownInput, mode, accentColor } = payload;
+        const { markdown: rawInput, mode, accentColor } = payload;
         const generationId = Date.now(); // Usado para associar status
         console.log(`[Flow ID: ${generationId}] Iniciando geração... (Modo: ${mode}, Accent: ${accentColor})`);
 
@@ -428,7 +486,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
             return; // Para a execução se não puder definir o status inicial
         }
 
-        let flowDataResult: { nodes: FlowNode[], connections: Connection[] } | null = null;
+        let flowDataResult: FlowParseResult | null = null;
         let nodeMap: { [id: string]: SceneNode } = {};
         let createdFrames: SceneNode[] = [];
 
@@ -437,15 +495,15 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
             const finalColors = getThemeColors(mode, accentColor);
 
             // 2. Validar Input
-            if (typeof markdownInput !== 'string' || markdownInput.trim() === '') {
-                throw new Error("Entrada Markdown inválida ou vazia.");
+            if (typeof rawInput !== 'string' || rawInput.trim() === '') {
+                throw new Error("Entrada inválida ou vazia.");
             }
 
-            // 3. Parsear Markdown
+            // 3. Interpretar entrada
             try {
-                 flowDataResult = await parseMarkdownToFlow(markdownInput);
+                 flowDataResult = await processFlowInput(rawInput);
             } catch (parseError: any) {
-                 const errorMessage = `Erro de Parsing: ${parseError.message}`;
+                 const errorMessage = `Erro de Parsing YAML: ${parseError.message}`;
                  console.error(`[Flow ID: ${generationId}] ${errorMessage}`, parseError);
                  const lineNumberMatch = parseError.message?.match(/linha (\d+)/);
                  const lineNumber = lineNumberMatch ? parseInt(lineNumberMatch[1], 10) : undefined;
@@ -461,7 +519,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              if (!flowDataResult || !flowDataResult.nodes || flowDataResult.nodes.length === 0) {
                  throw new Error("Nenhum nó válido encontrado após o parsing.");
              }
-             const { nodes: flowNodes, connections: flowConnections } = flowDataResult;
+             const { nodes: flowNodes, connections: flowConnections, layoutConfig } = flowDataResult;
              console.log(`[Flow ID: ${generationId}] Parsing OK. Nodes: ${flowNodes.length}, Conns: ${flowConnections.length}`);
 
              // 5. Carregar Fontes
@@ -469,7 +527,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
 
              // 6. Geração com Layout Inteligente (Bifurcado ou Linear)
              console.log(`[Flow ID: ${generationId}] Iniciando geração com layout inteligente...`);
-             const layoutResult = await generateFlowWithSmartLayout(flowNodes, flowConnections, finalColors);
+             const layoutResult = await generateFlowWithSmartLayout(flowNodes, flowConnections, finalColors, layoutConfig);
              nodeMap = layoutResult.nodeMap;
              createdFrames = layoutResult.createdFrames;
              
@@ -483,9 +541,29 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
                 figma.currentPage.findAll(n => {
                     if (n.type === 'CONNECTOR') {
                         const connector = n as ConnectorNode;
-                        // Verifica se os endpoints do conector estão entre os nós criados
-                        return allCreatedNodes.some(f => f.id === connector.connectorStart?.endpointNodeId) &&
-                               allCreatedNodes.some(f => f.id === connector.connectorEnd?.endpointNodeId);
+
+                        const startNodeId = (() => {
+                            const endpoint = connector.connectorStart;
+                            if (endpoint && 'endpointNodeId' in endpoint) {
+                                return endpoint.endpointNodeId as string;
+                            }
+                            return undefined;
+                        })();
+
+                        const endNodeId = (() => {
+                            const endpoint = connector.connectorEnd;
+                            if (endpoint && 'endpointNodeId' in endpoint) {
+                                return endpoint.endpointNodeId as string;
+                            }
+                            return undefined;
+                        })();
+
+                        if (!startNodeId || !endNodeId) {
+                            return false;
+                        }
+
+                        return allCreatedNodes.some(f => f.id === startNodeId) &&
+                               allCreatedNodes.some(f => f.id === endNodeId);
                     }
                     return false;
                 }).forEach(conn => nodesToGroup.push(conn));
@@ -510,7 +588,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
 
              // --- SUCESSO ---
              console.log(`[Flow ID: ${generationId}] Tentando adicionar ao histórico...`);
-             await addHistoryEntry(payload.markdown);
+             await addHistoryEntry(rawInput);
              console.log(`[Flow ID: ${generationId}] Adicionado ao histórico com sucesso.`);
 
              // <<< ATUALIZA A UI COM O NOVO HISTÓRICO >>>

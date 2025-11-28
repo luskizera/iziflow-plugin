@@ -161,7 +161,7 @@ export function App() {
 
   // Effect for polling generation status via clientStorage when isLoading is true
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
     let attempts = 0;
     const maxAttempts = 30;
 
@@ -284,7 +284,7 @@ export function App() {
     setIsLoading(true);
 
     if (!markdown.trim()) {
-      setError("O campo Markdown não pode estar vazio.");
+      setError("O campo YAML não pode estar vazio.");
       setIsLoading(false);
       return;
     }
@@ -516,7 +516,7 @@ export function App() {
               ref={markdownTextareaRef}
               value={markdown}
               onChange={(e) => setMarkdown(e.target.value)}
-              placeholder="Paste your IziFlow Markdown here or start typing..."
+              placeholder="Paste your IziFlow YAML here or start typing..."
               className="h-full w-full resize-none font-mono text-xs min-h-[15vh] bg-muted/30 dark:bg-muted/10 border-border"
             />
             {/* Customization Section */}

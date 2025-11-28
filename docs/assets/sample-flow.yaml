@@ -1,0 +1,87 @@
+metadata:
+  layout:
+    algorithm: auto
+    unit: 200
+    first_node_position: center
+    spacing:
+      horizontal: 1.6u
+      vertical: 0.8u
+
+nodes:
+  welcome_screen:
+    type: ENTRYPOINT
+    name: Welcome
+    description: Entry hero informing about the new onboarding flow
+  auth_choice:
+    type: DECISION
+    name: Choose path
+    description: Decide whether to log in or continue as guest
+    position:
+      anchor: welcome_screen
+      offset:
+        x: 1.8u
+        y: 0u
+      exit: right
+  login_form:
+    type: STEP
+    name: Log In
+    content: Collects email + password with basic validation
+    position:
+      anchor: auth_choice
+      offset:
+        x: 1.6u
+        y: -0.6u
+      entry: left
+      exit: bottom
+  guest_profile:
+    type: STEP
+    name: Guest setup
+    content: Collect minimal profile data for guests
+    position:
+      anchor: auth_choice
+      offset:
+        x: 1.6u
+        y: 0.6u
+      entry: left
+  success_screen:
+    type: END
+    name: Success!
+    description: Confirms the profile is ready and routes to dashboard
+    position:
+      anchor: login_form
+      offset:
+        x: 1.4u
+        y: 0.6u
+      entry: top
+  fallback_exit:
+    type: END
+    name: Exit flow
+    description: User abandons the process
+
+connections:
+  - from: welcome_screen
+    to: auth_choice
+    label: Get started
+  - from: auth_choice
+    to: login_form
+    label: Log in
+    style:
+      line_type: ELBOWED
+      exit: right
+      entry: left
+  - from: auth_choice
+    to: guest_profile
+    label: Continue as guest
+  - from: login_form
+    to: success_screen
+    label: Authenticated
+    style:
+      line_type: STRAIGHT
+      exit: bottom
+      entry: top
+  - from: guest_profile
+    to: success_screen
+    label: Guest ready
+  - from: guest_profile
+    to: fallback_exit
+    label: Cancelled

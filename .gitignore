@@ -24,3 +24,4 @@ iziflow-plugin.code-workspace
 .gemini-ignore
 
 iziflow-plugin.code-workspace
+*:Zone.Identifier

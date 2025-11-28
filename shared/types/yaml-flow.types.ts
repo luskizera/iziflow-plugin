@@ -8,6 +8,7 @@ export interface YAMLFlowDocument {
 }
 
 export interface YAMLMetadata {
+  name?: string;
   layout: YAMLLayoutConfig;
 }
 

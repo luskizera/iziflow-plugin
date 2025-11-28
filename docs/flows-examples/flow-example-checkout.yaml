@@ -1,0 +1,115 @@
+metadata:
+  name: Simple E-commerce Checkout
+  layout:
+    algorithm: auto
+    unit: 200
+    first_node_position: center
+    spacing:
+      horizontal: 1.6u
+      vertical: 0.8u
+
+nodes:
+  start_checkout:
+    type: ENTRYPOINT
+    name: Initiate Checkout
+    description: System kickoff for the checkout journey.
+    content: |
+      Category: System
+
+  review_cart:
+    type: STEP
+    name: Review Shopping Cart
+    description: User reviews items, quantities and total price.
+    content: |
+      Category: Checkout
+      Options:
+        - Update Quantity
+        - Remove Item
+        - Proceed to Shipping
+
+  shipping_address:
+    type: STEP
+    name: Enter Shipping Address
+    description: Collect shipping details before payment.
+    content: |
+      Category: Checkout Form
+      Inputs:
+        - Full Name
+        - Street Address
+        - City
+        - Postcode
+        - Country
+      Validation: All fields required, postcode format validation.
+      Option: Save address for future use (checkbox).
+
+  payment_options:
+    type: DECISION
+    name: Select Payment Method
+    description: Choose how to complete the payment.
+    content: |
+      Category: Payment
+      Prompt: How would you like to pay?
+
+  cc_details:
+    type: STEP
+    name: Credit Card Payment
+    description: Collect credit card information.
+    content: |
+      Category: Payment Form
+      Inputs:
+        - Card Number
+        - Expiry Date (MM/YY)
+        - CVV
+        - Name on Card
+      Security: Payment processed securely.
+
+  paypal_redirect:
+    type: STEP
+    name: PayPal Checkout
+    description: Redirect to PayPal to finish payment.
+    content: |
+      Category: Payment External
+      Action: Log in to PayPal and confirm purchase.
+
+  order_confirmation:
+    type: STEP
+    name: Order Confirmation
+    description: Show receipt and thank you message.
+    content: |
+      Category: Success Feedback
+      Title: Thank You For Your Order!
+      Order ID: #IZI-123456
+      Summary: Order details and shipping information will be emailed shortly.
+
+  end_checkout:
+    type: END
+    name: Checkout Process Complete
+    description: Flow ends after confirmation.
+    content: |
+      Category: System
+
+connections:
+  - from: start_checkout
+    to: review_cart
+    label: User Clicks Checkout
+  - from: review_cart
+    to: shipping_address
+    label: Proceed to Shipping
+  - from: shipping_address
+    to: payment_options
+    label: Address Confirmed
+  - from: payment_options
+    to: cc_details
+    label: Selects Credit Card
+  - from: payment_options
+    to: paypal_redirect
+    label: Selects PayPal
+  - from: cc_details
+    to: order_confirmation
+    label: Card Payment Successful
+  - from: paypal_redirect
+    to: order_confirmation
+    label: PayPal Payment Successful
+  - from: order_confirmation
+    to: end_checkout
+    label: View Order Confirmation

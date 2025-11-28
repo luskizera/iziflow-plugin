@@ -23,13 +23,14 @@ type FlowParseResult = {
     nodes: FlowNode[];
     connections: Connection[];
     layoutConfig?: ParsedLayoutConfig;
+    flowName?: string;
 };
 
 function resolveLayoutConfig(layoutConfig?: LayoutSpacingConfig): LayoutSpacingConfig {
     return layoutConfig ?? {
-        unit: 200,
+        unit: 300,
         spacing: {
-            horizontal: LayoutConfig.Nodes.HORIZONTAL_SPACING,
+            horizontal: LayoutConfig.Nodes.HORIZONTAL_SPACING || 300,
             vertical: LayoutConfig.VerticalLanes.LANE_HEIGHT,
         },
     };
@@ -127,8 +128,8 @@ async function generateFlowWithBifurcatedLayout(
             await new Promise(resolve => setTimeout(resolve, 50));
             
             const position = nodePositions.get(nodeData.id)!;
-            frame.x = position.x;
-            frame.y = position.y;
+            frame.x = position.x - frame.width / 2;
+            frame.y = position.y - frame.height / 2;
             
             nodeMap[nodeData.id] = frame;
             createdFrames.push(frame);
@@ -519,7 +520,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              if (!flowDataResult || !flowDataResult.nodes || flowDataResult.nodes.length === 0) {
                  throw new Error("Nenhum nó válido encontrado após o parsing.");
              }
-             const { nodes: flowNodes, connections: flowConnections, layoutConfig } = flowDataResult;
+             const { nodes: flowNodes, connections: flowConnections, layoutConfig, flowName } = flowDataResult;
              console.log(`[Flow ID: ${generationId}] Parsing OK. Nodes: ${flowNodes.length}, Conns: ${flowConnections.length}`);
 
              // 5. Carregar Fontes
@@ -588,7 +589,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
 
              // --- SUCESSO ---
              console.log(`[Flow ID: ${generationId}] Tentando adicionar ao histórico...`);
-             await addHistoryEntry(rawInput);
+             await addHistoryEntry(rawInput, flowName);
              console.log(`[Flow ID: ${generationId}] Adicionado ao histórico com sucesso.`);
 
              // <<< ATUALIZA A UI COM O NOVO HISTÓRICO >>>

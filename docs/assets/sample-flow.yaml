@@ -1,4 +1,5 @@
 metadata:
+  name: Sample Flow
   layout:
     algorithm: auto
     unit: 200

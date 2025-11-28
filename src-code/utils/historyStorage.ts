@@ -9,19 +9,24 @@ const MAX_HISTORY_ITEMS = 50;
 // --- Funções Auxiliares ---
 
 /**
- * Extrai o nome do fluxo do conteúdo Markdown.
- * @param markdown O conteúdo completo do fluxo.
- * @returns O nome do fluxo ou "Untitled Flow" se não for encontrado.
+ * Resolve o nome do fluxo usando o valor informado pelo parser ou heurísticas legadas.
  */
-function extractFlowName(markdown: string): string {
-    if (!markdown) return "Untitled Flow";
-    const lines = markdown.split('\n');
+function resolveFlowName(flowInput: string, parsedName?: string): string {
+    const sanitizedParsed = parsedName?.trim();
+    if (sanitizedParsed) {
+        return sanitizedParsed;
+    }
+
+    if (!flowInput) return "Untitled Flow";
+
+    const lines = flowInput.split('\n');
     for (const line of lines) {
         const trimmedLine = line.trim();
         if (trimmedLine.startsWith('# Flow Name:')) {
             return trimmedLine.substring('# Flow Name:'.length).trim() || "Untitled Flow";
         }
     }
+
     return "Untitled Flow";
 }
 
@@ -74,7 +79,7 @@ export async function getHistory(): Promise<HistoryEntry[]> {
  * Adiciona uma nova entrada de markdown ao histórico.
  * @param markdownToAdd O conteúdo markdown do fluxo a ser adicionado.
  */
-export async function addHistoryEntry(markdownToAdd: string): Promise<void> {
+export async function addHistoryEntry(markdownToAdd: string, parsedName?: string): Promise<void> {
     console.log('[HistoryStorage] Iniciando addHistoryEntry...');
     if (typeof markdownToAdd !== 'string' || !markdownToAdd.trim()) {
         console.warn("[HistoryStorage] Tentativa de adicionar entrada de histórico vazia/inválida.");
@@ -88,7 +93,7 @@ export async function addHistoryEntry(markdownToAdd: string): Promise<void> {
         // Criar a nova entrada
         const newEntry: HistoryEntry = {
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            name: extractFlowName(markdownToAdd),
+            name: resolveFlowName(markdownToAdd, parsedName),
             markdown: markdownToAdd,
             createdAt: new Date().toISOString()
         };

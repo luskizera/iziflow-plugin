@@ -17,9 +17,10 @@ export interface ParsedYAMLFlowResult {
   nodes: FlowNode[];
   connections: Connection[];
   layoutConfig: ParsedLayoutConfig;
+  flowName?: string;
 }
 
-const DEFAULT_HORIZONTAL_SPACING = '1.5u';
+const DEFAULT_HORIZONTAL_SPACING = '1u';
 const DEFAULT_VERTICAL_SPACING = '0.75u';
 
 /**
@@ -36,6 +37,7 @@ export function parseYAMLToFlow(input: string): ParsedYAMLFlowResult {
 
   validateYAMLDocument(document);
 
+  const flowName = sanitizeFlowName(document.metadata?.name);
   const unit = document.metadata.layout.unit;
   const layoutConfig: ParsedLayoutConfig = {
     unit,
@@ -48,7 +50,7 @@ export function parseYAMLToFlow(input: string): ParsedYAMLFlowResult {
   const nodes = convertYAMLNodesToFlowNodes(document.nodes, unit);
   const connections = convertYAMLConnectionsToFlowConnections(document.connections);
 
-  return { nodes, connections, layoutConfig };
+  return { nodes, connections, layoutConfig, flowName };
 }
 
 /**
@@ -93,6 +95,10 @@ function validateYAMLDocument(doc: YAMLFlowDocument | undefined): asserts doc is
   const layout = doc.metadata?.layout;
   if (!layout) {
     throw new Error('metadata.layout é obrigatório.');
+  }
+
+  if (doc.metadata?.name && typeof doc.metadata.name !== 'string') {
+    throw new Error('metadata.name deve ser uma string quando definido.');
   }
 
   if (layout.algorithm !== 'auto') {
@@ -154,6 +160,14 @@ function validateYAMLDocument(doc: YAMLFlowDocument | undefined): asserts doc is
   });
 
   detectCircularAnchors(doc.nodes);
+}
+
+function sanitizeFlowName(name: string | undefined): string | undefined {
+  if (!name) {
+    return undefined;
+  }
+  const trimmed = name.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 function detectCircularAnchors(nodes: Record<string, YAMLNode>): void {

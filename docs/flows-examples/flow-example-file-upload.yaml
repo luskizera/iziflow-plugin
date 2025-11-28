@@ -1,0 +1,115 @@
+metadata:
+  name: File Upload Process
+  layout:
+    algorithm: auto
+    unit: 200
+    first_node_position: center
+    spacing:
+      horizontal: 1.6u
+      vertical: 0.8u
+
+nodes:
+  start_upload:
+    type: ENTRYPOINT
+    name: Begin Upload
+    description: Entry point for the upload routine.
+    content: |
+      Category: System
+
+  upload_trigger:
+    type: STEP
+    name: Initiate File Upload
+    description: User chooses to upload a document.
+    content: |
+      Category: User Action
+      Context: User clicks the "Upload Document" button or drags a file onto the dropzone.
+
+  file_selection:
+    type: STEP
+    name: File Selection Dialog
+    description: OS file picker opens for selection.
+    content: |
+      Category: System Interaction
+      User Task: Select one or more files to upload.
+
+  validation_preview:
+    type: STEP
+    name: Validation & Preview
+    description: System validates the selected files.
+    content: |
+      Category: Pre-Upload
+      Success Feedback: File ready for upload (shows filename and size).
+      Error Feedback: Unsupported file type or size exceeds limit.
+      Options:
+        - Confirm Upload
+        - Cancel
+        - Choose Different File
+
+  metadata_input:
+    type: STEP
+    name: Add File Metadata (Optional)
+    description: Optional inputs before uploading.
+    content: |
+      Category: User Input
+      Inputs:
+        - Description (Textarea)
+        - Tags (Comma-separated)
+
+  upload_progress:
+    type: STEP
+    name: Uploading File
+    description: Real-time progress indicator.
+    content: |
+      Category: Feedback
+      State: Uploading [filename]... X%
+      Option: Cancel Upload.
+
+  upload_complete:
+    type: STEP
+    name: Upload Successful
+    description: User feedback after upload completes.
+    content: |
+      Category: Success Feedback
+      Message: "[filename]" has been uploaded successfully!
+      Next Actions:
+        - View File
+        - Upload Another
+
+  end_upload:
+    type: END
+    name: End Upload Process
+    description: Terminates the upload journey.
+    content: |
+      Category: System
+
+connections:
+  - from: start_upload
+    to: upload_trigger
+    label: User Initiates
+  - from: upload_trigger
+    to: file_selection
+    label: Trigger Action Completed
+  - from: file_selection
+    to: validation_preview
+    label: File(s) Selected
+  - from: validation_preview
+    to: metadata_input
+    label: Valid File - Confirm Upload
+  - from: validation_preview
+    to: upload_trigger
+    label: Choose Different File
+  - from: metadata_input
+    to: upload_progress
+    label: Metadata Saved or Skipped
+  - from: validation_preview
+    to: upload_progress
+    label: Valid File - Confirm Upload (No Metadata)
+  - from: upload_progress
+    to: upload_complete
+    label: Upload Finishes
+  - from: upload_complete
+    to: end_upload
+    label: User Finishes
+  - from: upload_complete
+    to: upload_trigger
+    label: Upload Another

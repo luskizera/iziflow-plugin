@@ -3,7 +3,7 @@ import type { HistoryEntry, LayoutPreferences } from './flow.types';
 
 export interface EventTS {
   'generate-flow': {
-    markdown: string;
+    yaml: string;
     mode: 'light' | 'dark';
     accentColor: string;
   };
@@ -15,7 +15,7 @@ export interface EventTS {
   'get-history': {};
   'history-data': { history: string[] };
   'history-updated': { history: HistoryEntry[] };
-  // 'add-history-entry': { markdown: string }; // Note: Plugin adds internally now
+  // 'add-history-entry': { yaml: string }; // Note: Plugin adds internally now
   'clear-history-request': {};
   'remove-history-entry': { id: string };
   

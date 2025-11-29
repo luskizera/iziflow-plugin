@@ -39,7 +39,7 @@ function isValidHistoryEntry(obj: any): obj is HistoryEntry {
     return obj &&
            typeof obj.id === 'string' &&
            typeof obj.name === 'string' &&
-           typeof obj.markdown === 'string' &&
+           typeof obj.yaml === 'string' &&
            typeof obj.createdAt === 'string';
 }
 
@@ -76,12 +76,12 @@ export async function getHistory(): Promise<HistoryEntry[]> {
 }
 
 /**
- * Adiciona uma nova entrada de markdown ao histórico.
- * @param markdownToAdd O conteúdo markdown do fluxo a ser adicionado.
+ * Adiciona uma nova entrada de yaml ao histórico.
+ * @param yamlToAdd O conteúdo yaml do fluxo a ser adicionado.
  */
-export async function addHistoryEntry(markdownToAdd: string, parsedName?: string): Promise<void> {
+export async function addHistoryEntry(yamlToAdd: string, parsedName?: string): Promise<void> {
     console.log('[HistoryStorage] Iniciando addHistoryEntry...');
-    if (typeof markdownToAdd !== 'string' || !markdownToAdd.trim()) {
+    if (typeof yamlToAdd !== 'string' || !yamlToAdd.trim()) {
         console.warn("[HistoryStorage] Tentativa de adicionar entrada de histórico vazia/inválida.");
         return;
     }
@@ -93,8 +93,8 @@ export async function addHistoryEntry(markdownToAdd: string, parsedName?: string
         // Criar a nova entrada
         const newEntry: HistoryEntry = {
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            name: resolveFlowName(markdownToAdd, parsedName),
-            markdown: markdownToAdd,
+            name: resolveFlowName(yamlToAdd, parsedName),
+            yaml: yamlToAdd,
             createdAt: new Date().toISOString()
         };
         console.log('[HistoryStorage] Nova entrada criada:', newEntry);

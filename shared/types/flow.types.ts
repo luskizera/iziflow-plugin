@@ -98,8 +98,8 @@ export interface FlowData {
  */
 export interface HistoryEntry {
   id: string;          // Gerado com UUID ou timestamp + aleatório
-  name: string;        // Um nome curto para o fluxo, extraído do markdown
-  markdown: string;    // O conteúdo completo do fluxo em markdown
+  name: string;        // Um nome curto para o fluxo, extraído do yaml
+  yaml: string;    // O conteúdo completo do fluxo em yaml
   createdAt: string;   // Data de criação em formato ISO string
 }
 

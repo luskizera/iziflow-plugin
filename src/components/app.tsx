@@ -66,11 +66,11 @@ declare const figma: {
 
 export function App() {
   // --- States ---
-  const [markdown, setMarkdown] = useState("");
+  const [yaml, setyaml] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { theme: uiTheme, setTheme: setUiTheme } = useTheme();
-  const markdownTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const yamlTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [accentColor, setAccentColor] = useState<string>("#3860FF");
   const [inputValue, setInputValue] = useState<string>(accentColor);
   const [nodeMode, setNodeMode] = useState<NodeGenerationMode>("light");
@@ -100,7 +100,7 @@ export function App() {
 
   // Effect for listeners and initial history fetch
   useEffect(() => {
-    markdownTextareaRef.current?.focus();
+    yamlTextareaRef.current?.focus();
     console.log("[App Effect] Montado. Pedindo histórico inicial...");
     dispatchTS("get-history");
 
@@ -283,7 +283,7 @@ export function App() {
     setError(null);
     setIsLoading(true);
 
-    if (!markdown.trim()) {
+    if (!yaml.trim()) {
       setError("O campo YAML não pode estar vazio.");
       setIsLoading(false);
       return;
@@ -297,12 +297,12 @@ export function App() {
 
     try {
       console.log("[handleSubmit] Enviando para plugin:", {
-        markdown,
+        yaml,
         mode: nodeMode,
         accentColor: finalAccentColor,
       });
       dispatchTS("generate-flow", {
-        markdown,
+        yaml,
         mode: nodeMode,
         accentColor: finalAccentColor,
       });
@@ -318,9 +318,9 @@ export function App() {
   };
 
   const handleCleanText = () => {
-    setMarkdown("");
+    setyaml("");
     setError(null);
-    markdownTextareaRef.current?.focus();
+    yamlTextareaRef.current?.focus();
   };
   const handleNodeModeChange = (value: string) => {
     if (value === "light" || value === "dark") {
@@ -373,10 +373,10 @@ export function App() {
   // --- History Handlers ---
   // << MUDANÇA: Recebe HistoryEntry
   const handleLoadFromHistory = (historyEntry: HistoryEntry) => {
-    setMarkdown(historyEntry.markdown);
+    setyaml(historyEntry.yaml);
     setError(null);
     setActiveTab("generator");
-    setTimeout(() => markdownTextareaRef.current?.focus(), 0);
+    setTimeout(() => yamlTextareaRef.current?.focus(), 0);
   };
 
   const handleRemoveItemClick = (entry: HistoryEntry) => {
@@ -513,9 +513,9 @@ export function App() {
           >
             {/* Textarea */}
             <Textarea
-              ref={markdownTextareaRef}
-              value={markdown}
-              onChange={(e) => setMarkdown(e.target.value)}
+              ref={yamlTextareaRef}
+              value={yaml}
+              onChange={(e) => setyaml(e.target.value)}
               placeholder="Paste your IziFlow YAML here or start typing..."
               className="h-full w-full resize-none font-mono text-xs min-h-[15vh] bg-muted/30 dark:bg-muted/10 border-border"
             />
@@ -624,7 +624,7 @@ export function App() {
                   size="sm"
                   onClick={handleSubmit}
                   disabled={
-                    isLoading || !markdown.trim() || !isValidHex(inputValue)
+                    isLoading || !yaml.trim() || !isValidHex(inputValue)
                   }
                 >
                   {isLoading ? "Generating..." : "Create Flow"}

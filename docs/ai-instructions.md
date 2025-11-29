@@ -148,7 +148,7 @@ connections:
 ```
 
 > Paste the YAML description into the plugin and click **‘Generate Flow.’**  
-> You can check the full YAML syntax documentation here: [docs/markdown-syntax.md]
+> You can check the full YAML syntax documentation here: [docs/yaml-syntax.md]
 
 ---
 

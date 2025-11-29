@@ -2,11 +2,11 @@ metadata:
   name: Sample Flow
   layout:
     algorithm: auto
-    unit: 200
+    unit: 300
     first_node_position: center
     spacing:
       horizontal: 1.6u
-      vertical: 0.8u
+      vertical: 2u
 
 nodes:
   welcome_screen:

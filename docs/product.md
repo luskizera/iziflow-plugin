@@ -26,7 +26,7 @@ To automate and standardize the creation of user flows in FigJam — cutting tim
 ### ✍️ Simple YAML input
 - Define `metadata` (including `name`, layout algorithm, default unit = 300px, spacing), `nodes`, and `connections` using readable YAML.  
 - **Syntax validation:** Get instant feedback on structure errors via the YAML parser.  
-- See the **[IziFlow YAML Syntax](docs/markdown-syntax.md)** for full details.  
+- See the **[IziFlow YAML Syntax](docs/yaml-syntax.md)** for full details.  
 
 ### 🔄 Smart automation
 - **Auto layout generation:** Automatically arranges nodes on the canvas.  

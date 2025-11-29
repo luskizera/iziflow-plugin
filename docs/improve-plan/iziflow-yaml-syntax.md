@@ -17,7 +17,7 @@ An IziFlow YAML file consists of three main sections:
 metadata:
   layout:
     algorithm: auto
-    unit: 200
+    unit: 300
     first_node_position: center
 
 nodes:
@@ -58,7 +58,7 @@ The `metadata` section defines global layout configuration that applies to the e
 metadata:
   layout:
     algorithm: auto
-    unit: 200
+    unit: 300
     first_node_position: center
     spacing:
       horizontal: 1.5u
@@ -508,7 +508,7 @@ Comments start with `#` and can appear anywhere in the YAML file.
 metadata:
   layout:
     algorithm: auto
-    unit: 200  # 1 unit = 200 pixels
+    unit: 300  # 1 unit = 200 pixels
     first_node_position: center
 
 nodes:
@@ -536,7 +536,7 @@ connections:
 metadata:
   layout:
     algorithm: auto
-    unit: 200
+    unit: 300
     first_node_position: center
     spacing:
       horizontal: 1.5u
@@ -734,7 +734,7 @@ connections:
 metadata:
   layout:
     algorithm: auto
-    unit: 200
+    unit: 300
     first_node_position: center
     spacing:
       horizontal: 1.5u

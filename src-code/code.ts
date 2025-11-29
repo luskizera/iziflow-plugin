@@ -467,7 +467,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
 
     // --- Handler para 'generate-flow' ---
     if (messageType === 'generate-flow') {
-        const { markdown: rawInput, mode, accentColor } = payload;
+        const { yaml: rawInput, mode, accentColor } = payload;
         const generationId = Date.now(); // Usado para associar status
         console.log(`[Flow ID: ${generationId}] Iniciando geração... (Modo: ${mode}, Accent: ${accentColor})`);
 

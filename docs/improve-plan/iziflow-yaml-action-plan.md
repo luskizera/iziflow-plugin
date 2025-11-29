@@ -476,7 +476,7 @@ async function processFlowInput(input: string): Promise<{
     return {
       ...result,
       layoutConfig: {
-        unit: 200,
+        unit: 300,
         spacing: { horizontal: 300, vertical: 150 }
       }
     };
@@ -1123,7 +1123,7 @@ describe('YAML Parser', () => {
 metadata:
   layout:
     algorithm: auto
-    unit: 200
+    unit: 300
     first_node_position: center
 
 nodes:
@@ -1155,7 +1155,7 @@ connections:
 metadata:
   layout:
     algorithm: auto
-    unit: 200
+    unit: 300
     first_node_position: center
 
 nodes:
@@ -1234,7 +1234,7 @@ The assistant should generate a complete YAML document following the IziFlow v1.
 metadata:
   layout:
     algorithm: auto
-    unit: 200
+    unit: 300
     first_node_position: center
 
 nodes:

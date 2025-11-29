@@ -5,7 +5,7 @@ metadata:
     unit: 300
     first_node_position: center
     spacing:
-      horizontal: 1.6u
+      horizontal: 1u
       vertical: 2u
 
 nodes:

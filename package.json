@@ -9,6 +9,7 @@
     "dev:ui": "vite build --watch",
     "dev:code": "vite build --config vite.config.code.ts --watch",
     "build": "vite build && vite build --config vite.config.code.ts",
+    "buildcode": "vite build --config vite.config.code.ts",
     "preview": "vite preview",
     "hmr": "vite"
   },

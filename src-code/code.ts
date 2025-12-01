@@ -441,7 +441,7 @@ async function generateFlowWithSmartLayout(
 }
 
 // --- UI e Listener principal ---
-figma.showUI(__html__, { width: 624, height: 500, themeColors: true, title: 'IziFlow Plugin' });
+figma.showUI(__html__, { width: 680, height: 500, themeColors: true, title: 'IziFlow Plugin' });
 
 // Listener principal
 figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pelo Figma

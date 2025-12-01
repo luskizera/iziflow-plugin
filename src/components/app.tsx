@@ -516,7 +516,7 @@ export function App() {
               ref={yamlTextareaRef}
               value={yaml}
               onChange={(e) => setyaml(e.target.value)}
-              placeholder="Paste your IziFlow YAML here or start typing..."
+              placeholder="Paste your IziFlow YAML here..."
               className="h-full w-full resize-none font-mono text-xs min-h-[15vh] bg-muted/30 dark:bg-muted/10 border-border"
             />
             {/* Customization Section */}

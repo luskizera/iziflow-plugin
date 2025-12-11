@@ -3,7 +3,7 @@ import { version } from "./package.json";
 
 export const manifest: PluginManifest = {
   name: "IziFlow", 
-  id: "com.luskizera.iziflow", 
+id: "1577430455268046783",
   api: "1.0.0",
   main: "code.js",
   ui: "index.html",

@@ -186,7 +186,9 @@ async function _createDescLabelChip(label: string, finalColors: Record<string, R
     switch (normalizedLabel) {
         case 'action': variant = 'Action'; break;
         case 'inputs': case 'input': variant = 'Input'; break;
-        case 'error state': case 'error states': case 'error': case 'error message': case 'error messages': variant = 'Error'; break; // Adicionado error message(s)
+        case 'error state': case 'error states': case 'error': case 'error message': case 'error messages':
+        case 'invalid': case 'expired': case 'failed': case 'failure': // Estados de erro comuns
+            variant = 'Error'; break;
         case 'success feedback': case 'success message': case 'success': variant = 'Success'; break;
         case 'info': case 'message': case 'note': case 'context': case 'instructions': case 'summary': case 'title': case 'highlights': case 'security note': case 'prompt': case 'options': case 'motivation': case 'tone': variant = 'Info'; break; // Adicionado prompt, options, etc.
         case 'validation': variant = 'Default'; standardDisplayText="VALIDATION"; break; // Tratamento especial para Validation como Default
@@ -202,10 +204,17 @@ async function _createDescLabelChip(label: string, finalColors: Record<string, R
 
     // 2. Definir Texto Padrão baseado na Variante Final (se não for validation)
     if (standardDisplayText === label.trim()) { // Só ajusta se não for validation
+        // Para casos específicos de erro, mantém o texto original
+        const preserveOriginalText = ['invalid', 'expired', 'failed', 'failure'];
+        const shouldPreserveText = preserveOriginalText.includes(normalizedLabel);
+
         switch(variant) {
             case 'Action': standardDisplayText = "ACTION"; break;
             case 'Input': standardDisplayText = "INPUTS"; break;
-            case 'Error': standardDisplayText = "ERROR"; break;
+            case 'Error':
+                // Preserva texto original para estados de erro específicos
+                standardDisplayText = shouldPreserveText ? label.trim().toUpperCase() : "ERROR";
+                break;
             case 'Success': standardDisplayText = "SUCCESS"; break;
             case 'Info': standardDisplayText = "INFO"; break;
             default: // Para 'Default' (exceto Validation)

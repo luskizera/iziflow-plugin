@@ -786,11 +786,11 @@ export function App() {
               asChild
             >
               <a
-                href="https://www.izitools.xyz"
+                href="https://www.izitools.xyz/iziflow"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                iziTools Website
+                iziFlow Website
               </a>
             </Button>
           </div>

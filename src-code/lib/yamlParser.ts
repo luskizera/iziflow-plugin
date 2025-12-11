@@ -237,10 +237,93 @@ function buildDescriptionFields(node: YAMLNode): FlowNode['description'] | undef
   }
 
   if (node.content) {
-    fields.push({ label: 'Content', content: node.content });
+    // Tenta parsear content como campos estruturados (label: value)
+    const contentFields = parseStructuredContent(node.content);
+
+    if (contentFields.length > 0) {
+      // Se encontrou campos estruturados, adiciona cada um como field separado
+      for (const field of contentFields) {
+        fields.push(field);
+      }
+    } else {
+      // Se não é estruturado, adiciona como field único "Content"
+      fields.push({ label: 'Content', content: node.content });
+    }
   }
 
   return fields.length > 0 ? { fields } : undefined;
+}
+
+/**
+ * Parseia conteúdo estruturado no formato "Label: Value" em múltiplos fields.
+ * Detecta TODOS os tópicos (qualquer texto seguido de ":"), independente de indentação.
+ *
+ * Exemplo:
+ *   "Instruction: Type your code\nErrors:\n  invalid: Wrong code\n  expired: Code expired"
+ *
+ * Retorna:
+ *   [
+ *     { label: 'Instruction', content: 'Type your code' },
+ *     { label: 'invalid', content: 'Wrong code' },
+ *     { label: 'expired', content: 'Code expired' }
+ *   ]
+ *
+ * Nota: "Errors:" sem conteúdo inline é ignorado (serve apenas como header visual no YAML)
+ */
+function parseStructuredContent(content: string): DescriptionField[] {
+  const fields: DescriptionField[] = [];
+  const lines = content.split('\n');
+
+  let currentLabel: string | null = null;
+  let currentContent: string[] = [];
+
+  const saveCurrentField = () => {
+    if (currentLabel !== null) {
+      const contentText = currentContent.join('\n').trim();
+      // Só adiciona se tiver conteúdo OU se o label não for um header vazio
+      if (contentText.length > 0) {
+        fields.push({ label: currentLabel, content: contentText });
+      }
+      // Se não tem conteúdo, não adiciona (ignora headers vazios como "Errors:")
+    }
+  };
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+
+    // Ignora linhas vazias
+    if (trimmedLine.length === 0) {
+      continue;
+    }
+
+    // Verifica se a linha é um tópico (contém ":")
+    const topicMatch = trimmedLine.match(/^([^:]+):\s*(.*)$/);
+
+    if (topicMatch) {
+      // Salva o tópico anterior antes de começar novo
+      saveCurrentField();
+
+      // Inicia novo tópico
+      currentLabel = topicMatch[1].trim();
+      const inlineContent = topicMatch[2].trim();
+
+      // Se tem conteúdo na mesma linha (ex: "Message: texto"), adiciona
+      if (inlineContent.length > 0) {
+        currentContent = [inlineContent];
+      } else {
+        currentContent = [];
+      }
+    } else if (currentLabel !== null) {
+      // Se não é um novo tópico mas existe um tópico ativo, adiciona ao conteúdo
+      currentContent.push(trimmedLine);
+    }
+    // Se não é tópico e não há tópico ativo, ignora a linha
+  }
+
+  // Adiciona o último tópico se existir
+  saveCurrentField();
+
+  return fields;
 }
 
 function convertYAMLConnectionsToFlowConnections(yamlConnections: YAMLConnection[]): Connection[] {

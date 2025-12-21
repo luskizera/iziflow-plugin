@@ -748,7 +748,7 @@ export function App() {
         </Tabs>
         <footer className="flex flex-row sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            Made with ❤️ by IziTools
+            Made with ❤️
           </p>
           <div className="flex items-center gap-3">
             <Button
@@ -786,7 +786,7 @@ export function App() {
               asChild
             >
               <a
-                href="https://www.izitools.xyz/iziflow"
+                href="https://www.izitools.xyz/"
                 target="_blank"
                 rel="noopener noreferrer"
               >

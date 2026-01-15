@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     emptyOutDir: false,
     outDir: ".tmp",
-    target: "chrome58",
+    target: "es2020", // Vite 7 compatible, Figma uses modern V8 engine
     rollupOptions: {
       output: {
         inlineDynamicImports: true,
@@ -20,7 +20,7 @@ export default defineConfig({
     terserOptions: {
       compress: {
         passes: 2,
-        drop_console: false, // Importante: manter isso como false
+        drop_console: false,
         drop_debugger: false
       },
       mangle: true

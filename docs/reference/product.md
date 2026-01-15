@@ -1,11 +1,11 @@
 # IziFlow – the automation plugin for user flows
 
-IziFlow is a next-gen FigJam plugin that **redefines how user flows are created** through smart automation. Designed for designers and product teams, it turns **structured YAML input** into visually consistent flow diagrams in seconds.
+IziFlow is a FigJam plugin that **simplifies how user flows are created** through smart automation. Designed for designers and product teams, it turns **structured YAML input** into visually consistent flow diagrams in seconds.
 
 ## Overview
 
 ### Main goal
-To automate and standardize the creation of user flows in FigJam — cutting time, removing repetitive work, and ensuring visual consistency through an **intuitive text-based input**.
+To automate and standardize the creation of user flows in FigJam cutting time, removing repetitive work, and ensuring visual consistency through an **intuitive text-based input**.
 
 ### Target audience
 - UI/UX designers  
@@ -38,8 +38,8 @@ To automate and standardize the creation of user flows in FigJam — cutting tim
 - **Detailed content:** Displays names, descriptions, and metadata where needed.  
 - **Connection styles:** Differentiates primary and secondary connections (`[SECONDARY]`).  
 
-### 🤖 AI assistant (optional)
-- Use the IziFlow Copilot (GPT-powered) to automatically generate ready-to-paste YAML (with metadata, anchors, offsets) through guided prompts — just copy the result into the plugin.  
+### 🤖 AI assistant
+- Use the IziFlow Copilot (GPT-powered) to automatically generate ready-to-paste YAML (with metadata, anchors, offsets) through guided prompts just copy the result into the plugin.  
 
 ## Technical requirements
 

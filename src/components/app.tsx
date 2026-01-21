@@ -81,6 +81,7 @@ export function App() {
     action: () => void;
     title: string;
     description: string;
+    icon?: React.ReactNode;
   } | null>(null);
 
   console.log(
@@ -385,6 +386,7 @@ export function App() {
       title: `Delete "${entry.name}"?`,
       description:
         "This will permanently delete this flow from your history. This action cannot be undone.",
+      icon: <Trash2Icon className="h-5 w-5 text-destructive" />,
     });
     setIsConfirmDialogOpen(true);
   };
@@ -395,6 +397,7 @@ export function App() {
         action: () => dispatchTS("clear-history-request"),
         title: "Delete all history?",
         description: `Are you sure you want to delete all ${history.length} entries? This action cannot be undone.`,
+        icon: <Trash2Icon className="h-5 w-5 text-destructive" />,
       });
       setIsConfirmDialogOpen(true);
     }
@@ -802,7 +805,10 @@ export function App() {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{actionToConfirm?.title}</AlertDialogTitle>
+              <div className="flex items-center gap-2">
+                {actionToConfirm?.icon}
+                <AlertDialogTitle>{actionToConfirm?.title}</AlertDialogTitle>
+              </div>
               <AlertDialogDescription>
                 {actionToConfirm?.description}
               </AlertDialogDescription>
@@ -818,6 +824,9 @@ export function App() {
                     setActionToConfirm(null);
                   }
                 }}
+                className={cn(
+                  actionToConfirm?.icon ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""
+                )}
               >
                 Confirm
               </AlertDialogAction>

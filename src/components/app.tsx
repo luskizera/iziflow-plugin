@@ -404,7 +404,7 @@ export function App() {
     <TooltipProvider delayDuration={100}>
       <div
         className={cn(
-          "flex flex-col h-[500px] bg-background text-foreground pt-4 pb-1 px-4 gap-5",
+          "flex flex-col h-125 bg-background text-foreground pt-4 pb-1 px-4 gap-5",
           uiTheme
         )}
       >
@@ -642,7 +642,7 @@ export function App() {
               <h2 className="text-xl font-medium shrink-0">
                 Flows History
               </h2>
-              <div className="grow w-full min-h-0 border max-h-[200px] rounded-md">
+              <div className="grow w-full min-h-0 border max-h-50 rounded-md">
                 <ScrollArea className="h-full">
                   <Table className="text-xs">
                     <TableHeader className="top-0 bg-muted/80 backdrop-blur-sm">

@@ -3,33 +3,33 @@ import { z } from "zod";
 
 // Define o schema para DescriptionField primeiro
 // Note o z.union para 'content' para flexibilidade
-// Zod 4: z.looseObject() permite campos extras (substitui .passthrough())
-const DescriptionFieldSchema = z.looseObject({
+// Revertido para z.object().passthrough() para compatibilidade com Zod 3
+const DescriptionFieldSchema = z.object({
   label: z.string(),
   content: z.union([
     z.string(),
     z.array(z.string()),
-    z.record(z.string(), z.string()), // Zod 4: record requer dois argumentos
+    z.record(z.string(), z.string()), 
   ]),
-});
+}).passthrough();
 
 // Define o schema para FlowNode usando o DescriptionFieldSchema
-// Zod 4: z.looseObject() permite campos extras não definidos
+// Revertido para z.object().passthrough() para compatibilidade com Zod 3
 export const FlowNodeSchema = z.object({
   id: z.string(),
   type: z.enum(["START", "END", "STEP", "DECISION", "ENTRYPOINT"]),
   name: z.string(),
-  metadata: z.looseObject({
+  metadata: z.object({
     category: z.string().optional(),
     createdBy: z.string().optional(),
-  }).optional(),
+  }).passthrough().optional(),
   /**
    * CORREÇÃO: 'description' agora é um objeto opcional
    * que CONTÉM a propriedade 'fields' (que é o array).
    */
-  description: z.looseObject({
+  description: z.object({
     fields: z.array(DescriptionFieldSchema),
-  }).optional(),
+  }).passthrough().optional(),
 });
 
 // Define o schema para Connection

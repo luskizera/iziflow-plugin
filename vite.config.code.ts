@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     emptyOutDir: false,
     outDir: ".tmp",
-    target: "es2020", // Vite 7 compatible, Figma uses modern V8 engine
+    target: "es2017", // Reverted to ES2017 for better compatibility
     rollupOptions: {
       output: {
         inlineDynamicImports: true,

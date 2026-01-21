@@ -409,7 +409,7 @@ export function App() {
         )}
       >
         {/* Header */}
-        <header className="flex items-center justify-between w-full flex-shrink-0">
+        <header className="flex items-center justify-between w-full shrink-0">
           <div className="h-6 w-auto text-foreground">
             {/* IziFlow Logo SVG */}
             <svg
@@ -489,9 +489,9 @@ export function App() {
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="flex flex-col flex-grow min-h-0"
+          className="flex flex-col grow min-h-0"
         >
-          <TabsList className="flex-shrink-0 h-9 w-auto justify-start rounded-lg bg-muted text-muted-foreground">
+          <TabsList className="shrink-0 h-9 w-auto justify-start rounded-lg bg-muted text-muted-foreground">
             <TabsTrigger
               value="generator"
               className="flex-1 px-3 py-1 h-7 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
@@ -520,7 +520,7 @@ export function App() {
               className="h-full w-full resize-none font-mono text-xs min-h-[15vh] bg-muted/30 dark:bg-muted/10 border-border"
             />
             {/* Customization Section */}
-            <div className="flex flex-col gap-2 w-full flex-shrink-0">
+            <div className="flex flex-col gap-2 w-full shrink-0">
               <h3 className="text-xl font-medium">Customize nodes</h3>
               <div className="flex flex-row items-end gap-2">
                 {/* Accent Color Input */}
@@ -610,7 +610,7 @@ export function App() {
               </div>
             </div>
             {/* Error Area & Action Buttons */}
-            <div className="w-full mt-auto flex-shrink-0 space-y-1.5 pt-1.5">
+            <div className="w-full mt-auto shrink-0 space-y-1.5 pt-1.5">
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
@@ -636,13 +636,13 @@ export function App() {
           {/* --- History Tab Content (Table View) --- */}
           <TabsContent
             value="history"
-            className="flex flex-col flex-grow p-3 gap-6 overflow-hidden data-[state=inactive]:hidden"
+            className="flex flex-col grow p-3 gap-6 overflow-hidden data-[state=inactive]:hidden"
           >
-            <div className="flex flex-col flex-grow w-full items-start gap-2">
-              <h2 className="text-xl font-medium flex-shrink-0">
+            <div className="flex flex-col grow w-full items-start gap-2">
+              <h2 className="text-xl font-medium shrink-0">
                 Flows History
               </h2>
-              <div className="flex-grow w-full min-h-0 border max-h-[200px] rounded-md">
+              <div className="grow w-full min-h-0 border max-h-[200px] rounded-md">
                 <ScrollArea className="h-full">
                   <Table className="text-xs">
                     <TableHeader className="top-0 bg-muted/80 backdrop-blur-sm">
@@ -733,7 +733,7 @@ export function App() {
               </div>
             </div>
             {/* Clean History Button */}
-            <div className="flex justify-end mt-auto flex-shrink-0">
+            <div className="flex justify-end mt-auto shrink-0">
               <Button
                 variant="destructive"
                 size="sm"

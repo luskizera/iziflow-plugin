@@ -1,6 +1,6 @@
 // src/components/app.tsx
 // src/components/app.tsx
-import React, { useState, useRef, useEffect, type ChangeEvent } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import yaml from "js-yaml";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,7 +26,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
+import {
+  ColorArea,
+  ColorPicker,
+  ColorSlider,
+  ColorSwatch,
+  ColorThumb,
+  SliderTrack,
+} from "@/components/ui/color";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -78,7 +90,6 @@ export function App() {
   const { theme: uiTheme, setTheme: setUiTheme } = useTheme();
   const yamlTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [accentColor, setAccentColor] = useState<string>("#3860FF");
-  const [inputValue, setInputValue] = useState<string>(accentColor);
   const [nodeMode, setNodeMode] = useState<NodeGenerationMode>("light");
   const [history, setHistory] = useState<HistoryEntry[]>([]); // << MUDANÇA: Usa HistoryEntry[]
   const [activeTab, setActiveTab] = useState<string>("generator");
@@ -100,13 +111,6 @@ export function App() {
     history.length
   );
   console.log("[App Render] History state:", history);
-
-  // --- Effects ---
-  useEffect(() => {
-    if (isValidHex(accentColor)) {
-      setInputValue(accentColor.toUpperCase());
-    }
-  }, [accentColor]);
 
   // Effect to save UI preferences when they change (debounced)
   useEffect(() => {
@@ -145,7 +149,6 @@ export function App() {
       
       if (loadedAccent && isValidHex(loadedAccent)) {
         setAccentColor(loadedAccent);
-        setInputValue(loadedAccent);
       }
       if (loadedNodeMode) setNodeMode(loadedNodeMode);
       if (loadedUiTheme) setUiTheme(loadedUiTheme);
@@ -368,7 +371,7 @@ export function App() {
       setIsLoading(false);
       return;
     }
-    if (!isValidHex(inputValue)) {
+    if (!isValidHex(accentColor)) {
       setError("Invalid Accent color. Use HEX format (e.g. #3860FF).");
       setIsLoading(false);
       return;
@@ -408,44 +411,13 @@ export function App() {
     }
   };
 
-  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    let newValue = event.target.value;
-    if (newValue.startsWith("#")) {
-      newValue = "#" + newValue.substring(1).replace(/[^0-9a-fA-F]/gi, "");
-    } else {
-      newValue = "#" + newValue.replace(/[^0-9a-fA-F]/gi, "");
-    }
-    newValue = newValue.substring(0, 7);
-    const upperNewValue = newValue.toUpperCase();
-    setInputValue(upperNewValue);
-    if (isValidHex(upperNewValue)) {
-      setAccentColor(upperNewValue);
-      if (
-        error === "Invalid Accent color." ||
-        error === "Invalid Accent color. Use HEX format (e.g. #3860FF)."
-      ) {
-        setError(null);
-      }
-    } else if (upperNewValue.length === 7) {
-      setError("Invalid Accent color.");
-    } else {
-      if (error === "Invalid Accent color.") {
-        setError(null);
-      }
-    }
-  };
-
-  const handleInputBlur = () => {
-    if (!isValidHex(inputValue)) {
-      setInputValue(accentColor.toUpperCase());
-      if (
-        error === "Invalid Accent color." ||
-        error === "Invalid Accent color. Use HEX format (e.g. #3860FF)."
-      ) {
-        setError(null);
-      }
-    } else {
-      setAccentColor(inputValue.toUpperCase());
+  const handleAccentColorChange = (color: { toString: (format: string) => string }) => {
+    const nextColor = color.toString("hex").toUpperCase();
+    setAccentColor(nextColor);
+    if (
+      error === "Invalid Accent color." ||
+      error === "Invalid Accent color. Use HEX format (e.g. #3860FF)."
+    ) {
       setError(null);
     }
   };
@@ -640,31 +612,45 @@ export function App() {
                       </TooltipContent>
                     </Tooltip>
                   </Label>
-                  <div className="relative flex items-center w-full h-8">
-                    <Input
-                      id="accent-color-input"
-                      type="text"
-                      value={inputValue}
-                      onChange={handleInputChange}
-                      onBlur={handleInputBlur}
-                      className={cn(
-                        "h-8 w-full pl-7 pr-1 text-xs font-mono",
-                        !isValidHex(inputValue) &&
-                          "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30"
-                      )}
-                      maxLength={7}
-                      aria-label="Accent color hex value"
-                    />
-                    <div
-                      aria-hidden="true"
-                      className="absolute left-1.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-sm border border-input pointer-events-none"
-                      style={{
-                        backgroundColor: isValidHex(accentColor)
-                          ? accentColor
-                          : "#CCCCCC",
-                      }}
-                    />
-                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="accent-color-input"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-full justify-start gap-2 px-2 text-xs font-mono"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="inline-flex h-4 w-4 rounded-xs border border-input"
+                          style={{ backgroundColor: accentColor }}
+                        />
+                        {accentColor}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[220px] p-3">
+                      <ColorPicker value={accentColor} onChange={handleAccentColorChange}>
+                        <div className="flex flex-col items-center gap-2">
+                          <ColorArea
+                            colorSpace="hsb"
+                            xChannel="saturation"
+                            yChannel="brightness"
+                          >
+                            <ColorThumb />
+                          </ColorArea>
+                          <ColorSlider colorSpace="hsb" channel="hue">
+                            <SliderTrack>
+                              <ColorThumb />
+                            </SliderTrack>
+                          </ColorSlider>
+                          <div className="flex items-center gap-2 text-xs font-mono">
+                            <ColorSwatch className="h-4 w-4 rounded-sm border border-input" />
+                            <span>{accentColor}</span>
+                          </div>
+                        </div>
+                      </ColorPicker>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 {/* Node Mode Tabs */}
                 <div className="flex flex-1 flex-col items-start gap-1">
@@ -725,7 +711,7 @@ export function App() {
                   size="sm"
                   onClick={handleSubmit}
                   disabled={
-                    isLoading || !yamlContent.trim() || !isValidHex(inputValue)
+                    isLoading || !yamlContent.trim() || !isValidHex(accentColor)
                   }
                 >
                   {isLoading ? "Generating..." : "Create Flow"}

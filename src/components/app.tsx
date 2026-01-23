@@ -90,7 +90,7 @@ export function App() {
     "history.length:",
     history.length
   );
-  console.log("[App Render] Estado do histórico:", history);
+  console.log("[App Render] History state:", history);
 
   // --- Effects ---
   useEffect(() => {
@@ -102,7 +102,7 @@ export function App() {
   // Effect for listeners and initial history fetch
   useEffect(() => {
     yamlTextareaRef.current?.focus();
-    console.log("[App Effect] Montado. Pedindo histórico inicial...");
+    console.log("[App Effect] Mounted. Requesting initial history...");
     dispatchTS("get-history");
 
     // Handlers for specific messages
@@ -114,38 +114,38 @@ export function App() {
     // << MUDANÇA: Ouve 'history-updated' e atualiza o estado
     const handleHistoryUpdate = (payload: EventTS["history-updated"]) => {
       console.log(
-        "[App Handler] Recebido 'history-updated'. Payload completo:",
+        "[App Handler] Received 'history-updated'. Full payload:",
         payload
       );
       console.log(
-        "[App Handler] Tipo de payload.history:",
+        "[App Handler] payload.history type:",
         typeof payload.history,
-        "É array?",
+        "Is array?",
         Array.isArray(payload.history)
       );
       if (Array.isArray(payload.history)) {
         console.log(
-          `[App Handler] Definindo ${payload.history.length} itens no histórico:`,
+          `[App Handler] Setting ${payload.history.length} items in history:`,
           payload.history
         );
         setHistory(payload.history);
       } else {
-        console.error("UI: Formato de histórico inválido recebido:", payload);
+        console.error("UI: Invalid history format received:", payload);
         setHistory([]);
       }
     };
 
     const handleParseError = (payload: EventTS["parse-error"]) => {
-      console.error("[App Handler] Recebido 'parse-error'. Payload:", payload);
+      console.error("[App Handler] Received 'parse-error'. Payload:", payload);
       setError(
-        `Erro de sintaxe ${payload.lineNumber ? `(linha ${payload.lineNumber})` : ""}: ${payload.message}`
+        `Syntax error ${payload.lineNumber ? `(line ${payload.lineNumber})` : ""}: ${payload.message}`
       );
       setIsLoading(false);
     };
 
     // Setup listeners
     console.log(
-      "[App Effect] Adicionando listeners (Debug, History, ParseError)..."
+      "[App Effect] Adding listeners (Debug, History, ParseError)..."
     );
     const cleanupDebug = listenTS("debug", handleDebug);
     const cleanupHistory = listenTS("history-updated", handleHistoryUpdate); // << MUDANÇA: Novo listener
@@ -156,7 +156,7 @@ export function App() {
       cleanupDebug();
       cleanupHistory();
       cleanupParseError();
-      console.log("[App Effect] Listeners limpos.");
+      console.log("[App Effect] Listeners cleared.");
     };
   }, []); // Runs only once
 
@@ -167,7 +167,7 @@ export function App() {
     const maxAttempts = 30;
 
     if (isLoading) {
-      console.log("[App Polling Effect] Iniciando verificação de status...");
+      console.log("[App Polling Effect] Starting status check...");
       intervalId = setInterval(async () => {
         attempts++;
         try {
@@ -176,10 +176,10 @@ export function App() {
             typeof figma.clientStorage === "undefined"
           ) {
             console.warn(
-              "[App Polling Effect] API Figma ou clientStorage não disponível na UI. Parando polling."
+              "[App Polling Effect] Figma API or clientStorage not available in UI. Stopping polling."
             );
             setError(
-              "Não foi possível verificar o status da geração (API Figma indisponível)."
+              "Unable to verify generation status (Figma API unavailable)."
             );
             setIsLoading(false);
             if (intervalId) clearInterval(intervalId);
@@ -203,12 +203,12 @@ export function App() {
                 isRecent
               ) {
                 console.log(
-                  `[App Polling Effect] Status final (${statusData.status}) detectado. Parando polling.`
+                  `[App Polling Effect] Final status (${statusData.status}) detected. Stopping polling.`
                 );
                 if (statusData.status === "error") {
                   setError(
                     statusData.message ||
-                      "Erro na geração (detalhes no console do plugin)."
+                      "Generation error (details in plugin console)."
                   );
                 } else {
                   setError(null);
@@ -223,7 +223,7 @@ export function App() {
                   statusData.status === "error")
               ) {
                 console.warn(
-                  "[App Polling Effect] Status final encontrado, mas é antigo. Limpando e parando polling."
+                  "[App Polling Effect] Final status found, but it is old. Cleaning up and stopping polling."
                 );
                 if (intervalId) clearInterval(intervalId);
                 setIsLoading(false);
@@ -231,12 +231,12 @@ export function App() {
               }
             } catch (parseError) {
               console.error(
-                "[App Polling Effect] Erro ao fazer parse do statusRaw:",
+                "[App Polling Effect] Error parsing statusRaw:",
                 parseError,
-                "Valor Raw:",
+                "Raw value:",
                 statusRaw
               );
-              setError("Erro interno ao ler status da geração (parse).");
+              setError("Internal error reading generation status (parse).");
               setIsLoading(false);
               if (intervalId) clearInterval(intervalId);
               try {
@@ -247,10 +247,10 @@ export function App() {
 
           if (attempts >= maxAttempts && isLoading) {
             console.warn(
-              "[App Polling Effect] Máximo de tentativas atingido. Parando polling."
+              "[App Polling Effect] Maximum attempts reached. Stopping polling."
             );
             setError(
-              "A geração demorou muito ou o status não foi atualizado. Verifique o console do Figma."
+              "Generation took too long or status was not updated. Check the Figma console."
             );
             setIsLoading(false);
             if (intervalId) clearInterval(intervalId);
@@ -260,10 +260,10 @@ export function App() {
           }
         } catch (storageError) {
           console.error(
-            "[App Polling Effect] Erro ao LER clientStorage:",
+            "[App Polling Effect] Error READING clientStorage:",
             storageError
           );
-          setError("Erro ao verificar status da geração (storage).");
+          setError("Error verifying generation status (storage).");
           setIsLoading(false);
           if (intervalId) clearInterval(intervalId);
         }
@@ -272,7 +272,7 @@ export function App() {
 
     return () => {
       if (intervalId) {
-        console.log("[App Polling Effect] Limpando intervalo de verificação.");
+        console.log("[App Polling Effect] Cleaning up verification interval.");
         clearInterval(intervalId);
       }
     };
@@ -280,24 +280,24 @@ export function App() {
 
   // --- Handlers ---
   const handleSubmit = async () => {
-    console.log("[handleSubmit] Iniciado.");
+    console.log("[handleSubmit] Started.");
     setError(null);
     setIsLoading(true);
 
     if (!yaml.trim()) {
-      setError("O campo YAML não pode estar vazio.");
+      setError("The YAML field cannot be empty.");
       setIsLoading(false);
       return;
     }
     if (!isValidHex(inputValue)) {
-      setError("Cor Accent inválida. Use formato HEX (ex: #3860FF).");
+      setError("Invalid Accent color. Use HEX format (e.g. #3860FF).");
       setIsLoading(false);
       return;
     }
     const finalAccentColor = accentColor;
 
     try {
-      console.log("[handleSubmit] Enviando para plugin:", {
+      console.log("[handleSubmit] Sending to plugin:", {
         yaml,
         mode: nodeMode,
         accentColor: finalAccentColor,
@@ -307,13 +307,13 @@ export function App() {
         mode: nodeMode,
         accentColor: finalAccentColor,
       });
-      console.log("[handleSubmit] Mensagem 'generate-flow' enviada.");
+      console.log("[handleSubmit] 'generate-flow' message sent.");
     } catch (error: any) {
       console.error(
-        "[handleSubmit] Erro ao despachar mensagem 'generate-flow':",
+        "[handleSubmit] Error dispatching 'generate-flow' message:",
         error
       );
-      setError(`Erro interno ao enviar pedido: ${error.message}`);
+      setError(`Internal error sending request: ${error.message}`);
       setIsLoading(false);
     }
   };
@@ -342,15 +342,15 @@ export function App() {
     if (isValidHex(upperNewValue)) {
       setAccentColor(upperNewValue);
       if (
-        error === "Cor Accent inválida." ||
-        error === "Cor Accent inválida. Use formato HEX (ex: #3860FF)."
+        error === "Invalid Accent color." ||
+        error === "Invalid Accent color. Use HEX format (e.g. #3860FF)."
       ) {
         setError(null);
       }
     } else if (upperNewValue.length === 7) {
-      setError("Cor Accent inválida.");
+      setError("Invalid Accent color.");
     } else {
-      if (error === "Cor Accent inválida.") {
+      if (error === "Invalid Accent color.") {
         setError(null);
       }
     }
@@ -360,8 +360,8 @@ export function App() {
     if (!isValidHex(inputValue)) {
       setInputValue(accentColor.toUpperCase());
       if (
-        error === "Cor Accent inválida." ||
-        error === "Cor Accent inválida. Use formato HEX (ex: #3860FF)."
+        error === "Invalid Accent color." ||
+        error === "Invalid Accent color. Use HEX format (e.g. #3860FF)."
       ) {
         setError(null);
       }
@@ -475,8 +475,8 @@ export function App() {
               onClick={() => setUiTheme(uiTheme === "dark" ? "light" : "dark")}
               title={
                 uiTheme === "dark"
-                  ? "Mudar para Light Mode (UI)"
-                  : "Mudar para Dark Mode (UI)"
+                  ? "Switch to Light Mode (UI)"
+                  : "Switch to Dark Mode (UI)"
               }
             >
               {uiTheme === "dark" ? (

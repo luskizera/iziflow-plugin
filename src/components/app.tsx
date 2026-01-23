@@ -1,12 +1,13 @@
 // src/components/app.tsx
 // src/components/app.tsx
 import React, { useState, useRef, useEffect, type ChangeEvent } from "react";
+import yaml from "js-yaml";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useTheme } from "@/components/providers/theme-provider";
 import { dispatchTS, listenTS } from "@/utils/utils";
 import type { EventTS } from "@shared/types/messaging.types";
-import type { HistoryEntry } from "@shared/types/flow.types"; // Importa o novo tipo
+import type { HistoryEntry } from "@shared/types/flow.types";
 import {
   SunIcon,
   MoonIcon,
@@ -14,6 +15,8 @@ import {
   Trash2Icon,
   MoreHorizontalIcon,
   PlayIcon,
+  CheckCircle2Icon,
+  AlertCircleIcon,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -46,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 type NodeGenerationMode = "light" | "dark";
+type ValidationStatus = "idle" | "valid" | "invalid";
 
 // Chave para o clientStorage (deve ser a mesma no plugin)
 const GENERATION_STATUS_KEY = "iziflow_generation_status";
@@ -66,8 +70,10 @@ declare const figma: {
 
 export function App() {
   // --- States ---
-  const [yaml, setyaml] = useState("");
+  const [yamlContent, setYamlContent] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [validationStatus, setValidationStatus] = useState<ValidationStatus>("idle");
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { theme: uiTheme, setTheme: setUiTheme } = useTheme();
   const yamlTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -278,13 +284,47 @@ export function App() {
     };
   }, [isLoading]);
 
+  // Effect for real-time YAML validation
+  useEffect(() => {
+    if (!yamlContent.trim()) {
+      setValidationStatus("idle");
+      setValidationMessage(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      try {
+        const parsed = yaml.load(yamlContent);
+        
+        if (typeof parsed !== 'object' || parsed === null) {
+          throw new Error("YAML must be a valid object.");
+        }
+
+        if (!('nodes' in (parsed as object))) {
+          setValidationStatus("invalid");
+          setValidationMessage("Missing 'nodes' property in YAML.");
+        } else {
+          setValidationStatus("valid");
+          setValidationMessage("Valid YAML structure");
+        }
+      } catch (e: any) {
+        setValidationStatus("invalid");
+        // Captura apenas a primeira linha do erro do js-yaml que costuma ser a mais relevante
+        const firstLine = e.message?.split('\n')[0] || "Invalid YAML syntax";
+        setValidationMessage(firstLine);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [yamlContent]);
+
   // --- Handlers ---
   const handleSubmit = async () => {
     console.log("[handleSubmit] Started.");
     setError(null);
     setIsLoading(true);
 
-    if (!yaml.trim()) {
+    if (!yamlContent.trim()) {
       setError("The YAML field cannot be empty.");
       setIsLoading(false);
       return;
@@ -298,12 +338,12 @@ export function App() {
 
     try {
       console.log("[handleSubmit] Sending to plugin:", {
-        yaml,
+        yaml: yamlContent,
         mode: nodeMode,
         accentColor: finalAccentColor,
       });
       dispatchTS("generate-flow", {
-        yaml,
+        yaml: yamlContent,
         mode: nodeMode,
         accentColor: finalAccentColor,
       });
@@ -319,7 +359,7 @@ export function App() {
   };
 
   const handleCleanText = () => {
-    setyaml("");
+    setYamlContent("");
     setError(null);
     yamlTextareaRef.current?.focus();
   };
@@ -374,7 +414,7 @@ export function App() {
   // --- History Handlers ---
   // << MUDANÇA: Recebe HistoryEntry
   const handleLoadFromHistory = (historyEntry: HistoryEntry) => {
-    setyaml(historyEntry.yaml);
+    setYamlContent(historyEntry.yaml);
     setError(null);
     setActiveTab("generator");
     setTimeout(() => yamlTextareaRef.current?.focus(), 0);
@@ -515,13 +555,32 @@ export function App() {
             className="mt-5 flex flex-1 flex-col gap-5 data-[state=inactive]:hidden"
           >
             {/* Textarea */}
-            <Textarea
-              ref={yamlTextareaRef}
-              value={yaml}
-              onChange={(e) => setyaml(e.target.value)}
-              placeholder="Paste your IziFlow YAML here..."
-              className="h-full w-full resize-none font-mono text-xs min-h-[15vh] bg-muted/30 dark:bg-muted/10 border-border"
-            />
+            <div className="flex flex-col gap-1.5 flex-1 min-h-0">
+              <Textarea
+                ref={yamlTextareaRef}
+                value={yamlContent}
+                onChange={(e) => setYamlContent(e.target.value)}
+                placeholder="Paste your IziFlow YAML here..."
+                className="flex-1 w-full resize-none font-mono text-xs bg-muted/30 dark:bg-muted/10 border-border"
+              />
+              
+              {/* Real-time Validation Indicator */}
+              {validationStatus !== "idle" && (
+                <div className={cn(
+                  "flex items-center gap-1.5 text-[10px] px-1 transition-all duration-200",
+                  validationStatus === "valid" ? "text-green-600 dark:text-green-400" : "text-destructive"
+                )}>
+                  {validationStatus === "valid" ? (
+                    <CheckCircle2Icon className="w-3 h-3" />
+                  ) : (
+                    <AlertCircleIcon className="w-3 h-3" />
+                  )}
+                  <span className="font-medium truncate">
+                    {validationMessage}
+                  </span>
+                </div>
+              )}
+            </div>
             {/* Customization Section */}
             <div className="flex flex-col gap-2 w-full shrink-0">
               <h3 className="text-xl font-medium">Customize nodes</h3>
@@ -627,7 +686,7 @@ export function App() {
                   size="sm"
                   onClick={handleSubmit}
                   disabled={
-                    isLoading || !yaml.trim() || !isValidHex(inputValue)
+                    isLoading || !yamlContent.trim() || !isValidHex(inputValue)
                   }
                 >
                   {isLoading ? "Generating..." : "Create Flow"}

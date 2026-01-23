@@ -696,6 +696,30 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
    else if (messageType === 'closePlugin') {
        figma.closePlugin();
    }
+   // --- Handlers para Preferências de UI ---
+   else if (messageType === 'get-ui-preferences') {
+       console.log("[Plugin] Recebido pedido 'get-ui-preferences'.");
+       try {
+           const prefsStr = await figma.clientStorage.getAsync('iziflow_ui_prefs');
+           const preferences = prefsStr ? JSON.parse(prefsStr) : {};
+           figma.ui.postMessage({ type: 'ui-preferences-updated', preferences });
+       } catch (error) {
+           console.error("[Plugin] Erro ao carregar preferências de UI:", error);
+           // Send empty to unblock UI
+           figma.ui.postMessage({ type: 'ui-preferences-updated', preferences: {} });
+       }
+   }
+   else if (messageType === 'save-ui-preferences') {
+       const { preferences } = payload;
+       if (preferences) {
+           console.log("[Plugin] Salvando preferências de UI:", preferences);
+           try {
+               await figma.clientStorage.setAsync('iziflow_ui_prefs', JSON.stringify(preferences));
+           } catch (error) {
+               console.error("[Plugin] Erro ao salvar preferências de UI:", error);
+           }
+       }
+   }
     else {
         console.warn(`[Plugin] Tipo de mensagem não tratado: ${messageType}`);
     }

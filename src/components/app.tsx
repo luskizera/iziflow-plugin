@@ -90,6 +90,9 @@ export function App() {
     icon?: React.ReactNode;
   } | null>(null);
 
+  // Ref to track if initial preferences have been loaded to avoid overwriting them
+  const isInitialLoad = useRef(true);
+
   console.log(
     "[App Render] isLoading:",
     isLoading,
@@ -105,16 +108,50 @@ export function App() {
     }
   }, [accentColor]);
 
+  // Effect to save UI preferences when they change (debounced)
+  useEffect(() => {
+    if (isInitialLoad.current) return;
+
+    const timer = setTimeout(() => {
+      console.log("[App] Saving UI preferences:", { accentColor, nodeMode, uiTheme });
+      dispatchTS("save-ui-preferences", {
+        preferences: {
+          accentColor,
+          nodeMode,
+          uiTheme: uiTheme as 'light' | 'dark',
+        },
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [accentColor, nodeMode, uiTheme]);
+
   // Effect for listeners and initial history fetch
   useEffect(() => {
     yamlTextareaRef.current?.focus();
-    console.log("[App Effect] Mounted. Requesting initial history...");
+    console.log("[App Effect] Mounted. Requesting initial history and preferences...");
     dispatchTS("get-history");
+    dispatchTS("get-ui-preferences");
 
     // Handlers for specific messages
     const handleDebug = (payload: EventTS["debug"]) => {
       const parsedData = payload.data ? JSON.parse(payload.data) : "";
       console.debug(`[Plugin Debug via UI]: ${payload.message}`, parsedData);
+    };
+
+    const handleUiPreferencesUpdated = (payload: EventTS["ui-preferences-updated"]) => {
+      console.log("[App Handler] Received 'ui-preferences-updated':", payload.preferences);
+      const { accentColor: loadedAccent, nodeMode: loadedNodeMode, uiTheme: loadedUiTheme } = payload.preferences;
+      
+      if (loadedAccent && isValidHex(loadedAccent)) {
+        setAccentColor(loadedAccent);
+        setInputValue(loadedAccent);
+      }
+      if (loadedNodeMode) setNodeMode(loadedNodeMode);
+      if (loadedUiTheme) setUiTheme(loadedUiTheme);
+      
+      // Mark initial load as complete after setting state
+      setTimeout(() => { isInitialLoad.current = false; }, 100);
     };
 
     // << MUDANÇA: Ouve 'history-updated' e atualiza o estado
@@ -151,17 +188,19 @@ export function App() {
 
     // Setup listeners
     console.log(
-      "[App Effect] Adding listeners (Debug, History, ParseError)..."
+      "[App Effect] Adding listeners (Debug, History, ParseError, UiPrefs)..."
     );
     const cleanupDebug = listenTS("debug", handleDebug);
     const cleanupHistory = listenTS("history-updated", handleHistoryUpdate); // << MUDANÇA: Novo listener
     const cleanupParseError = listenTS("parse-error", handleParseError);
+    const cleanupUiPrefs = listenTS("ui-preferences-updated", handleUiPreferencesUpdated);
 
     // Cleanup function
     return () => {
       cleanupDebug();
       cleanupHistory();
       cleanupParseError();
+      cleanupUiPrefs();
       console.log("[App Effect] Listeners cleared.");
     };
   }, []); // Runs only once

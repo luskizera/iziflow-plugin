@@ -23,6 +23,24 @@ export interface EventTS {
   'get-layout-preferences': {};
   'set-layout-preferences': { preferences: LayoutPreferences };
   'reset-layout-preferences': {};
-  'layout-preferences-updated': { preferences: LayoutPreferences };
-  'layout-preferences-error': { message: string };
-}
+    'layout-preferences-updated': { preferences: LayoutPreferences };
+    'layout-preferences-error': { message: string };
+  
+    // UI Preferences Events
+    'get-ui-preferences': {};
+    'save-ui-preferences': { 
+      preferences: {
+        accentColor: string;
+        nodeMode: 'light' | 'dark';
+        uiTheme: 'light' | 'dark';
+      }
+    };
+    'ui-preferences-updated': {
+      preferences: {
+        accentColor: string;
+        nodeMode: 'light' | 'dark';
+        uiTheme: 'light' | 'dark';
+      }
+    };
+  }
+  

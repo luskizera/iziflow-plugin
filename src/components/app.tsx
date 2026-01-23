@@ -81,6 +81,7 @@ export function App() {
     action: () => void;
     title: string;
     description: string;
+    icon?: React.ReactNode;
   } | null>(null);
 
   console.log(
@@ -89,7 +90,7 @@ export function App() {
     "history.length:",
     history.length
   );
-  console.log("[App Render] Estado do histórico:", history);
+  console.log("[App Render] History state:", history);
 
   // --- Effects ---
   useEffect(() => {
@@ -101,7 +102,7 @@ export function App() {
   // Effect for listeners and initial history fetch
   useEffect(() => {
     yamlTextareaRef.current?.focus();
-    console.log("[App Effect] Montado. Pedindo histórico inicial...");
+    console.log("[App Effect] Mounted. Requesting initial history...");
     dispatchTS("get-history");
 
     // Handlers for specific messages
@@ -113,38 +114,38 @@ export function App() {
     // << MUDANÇA: Ouve 'history-updated' e atualiza o estado
     const handleHistoryUpdate = (payload: EventTS["history-updated"]) => {
       console.log(
-        "[App Handler] Recebido 'history-updated'. Payload completo:",
+        "[App Handler] Received 'history-updated'. Full payload:",
         payload
       );
       console.log(
-        "[App Handler] Tipo de payload.history:",
+        "[App Handler] payload.history type:",
         typeof payload.history,
-        "É array?",
+        "Is array?",
         Array.isArray(payload.history)
       );
       if (Array.isArray(payload.history)) {
         console.log(
-          `[App Handler] Definindo ${payload.history.length} itens no histórico:`,
+          `[App Handler] Setting ${payload.history.length} items in history:`,
           payload.history
         );
         setHistory(payload.history);
       } else {
-        console.error("UI: Formato de histórico inválido recebido:", payload);
+        console.error("UI: Invalid history format received:", payload);
         setHistory([]);
       }
     };
 
     const handleParseError = (payload: EventTS["parse-error"]) => {
-      console.error("[App Handler] Recebido 'parse-error'. Payload:", payload);
+      console.error("[App Handler] Received 'parse-error'. Payload:", payload);
       setError(
-        `Erro de sintaxe ${payload.lineNumber ? `(linha ${payload.lineNumber})` : ""}: ${payload.message}`
+        `Syntax error ${payload.lineNumber ? `(line ${payload.lineNumber})` : ""}: ${payload.message}`
       );
       setIsLoading(false);
     };
 
     // Setup listeners
     console.log(
-      "[App Effect] Adicionando listeners (Debug, History, ParseError)..."
+      "[App Effect] Adding listeners (Debug, History, ParseError)..."
     );
     const cleanupDebug = listenTS("debug", handleDebug);
     const cleanupHistory = listenTS("history-updated", handleHistoryUpdate); // << MUDANÇA: Novo listener
@@ -155,7 +156,7 @@ export function App() {
       cleanupDebug();
       cleanupHistory();
       cleanupParseError();
-      console.log("[App Effect] Listeners limpos.");
+      console.log("[App Effect] Listeners cleared.");
     };
   }, []); // Runs only once
 
@@ -166,7 +167,7 @@ export function App() {
     const maxAttempts = 30;
 
     if (isLoading) {
-      console.log("[App Polling Effect] Iniciando verificação de status...");
+      console.log("[App Polling Effect] Starting status check...");
       intervalId = setInterval(async () => {
         attempts++;
         try {
@@ -175,10 +176,10 @@ export function App() {
             typeof figma.clientStorage === "undefined"
           ) {
             console.warn(
-              "[App Polling Effect] API Figma ou clientStorage não disponível na UI. Parando polling."
+              "[App Polling Effect] Figma API or clientStorage not available in UI. Stopping polling."
             );
             setError(
-              "Não foi possível verificar o status da geração (API Figma indisponível)."
+              "Unable to verify generation status (Figma API unavailable)."
             );
             setIsLoading(false);
             if (intervalId) clearInterval(intervalId);
@@ -202,12 +203,12 @@ export function App() {
                 isRecent
               ) {
                 console.log(
-                  `[App Polling Effect] Status final (${statusData.status}) detectado. Parando polling.`
+                  `[App Polling Effect] Final status (${statusData.status}) detected. Stopping polling.`
                 );
                 if (statusData.status === "error") {
                   setError(
                     statusData.message ||
-                      "Erro na geração (detalhes no console do plugin)."
+                      "Generation error (details in plugin console)."
                   );
                 } else {
                   setError(null);
@@ -222,7 +223,7 @@ export function App() {
                   statusData.status === "error")
               ) {
                 console.warn(
-                  "[App Polling Effect] Status final encontrado, mas é antigo. Limpando e parando polling."
+                  "[App Polling Effect] Final status found, but it is old. Cleaning up and stopping polling."
                 );
                 if (intervalId) clearInterval(intervalId);
                 setIsLoading(false);
@@ -230,12 +231,12 @@ export function App() {
               }
             } catch (parseError) {
               console.error(
-                "[App Polling Effect] Erro ao fazer parse do statusRaw:",
+                "[App Polling Effect] Error parsing statusRaw:",
                 parseError,
-                "Valor Raw:",
+                "Raw value:",
                 statusRaw
               );
-              setError("Erro interno ao ler status da geração (parse).");
+              setError("Internal error reading generation status (parse).");
               setIsLoading(false);
               if (intervalId) clearInterval(intervalId);
               try {
@@ -246,10 +247,10 @@ export function App() {
 
           if (attempts >= maxAttempts && isLoading) {
             console.warn(
-              "[App Polling Effect] Máximo de tentativas atingido. Parando polling."
+              "[App Polling Effect] Maximum attempts reached. Stopping polling."
             );
             setError(
-              "A geração demorou muito ou o status não foi atualizado. Verifique o console do Figma."
+              "Generation took too long or status was not updated. Check the Figma console."
             );
             setIsLoading(false);
             if (intervalId) clearInterval(intervalId);
@@ -259,10 +260,10 @@ export function App() {
           }
         } catch (storageError) {
           console.error(
-            "[App Polling Effect] Erro ao LER clientStorage:",
+            "[App Polling Effect] Error READING clientStorage:",
             storageError
           );
-          setError("Erro ao verificar status da geração (storage).");
+          setError("Error verifying generation status (storage).");
           setIsLoading(false);
           if (intervalId) clearInterval(intervalId);
         }
@@ -271,7 +272,7 @@ export function App() {
 
     return () => {
       if (intervalId) {
-        console.log("[App Polling Effect] Limpando intervalo de verificação.");
+        console.log("[App Polling Effect] Cleaning up verification interval.");
         clearInterval(intervalId);
       }
     };
@@ -279,24 +280,24 @@ export function App() {
 
   // --- Handlers ---
   const handleSubmit = async () => {
-    console.log("[handleSubmit] Iniciado.");
+    console.log("[handleSubmit] Started.");
     setError(null);
     setIsLoading(true);
 
     if (!yaml.trim()) {
-      setError("O campo YAML não pode estar vazio.");
+      setError("The YAML field cannot be empty.");
       setIsLoading(false);
       return;
     }
     if (!isValidHex(inputValue)) {
-      setError("Cor Accent inválida. Use formato HEX (ex: #3860FF).");
+      setError("Invalid Accent color. Use HEX format (e.g. #3860FF).");
       setIsLoading(false);
       return;
     }
     const finalAccentColor = accentColor;
 
     try {
-      console.log("[handleSubmit] Enviando para plugin:", {
+      console.log("[handleSubmit] Sending to plugin:", {
         yaml,
         mode: nodeMode,
         accentColor: finalAccentColor,
@@ -306,13 +307,13 @@ export function App() {
         mode: nodeMode,
         accentColor: finalAccentColor,
       });
-      console.log("[handleSubmit] Mensagem 'generate-flow' enviada.");
+      console.log("[handleSubmit] 'generate-flow' message sent.");
     } catch (error: any) {
       console.error(
-        "[handleSubmit] Erro ao despachar mensagem 'generate-flow':",
+        "[handleSubmit] Error dispatching 'generate-flow' message:",
         error
       );
-      setError(`Erro interno ao enviar pedido: ${error.message}`);
+      setError(`Internal error sending request: ${error.message}`);
       setIsLoading(false);
     }
   };
@@ -341,15 +342,15 @@ export function App() {
     if (isValidHex(upperNewValue)) {
       setAccentColor(upperNewValue);
       if (
-        error === "Cor Accent inválida." ||
-        error === "Cor Accent inválida. Use formato HEX (ex: #3860FF)."
+        error === "Invalid Accent color." ||
+        error === "Invalid Accent color. Use HEX format (e.g. #3860FF)."
       ) {
         setError(null);
       }
     } else if (upperNewValue.length === 7) {
-      setError("Cor Accent inválida.");
+      setError("Invalid Accent color.");
     } else {
-      if (error === "Cor Accent inválida.") {
+      if (error === "Invalid Accent color.") {
         setError(null);
       }
     }
@@ -359,8 +360,8 @@ export function App() {
     if (!isValidHex(inputValue)) {
       setInputValue(accentColor.toUpperCase());
       if (
-        error === "Cor Accent inválida." ||
-        error === "Cor Accent inválida. Use formato HEX (ex: #3860FF)."
+        error === "Invalid Accent color." ||
+        error === "Invalid Accent color. Use HEX format (e.g. #3860FF)."
       ) {
         setError(null);
       }
@@ -385,6 +386,7 @@ export function App() {
       title: `Delete "${entry.name}"?`,
       description:
         "This will permanently delete this flow from your history. This action cannot be undone.",
+      icon: <Trash2Icon className="h-5 w-5 text-destructive" />,
     });
     setIsConfirmDialogOpen(true);
   };
@@ -395,6 +397,7 @@ export function App() {
         action: () => dispatchTS("clear-history-request"),
         title: "Delete all history?",
         description: `Are you sure you want to delete all ${history.length} entries? This action cannot be undone.`,
+        icon: <Trash2Icon className="h-5 w-5 text-destructive" />,
       });
       setIsConfirmDialogOpen(true);
     }
@@ -404,12 +407,12 @@ export function App() {
     <TooltipProvider delayDuration={100}>
       <div
         className={cn(
-          "flex flex-col h-[500px] bg-background text-foreground pt-4 pb-1 px-4 gap-5",
+          "flex flex-col h-125 bg-background text-foreground pt-4 pb-1 px-4 gap-5",
           uiTheme
         )}
       >
         {/* Header */}
-        <header className="flex items-center justify-between w-full flex-shrink-0">
+        <header className="flex items-center justify-between w-full shrink-0">
           <div className="h-6 w-auto text-foreground">
             {/* IziFlow Logo SVG */}
             <svg
@@ -472,8 +475,8 @@ export function App() {
               onClick={() => setUiTheme(uiTheme === "dark" ? "light" : "dark")}
               title={
                 uiTheme === "dark"
-                  ? "Mudar para Light Mode (UI)"
-                  : "Mudar para Dark Mode (UI)"
+                  ? "Switch to Light Mode (UI)"
+                  : "Switch to Dark Mode (UI)"
               }
             >
               {uiTheme === "dark" ? (
@@ -489,9 +492,9 @@ export function App() {
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="flex flex-col flex-grow min-h-0"
+          className="flex flex-col grow min-h-0"
         >
-          <TabsList className="flex-shrink-0 h-9 w-auto justify-start rounded-lg bg-muted text-muted-foreground">
+          <TabsList className="shrink-0 h-9 w-auto justify-start rounded-lg bg-muted text-muted-foreground">
             <TabsTrigger
               value="generator"
               className="flex-1 px-3 py-1 h-7 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
@@ -520,7 +523,7 @@ export function App() {
               className="h-full w-full resize-none font-mono text-xs min-h-[15vh] bg-muted/30 dark:bg-muted/10 border-border"
             />
             {/* Customization Section */}
-            <div className="flex flex-col gap-2 w-full flex-shrink-0">
+            <div className="flex flex-col gap-2 w-full shrink-0">
               <h3 className="text-xl font-medium">Customize nodes</h3>
               <div className="flex flex-row items-end gap-2">
                 {/* Accent Color Input */}
@@ -610,7 +613,7 @@ export function App() {
               </div>
             </div>
             {/* Error Area & Action Buttons */}
-            <div className="w-full mt-auto flex-shrink-0 space-y-1.5 pt-1.5">
+            <div className="w-full mt-auto shrink-0 space-y-1.5 pt-1.5">
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
@@ -636,13 +639,13 @@ export function App() {
           {/* --- History Tab Content (Table View) --- */}
           <TabsContent
             value="history"
-            className="flex flex-col flex-grow p-3 gap-6 overflow-hidden data-[state=inactive]:hidden"
+            className="flex flex-col grow p-3 gap-6 overflow-hidden data-[state=inactive]:hidden"
           >
-            <div className="flex flex-col flex-grow w-full items-start gap-2">
-              <h2 className="text-xl font-medium flex-shrink-0">
+            <div className="flex flex-col grow w-full items-start gap-2">
+              <h2 className="text-xl font-medium shrink-0">
                 Flows History
               </h2>
-              <div className="flex-grow w-full min-h-0 border max-h-[200px] rounded-md">
+              <div className="grow w-full min-h-0 border max-h-50 rounded-md">
                 <ScrollArea className="h-full">
                   <Table className="text-xs">
                     <TableHeader className="top-0 bg-muted/80 backdrop-blur-sm">
@@ -733,7 +736,7 @@ export function App() {
               </div>
             </div>
             {/* Clean History Button */}
-            <div className="flex justify-end mt-auto flex-shrink-0">
+            <div className="flex justify-end mt-auto shrink-0">
               <Button
                 variant="destructive"
                 size="sm"
@@ -802,7 +805,10 @@ export function App() {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{actionToConfirm?.title}</AlertDialogTitle>
+              <div className="flex items-center gap-2">
+                {actionToConfirm?.icon}
+                <AlertDialogTitle>{actionToConfirm?.title}</AlertDialogTitle>
+              </div>
               <AlertDialogDescription>
                 {actionToConfirm?.description}
               </AlertDialogDescription>
@@ -818,6 +824,9 @@ export function App() {
                     setActionToConfirm(null);
                   }
                 }}
+                className={cn(
+                  actionToConfirm?.icon ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""
+                )}
               >
                 Confirm
               </AlertDialogAction>

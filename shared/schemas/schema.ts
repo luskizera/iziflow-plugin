@@ -3,18 +3,18 @@ import { z } from "zod";
 
 // Define o schema para DescriptionField primeiro
 // Note o z.union para 'content' para flexibilidade
+// Revertido para z.object().passthrough() para compatibilidade com Zod 3
 const DescriptionFieldSchema = z.object({
   label: z.string(),
   content: z.union([
     z.string(),
     z.array(z.string()),
-    z.record(z.string()), // Para objeto chave-valor simples
+    z.record(z.string(), z.string()), 
   ]),
-  // Você pode adicionar .passthrough() ou definir outros campos opcionais aqui
-  // se DescriptionField puder ter outras propriedades desconhecidas
-}).passthrough(); // Permite campos extras se necessário
+}).passthrough();
 
 // Define o schema para FlowNode usando o DescriptionFieldSchema
+// Revertido para z.object().passthrough() para compatibilidade com Zod 3
 export const FlowNodeSchema = z.object({
   id: z.string(),
   type: z.enum(["START", "END", "STEP", "DECISION", "ENTRYPOINT"]),
@@ -22,18 +22,14 @@ export const FlowNodeSchema = z.object({
   metadata: z.object({
     category: z.string().optional(),
     createdBy: z.string().optional(),
-    // .passthrough() permite outros campos não definidos em metadata
   }).passthrough().optional(),
   /**
    * CORREÇÃO: 'description' agora é um objeto opcional
    * que CONTÉM a propriedade 'fields' (que é o array).
    */
-  description: z.object({ // <--- description é um objeto...
-    fields: z.array(DescriptionFieldSchema), // <--- ...contendo 'fields' que é um array de DescriptionFieldSchema
-    // Adicione validação para outros campos dentro de description aqui, se houver
-    // title: z.string().optional(),
-  }).passthrough() // Permite outros campos dentro de description se necessário
-    .optional() // <--- O objeto 'description' inteiro é opcional
+  description: z.object({
+    fields: z.array(DescriptionFieldSchema),
+  }).passthrough().optional(),
 });
 
 // Define o schema para Connection

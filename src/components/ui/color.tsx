@@ -1,23 +1,17 @@
+import type React from "react"
 import {
   ColorArea as AriaColorArea,
-  ColorAreaProps as AriaColorAreaProps,
   ColorField as AriaColorField,
   ColorPicker as AriaColorPicker,
   ColorSlider as AriaColorSlider,
   ColorSwatch as AriaColorSwatch,
   ColorSwatchPicker as AriaColorSwatchPicker,
   ColorSwatchPickerItem as AriaColorSwatchPickerItem,
-  ColorSwatchPickerItemProps as AriaColorSwatchPickerItemProps,
-  ColorSwatchPickerProps as AriaColorSwatchPickerProps,
-  ColorSwatchProps as AriaColorSwatchProps,
   ColorThumb as AriaColorThumb,
-  ColorThumbProps as AriaColorThumbProps,
   ColorWheel as AriaColorWheel,
-  ColorWheelProps as AriaColorWheelProps,
   ColorWheelTrack as AriaColorWheelTrack,
   SliderOutput as AriaSliderOutput,
   SliderTrack as AriaSliderTrack,
-  SliderTrackProps as AriaSliderTrackProps,
   composeRenderProps,
 } from "react-aria-components"
 
@@ -32,6 +26,14 @@ const ColorWheelTrack = AriaColorWheelTrack
 const ColorPicker = AriaColorPicker
 
 const SliderOutput = AriaSliderOutput
+
+type AriaColorWheelProps = React.ComponentProps<typeof AriaColorWheel>
+type AriaColorAreaProps = React.ComponentProps<typeof AriaColorArea>
+type AriaSliderTrackProps = React.ComponentProps<typeof AriaSliderTrack>
+type AriaColorThumbProps = React.ComponentProps<typeof AriaColorThumb>
+type AriaColorSwatchPickerProps = React.ComponentProps<typeof AriaColorSwatchPicker>
+type AriaColorSwatchPickerItemProps = React.ComponentProps<typeof AriaColorSwatchPickerItem>
+type AriaColorSwatchProps = React.ComponentProps<typeof AriaColorSwatch>
 
 interface ColorWheelProps
   extends Omit<AriaColorWheelProps, "outerRadius" | "innerRadius"> {
@@ -60,7 +62,7 @@ function ColorArea({ className, ...props }: AriaColorAreaProps) {
     <AriaColorArea
       className={composeRenderProps(className, (className) =>
         cn(
-          "size-[192px] shrink-0 rounded-md border border-border shadow-md",
+          "size-48 shrink-0 rounded-md border border-border shadow-md",
           className
         )
       )}
@@ -73,7 +75,7 @@ function SliderTrack({ className, ...props }: AriaSliderTrackProps) {
   return (
     <AriaSliderTrack
       className={composeRenderProps(className, (className) =>
-        cn("h-7 w-[192px] rounded-md border border-border ", className)
+        cn("h-2 w-48 rounded-md border border-border ", className)
       )}
       {...props}
     />
@@ -85,9 +87,9 @@ function ColorThumb({ className, ...props }: AriaColorThumbProps) {
     <AriaColorThumb
       className={composeRenderProps(className, (className) =>
         cn(
-          "z-10 box-border size-5 rounded-[50%] border-2 border-white shadow-md",
+          "z-10 box-border size-5 rounded-[50%] border-2 top-1/2 border-white shadow-md",
           /* Focus Visible */
-          "data-[focus-visible]:size-6",
+          "data-focus-visible:size-6",
           className
         )
       )}
@@ -120,11 +122,11 @@ function ColorSwatchPickerItem({
         cn(
           "size-8 overflow-hidden rounded-md border-2 ring-offset-background transition-colors",
           /* Selected */
-          "data-[selected]:border-white",
+          "data-selected:border-white",
           /* Disabled */
-          "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          "data-disabled:pointer-events-none data-disabled:opacity-50",
           /* Focus Visible */
-          "data-[focus-visible]:outline-none data-[focus-visible]:ring-2 data-[focus-visible]:ring-ring",
+          "data-focus-visible:outline-none data-focus-visible:ring-2 data-focus-visible:ring-ring",
           className
         )
       )}

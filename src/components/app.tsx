@@ -519,6 +519,20 @@ export function App() {
           </div>
           {/* Header Buttons */}
           <div className="flex items-center gap-1.5">
+                        <Button
+              variant="secondary"
+              size="sm"
+              className=""
+              asChild
+            >
+              <a
+                href="https://chatgpt.com/g/g-68f197c021088191a6571b78ac38482d-iziflow-assistant"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Get iziFlow YAML here
+              </a>
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -578,7 +592,7 @@ export function App() {
               {/* Real-time Validation Indicator */}
               {validationStatus !== "idle" && (
                 <div className={cn(
-                  "flex items-center gap-1.5 text-[10px] px-1 transition-all duration-200",
+                  "flex items-center gap-1.5 text-xs px-1 transition-all duration-200",
                   validationStatus === "valid" ? "text-green-600 dark:text-green-400" : "text-destructive"
                 )}>
                   {validationStatus === "valid" ? (
@@ -608,7 +622,7 @@ export function App() {
                         <InfoIcon className="w-3 h-3 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent side="top" align="center">
-                        <p className="text-xs">Define accent color (HEX).</p>
+                        <p className="text-sm font-semibold">Define accent color (HEX).</p>
                       </TooltipContent>
                     </Tooltip>
                   </Label>
@@ -622,13 +636,13 @@ export function App() {
                       >
                         <span
                           aria-hidden="true"
-                          className="inline-flex h-4 w-4 rounded-xs border border-input"
+                          className="inline-flex h-4 w-4 rounded-sm border border-input"
                           style={{ backgroundColor: accentColor }}
                         />
                         {accentColor}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[220px] p-3">
+                    <PopoverContent className="w-55 p-3">
                       <ColorPicker value={accentColor} onChange={handleAccentColorChange}>
                         <div className="flex flex-col items-center gap-2">
                           <ColorArea
@@ -679,14 +693,14 @@ export function App() {
                     <TabsList className="grid w-full grid-cols-2 p-0.5 bg-secondary border border-border rounded-md h-8">
                       <TabsTrigger
                         value="dark"
-                        className="flex items-center gap-1 px-1 py-0.5 text-[11px] h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=inactive]:opacity-70"
+                        className="flex items-center gap-1 px-1 py-0.5 text-xs h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=inactive]:opacity-70"
                         aria-label="Generate in Dark mode"
                       >
                         <MoonIcon className="w-3 h-3" /> Dark Nodes
                       </TabsTrigger>
                       <TabsTrigger
                         value="light"
-                        className="flex items-center gap-1 px-1 py-0.5 text-[11px] h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=inactive]:opacity-70"
+                        className="flex items-center gap-1 px-1 py-0.5 text-xs h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=inactive]:opacity-70"
                         aria-label="Generate in Light mode"
                       >
                         <SunIcon className="w-3 h-3" /> Light Nodes
@@ -909,7 +923,7 @@ export function App() {
                   }
                 }}
                 className={cn(
-                  actionToConfirm?.icon ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""
+                  actionToConfirm?.icon ? "bg-destructive text-white hover:bg-destructive/90" : ""
                 )}
               >
                 Confirm

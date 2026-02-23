@@ -197,6 +197,7 @@ function calculateBifurcatedPositions(
     let currentX = viewportCenter.x;
     const centerY = viewportCenter.y;
     const sortedNodes = Layout.topologicalSort(nodes, connections);
+    const sortedNodeIds = new Set(sortedNodes.map(node => node.id));
     
     for (const node of sortedNodes) {
         const laneIndex = nodeLaneMap.get(node.id) || 0;
@@ -210,6 +211,28 @@ function calculateBifurcatedPositions(
 
         const y = centerY + (laneIndex * laneHeight);
         const x = calculateXPosition(node, currentX, bifurcations, nodeLaneMap);
+        positions.set(node.id, { x, y, laneIndex });
+
+        if (laneIndex === 0) {
+            currentX = x + typicalNodeWidth + horizontalSpacing;
+        }
+    }
+
+    if (sortedNodes.length < nodes.length) {
+        console.warn(
+            `[Bifurcated Layout] Ordenação topológica incompleta (${sortedNodes.length}/${nodes.length}). Possível ciclo detectado; posicionando nós restantes em modo de segurança.`
+        );
+    }
+
+    for (const node of nodes) {
+        if (positions.has(node.id)) {
+            continue;
+        }
+
+        const laneIndex = nodeLaneMap.get(node.id) || 0;
+        const y = centerY + (laneIndex * laneHeight);
+        const x = calculateXPosition(node, currentX, bifurcations, nodeLaneMap);
+
         positions.set(node.id, { x, y, laneIndex });
 
         if (laneIndex === 0) {

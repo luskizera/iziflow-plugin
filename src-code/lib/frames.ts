@@ -332,7 +332,7 @@ async function _createDescItemFrame(field: DescriptionField, finalColors: Record
         content.layoutSizingHorizontal = "FIXED"; // Largura Fixa
         content.resize(258, content.height); // Define largura 258px - Ajuste se necessário
         content.textAutoResize = "HEIGHT"; // Altura automática
-        content.layoutAlign = "MIN"; // <<< CORRIGIDO de MIN
+        content.layoutAlign = "INHERIT"; // <<< CORRIGIDO de MIN
 
         // Cor do texto (Ajustado para buscar token de Entrypoint corretamente)
         let descTextToken: string;

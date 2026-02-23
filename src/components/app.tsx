@@ -104,14 +104,6 @@ export function App() {
   // Ref to track if initial preferences have been loaded to avoid overwriting them
   const isInitialLoad = useRef(true);
 
-  console.log(
-    "[App Render] isLoading:",
-    isLoading,
-    "history.length:",
-    history.length
-  );
-  console.log("[App Render] History state:", history);
-
   // Effect to save UI preferences when they change (debounced)
   useEffect(() => {
     if (isInitialLoad.current) return;
@@ -144,7 +136,6 @@ export function App() {
     };
 
     const handleUiPreferencesUpdated = (payload: EventTS["ui-preferences-updated"]) => {
-      console.log("[App Handler] Received 'ui-preferences-updated':", payload.preferences);
       const { accentColor: loadedAccent, nodeMode: loadedNodeMode, uiTheme: loadedUiTheme } = payload.preferences;
       
       if (loadedAccent && isValidHex(loadedAccent)) {
@@ -159,21 +150,7 @@ export function App() {
 
     // << MUDANÇA: Ouve 'history-updated' e atualiza o estado
     const handleHistoryUpdate = (payload: EventTS["history-updated"]) => {
-      console.log(
-        "[App Handler] Received 'history-updated'. Full payload:",
-        payload
-      );
-      console.log(
-        "[App Handler] payload.history type:",
-        typeof payload.history,
-        "Is array?",
-        Array.isArray(payload.history)
-      );
       if (Array.isArray(payload.history)) {
-        console.log(
-          `[App Handler] Setting ${payload.history.length} items in history:`,
-          payload.history
-        );
         setHistory(payload.history);
       } else {
         console.error("UI: Invalid history format received:", payload);

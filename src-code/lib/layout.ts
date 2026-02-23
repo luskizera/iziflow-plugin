@@ -243,7 +243,6 @@ export namespace Layout {
     const MIN_HORIZONTAL_SPACING = 50; // Espaçamento mínimo entre nós
     const MIN_VERTICAL_SPACING = 30;   // Espaçamento mínimo vertical
     
-    console.log(`[Vertical Management] Detectando conflitos em ${positions.size} posições`);
     
     // Agrupar nós por faixa
     const nodesByLane = groupNodesByLane(positions, nodeWidths, nodeHeights);
@@ -252,7 +251,6 @@ export namespace Layout {
     for (const [laneIndex, nodesInLane] of nodesByLane.entries()) {
       if (laneIndex === 0) continue; // Faixa central raramente tem conflitos
       
-      console.log(`[Vertical Management] Analisando faixa ${laneIndex} com ${nodesInLane.length} nós`);
       
       // Ordenar nós por posição X
       const sortedByX = nodesInLane.sort((a, b) => a.position.x - b.position.x);
@@ -273,7 +271,6 @@ export namespace Layout {
             suggestedResolution: 'EXPAND_SPACING'
           });
           
-          console.log(`[Vertical Management] Conflito horizontal detectado: ${current.nodeId} <-> ${next.nodeId} (${actualSpacing}px < ${requiredSpacing}px)`);
         }
       }
     }
@@ -303,13 +300,11 @@ export namespace Layout {
               suggestedResolution: 'ADJUST_LANES'
             });
             
-            console.log(`[Vertical Management] Colisão entre faixas detectada: ${nodeA.nodeId} (lane ${nodeA.position.laneIndex}) <-> ${nodeB.nodeId} (lane ${nodeB.position.laneIndex})`);
           }
         }
       }
     }
     
-    console.log(`[Vertical Management] ${conflicts.length} conflitos detectados`);
     return conflicts;
   }
 
@@ -351,7 +346,6 @@ export namespace Layout {
   ): Map<string, LayoutPosition> {
     const resolvedPositions = new Map(positions);
     
-    console.log(`[Vertical Management] Resolvendo ${conflicts.length} conflitos`);
     
     for (const conflict of conflicts) {
       switch (conflict.type) {
@@ -370,7 +364,6 @@ export namespace Layout {
       }
     }
     
-    console.log(`[Vertical Management] Resolução concluída`);
     return resolvedPositions;
   }
 
@@ -403,7 +396,6 @@ export namespace Layout {
     
     positions.set(secondNodeId, updatedSecondPos);
     
-    console.log(`[Vertical Management] Resolvido overlap horizontal: ${secondNodeId} movido para x=${newX}`);
     
     // Propagar ajuste para nós subsequentes na mesma faixa
     propagateHorizontalAdjustment(secondNodeId, secondPos.laneIndex, newX + (nodeWidths.get(secondNodeId) || 400) + requiredSpacing, positions, nodeWidths);
@@ -438,7 +430,6 @@ export namespace Layout {
         };
         
         positions.set(currentNode.nodeId, updatedPos);
-        console.log(`[Vertical Management] Propagação: ${currentNode.nodeId} movido para x=${minNextX}`);
         
         // Atualizar minNextX para o próximo nó
         minNextX = minNextX + (nodeWidths.get(currentNode.nodeId) || 400) + 60;
@@ -479,7 +470,6 @@ export namespace Layout {
       }
     }
     
-    console.log(`[Vertical Management] Resolvida colisão de faixas: faixa ${affectedLane} ajustada`);
   }
 
   /**
@@ -490,7 +480,6 @@ export namespace Layout {
     positions: Map<string, LayoutPosition>
   ): void {
     // Implementação para ajustes de espaçamento vertical específicos
-    console.log(`[Vertical Management] Resolvendo espaçamento vertical para nós: ${conflict.affectedNodes.join(', ')}`);
     
     // Por enquanto, aplicar ajuste simples
     for (const nodeId of conflict.affectedNodes) {
@@ -515,13 +504,11 @@ export namespace Layout {
     nodeWidths: Map<string, number> = new Map(),
     nodeHeights: Map<string, number> = new Map()
   ): Map<string, LayoutPosition> {
-    console.log(`[Vertical Management] Iniciando gerenciamento vertical para ${positions.size} nós`);
     
     // 1. Detectar conflitos
     const conflicts = detectVerticalConflicts(positions, bifurcations, nodeWidths, nodeHeights);
     
     if (conflicts.length === 0) {
-      console.log(`[Vertical Management] Nenhum conflito detectado`);
       return positions;
     }
     
@@ -532,11 +519,9 @@ export namespace Layout {
     const remainingConflicts = detectVerticalConflicts(resolvedPositions, bifurcations, nodeWidths, nodeHeights);
     
     if (remainingConflicts.length > 0 && remainingConflicts.length < conflicts.length) {
-      console.log(`[Vertical Management] Segunda passada de resolução (${remainingConflicts.length} conflitos restantes)`);
       return resolveVerticalConflicts(remainingConflicts, resolvedPositions, nodeWidths);
     }
-    
-    console.log(`[Vertical Management] Gerenciamento concluído`);
+
     return resolvedPositions;
   }
 

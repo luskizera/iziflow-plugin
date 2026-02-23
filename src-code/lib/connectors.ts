@@ -52,7 +52,6 @@ export namespace Connectors {
         // Construir mapa de contexto de bifurcações
         const bifurcationContextMap = buildBifurcationContextMap(bifurcations);
         
-        console.log(`[Bifurcated Connectors] Criando conectores com ${bifurcations.length} bifurcações detectadas`);
         
         // Carregar fonte para labels
         try {
@@ -136,7 +135,6 @@ export namespace Connectors {
         // Aguardar criação de todas as labels
         try {
             await Promise.all(labelCreationPromises);
-            console.log("[Bifurcated Connectors] Criação de conectores bifurcados e etiquetas concluída.");
         } catch (overallError: any) {
             console.error("[Bifurcated Connectors] Erro inesperado durante criação das etiquetas:", overallError);
             figma.notify(`Ocorreu um erro durante a criação das etiquetas: ${overallError?.message || overallError}`, { error: true });
@@ -608,12 +606,10 @@ function determineBifurcatedConnectorConfig(
         // Ramo superior - sai pela parte superior do nó
         finalStartMagnetForLabel = LayoutConfig.Bifurcation.DECISION_TOP_BRANCH_MAGNET;
         startConnection = { magnet: finalStartMagnetForLabel };
-        console.log(`[Bifurcated Connectors] Conexão ${conn.from} -> ${conn.to}: Ramo SUPERIOR (${finalStartMagnetForLabel})`);
     } else if (isLowerBranch) {
         // Ramo inferior - sai pela parte inferior do nó
         finalStartMagnetForLabel = LayoutConfig.Bifurcation.DECISION_BOTTOM_BRANCH_MAGNET;
         startConnection = { magnet: finalStartMagnetForLabel };
-        console.log(`[Bifurcated Connectors] Conexão ${conn.from} -> ${conn.to}: Ramo INFERIOR (${finalStartMagnetForLabel})`);
     } else {
         // Fallback para lógica padrão
         finalStartMagnetForLabel = LayoutConfig.Connectors.DEFAULT_PRIMARY_START_MAGNET;

@@ -94,7 +94,6 @@ export namespace UserPreferences {
     export async function save(preferences: LayoutPreferences): Promise<void> {
         try {
             await figma.clientStorage.setAsync(LAYOUT_PREFERENCES_KEY, JSON.stringify(preferences));
-            console.log('[UserPreferences] Preferências salvas com sucesso:', preferences);
         } catch (error) {
             console.error('[UserPreferences] Erro ao salvar preferências:', error);
             throw error;
@@ -110,7 +109,6 @@ export namespace UserPreferences {
         Bifurcation.VERTICAL_SPACING_BETWEEN_BRANCHES = preferences.verticalSpacing;
         VerticalLanes.LANE_HEIGHT = preferences.verticalSpacing + 50; // Base + padding
         
-        console.log('[UserPreferences] Configurações aplicadas ao layout:', preferences);
     }
     
     /**

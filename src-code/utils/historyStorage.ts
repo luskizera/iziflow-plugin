@@ -51,18 +51,14 @@ function isValidHistoryEntry(obj: any): obj is HistoryEntry {
  * @returns Uma Promise que resolve para um array de HistoryEntry.
  */
 export async function getHistory(): Promise<HistoryEntry[]> {
-    console.log('[HistoryStorage] Iniciando getHistory...');
     try {
         const historyJson = await figma.clientStorage.getAsync(HISTORY_STORAGE_KEY);
-        console.log('[HistoryStorage] Raw data lido do storage:', historyJson);
         if (!historyJson) {
-            console.log('[HistoryStorage] Nenhum histórico encontrado.');
             return [];
         }
 
         const parsed = JSON.parse(historyJson);
         if (Array.isArray(parsed) && parsed.every(isValidHistoryEntry)) {
-            console.log(`[HistoryStorage] Histórico válido encontrado com ${parsed.length} itens.`);
             return parsed;
         } else {
             console.warn('[HistoryStorage] Dados de histórico corrompidos encontrados. Limpando.');
@@ -80,7 +76,6 @@ export async function getHistory(): Promise<HistoryEntry[]> {
  * @param yamlToAdd O conteúdo yaml do fluxo a ser adicionado.
  */
 export async function addHistoryEntry(yamlToAdd: string, parsedName?: string): Promise<void> {
-    console.log('[HistoryStorage] Iniciando addHistoryEntry...');
     if (typeof yamlToAdd !== 'string' || !yamlToAdd.trim()) {
         console.warn("[HistoryStorage] Tentativa de adicionar entrada de histórico vazia/inválida.");
         return;
@@ -88,7 +83,6 @@ export async function addHistoryEntry(yamlToAdd: string, parsedName?: string): P
 
     try {
         let history = await getHistory();
-        console.log(`[HistoryStorage] Histórico atual possui ${history.length} itens.`);
 
         // Criar a nova entrada
         const newEntry: HistoryEntry = {
@@ -97,19 +91,16 @@ export async function addHistoryEntry(yamlToAdd: string, parsedName?: string): P
             yaml: yamlToAdd,
             createdAt: new Date().toISOString()
         };
-        console.log('[HistoryStorage] Nova entrada criada:', newEntry);
 
         // Adiciona a nova entrada no início
         history.unshift(newEntry);
 
         // Limita o tamanho do histórico
         if (history.length > MAX_HISTORY_ITEMS) {
-            console.log(`[HistoryStorage] Histórico excedeu ${MAX_HISTORY_ITEMS} itens. Limitando...`);
             history = history.slice(0, MAX_HISTORY_ITEMS);
         }
 
         await figma.clientStorage.setAsync(HISTORY_STORAGE_KEY, JSON.stringify(history));
-        console.log(`[HistoryStorage] Histórico salvo com sucesso. Novo tamanho: ${history.length}`);
     } catch (error) {
         console.error("[HistoryStorage] Erro ao adicionar entrada no histórico:", error);
     }
@@ -120,14 +111,12 @@ export async function addHistoryEntry(yamlToAdd: string, parsedName?: string): P
  * @param idToRemove O ID da entrada a ser removida.
  */
 export async function removeHistoryEntry(idToRemove: string): Promise<void> {
-    console.log(`[HistoryStorage] Iniciando removeHistoryEntry para o ID: ${idToRemove}`);
     try {
         let history = await getHistory();
         const newHistory = history.filter(entry => entry.id !== idToRemove);
 
         if (newHistory.length < history.length) {
             await figma.clientStorage.setAsync(HISTORY_STORAGE_KEY, JSON.stringify(newHistory));
-            console.log(`[HistoryStorage] Entrada com ID ${idToRemove} removida. Novo tamanho: ${newHistory.length}`);
         } else {
             console.warn(`[HistoryStorage] Nenhuma entrada encontrada com o ID ${idToRemove} para remover.`);
         }
@@ -140,10 +129,8 @@ export async function removeHistoryEntry(idToRemove: string): Promise<void> {
  * Remove todo o histórico do clientStorage.
  */
 export async function clearHistory(): Promise<void> {
-     console.log('[HistoryStorage] Iniciando clearHistory...');
      try {
         await figma.clientStorage.deleteAsync(HISTORY_STORAGE_KEY);
-        console.log("[HistoryStorage] Histórico limpo com sucesso.");
      } catch (error) {
           console.error("[HistoryStorage] Erro ao limpar histórico:", error);
      }

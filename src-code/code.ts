@@ -403,7 +403,6 @@ async function generateFlowWithSmartLayout(
     try {
         // Carregar preferências do usuário
         userPreferences = await LayoutConfig.UserPreferences.load();
-        console.log('[Smart Layout] Preferências carregadas:', userPreferences);
         
         // Aplicar preferências às configurações globais
         LayoutConfig.UserPreferences.applyToLayout(userPreferences);
@@ -421,7 +420,6 @@ async function generateFlowWithSmartLayout(
             execute: async () => {
                 const bifurcations = Layout.detectBinaryDecisions(flowNodes, flowConnections);
                 if (bifurcations.length > 0) {
-                    console.log(`[Smart Layout] Nível 1: Usando layout bifurcado (${bifurcations.length} bifurcações)`);
                     return await generateFlowWithBifurcatedLayout(flowNodes, flowConnections, finalColors, layoutConfig);
                 }
                 throw new Error('Nenhuma bifurcação detectada');
@@ -431,7 +429,6 @@ async function generateFlowWithSmartLayout(
             name: 'Bifurcado Forçado',
             condition: userPreferences.enableBifurcation && !userPreferences.fallbackToLinear,
             execute: async () => {
-                console.log('[Smart Layout] Nível 2: Forçando layout bifurcado mesmo sem detecção automática');
                 return await generateFlowWithBifurcatedLayout(flowNodes, flowConnections, finalColors, layoutConfig);
             }
         },
@@ -439,7 +436,6 @@ async function generateFlowWithSmartLayout(
             name: 'Linear Padrão',
             condition: true, // Sempre disponível como último recurso
             execute: async () => {
-                console.log('[Smart Layout] Nível 3: Usando layout linear (fallback final)');
                 return await generateFlowWithLinearLayout(flowNodes, flowConnections, finalColors, layoutConfig);
             }
         }
@@ -450,7 +446,6 @@ async function generateFlowWithSmartLayout(
         if (level.condition) {
             try {
                 const result = await level.execute();
-                console.log(`[Smart Layout] Sucesso com ${level.name}`);
                 return result;
             } catch (error) {
                 console.warn(`[Smart Layout] ${level.name} falhou:`, error);
@@ -492,16 +487,11 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
     if (messageType === 'generate-flow') {
         const { yaml: rawInput, mode, accentColor } = payload;
         const generationId = Date.now(); // Usado para associar status
-        console.log(`[Flow ID: ${generationId}] Iniciando geração... (Modo: ${mode}, Accent: ${accentColor})`);
-
         try {
             // <<< Limpa o status antigo ANTES de definir como loading >>>
             await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
-            console.log(`[Flow ID: ${generationId}] Chave de status antiga limpa (se existia).`);
-
             // <<< Define status inicial como 'loading' no clientStorage >>>
             await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'loading', id: generationId, timestamp: Date.now() }));
-            console.log(`[Flow ID: ${generationId}] Status 'loading' salvo no clientStorage.`);
         } catch(storageError) {
             console.error(`[Flow ID: ${generationId}] Erro ao inicializar status no clientStorage:`, storageError);
             // Notifica a UI sobre o erro de storage inicial (pode não chegar, mas tentamos)
@@ -533,7 +523,6 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
                  const lineNumber = lineNumberMatch ? parseInt(lineNumberMatch[1], 10) : undefined;
                  // <<< Define status ERRO (parse) no clientStorage >>>
                  await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'error', id: generationId, message: errorMessage, timestamp: Date.now() }));
-                 console.log(`[Flow ID: ${generationId}] Status 'error' (parse) salvo no clientStorage.`);
                  // Tenta enviar a mensagem de erro de parse para UI
                  figma.ui.postMessage({ type: 'parse-error', message: `${parseError.message}`, lineNumber });
                  return; // Para a execução
@@ -544,18 +533,14 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
                  throw new Error("Nenhum nó válido encontrado após o parsing.");
              }
              const { nodes: flowNodes, connections: flowConnections, layoutConfig, flowName } = flowDataResult;
-             console.log(`[Flow ID: ${generationId}] Parsing OK. Nodes: ${flowNodes.length}, Conns: ${flowConnections.length}`);
 
              // 5. Carregar Fontes
              await preloadFonts();
 
              // 6. Geração com Layout Inteligente (Bifurcado ou Linear)
-             console.log(`[Flow ID: ${generationId}] Iniciando geração com layout inteligente...`);
              const layoutResult = await generateFlowWithSmartLayout(flowNodes, flowConnections, finalColors, layoutConfig);
              nodeMap = layoutResult.nodeMap;
              createdFrames = layoutResult.createdFrames;
-             
-             console.log(`[Flow ID: ${generationId}] Layout concluído. Nós criados: ${createdFrames.length}`);
 
              // 7. Finalização (Agrupar, Centralizar, Zoom)
              const allCreatedNodes = Object.values(nodeMap);
@@ -611,26 +596,17 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              }
 
              // --- SUCESSO ---
-             console.log(`[Flow ID: ${generationId}] Tentando adicionar ao histórico...`);
              await addHistoryEntry(rawInput, flowName);
-             console.log(`[Flow ID: ${generationId}] Adicionado ao histórico com sucesso.`);
 
              // <<< ATUALIZA A UI COM O NOVO HISTÓRICO >>>
              const updatedHistory = await getHistory();
-             console.log(`[Flow ID: ${generationId}] Histórico atualizado obtido com ${updatedHistory.length} itens:`, updatedHistory);
              figma.ui.postMessage({ type: 'history-updated', history: updatedHistory });
-             console.log(`[Flow ID: ${generationId}] Mensagem 'history-updated' enviada para UI.`);
 
              // <<< Define status SUCESSO no clientStorage >>>
              await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'success', id: generationId, timestamp: Date.now() }));
-             console.log(`[Flow ID: ${generationId}] Status 'success' salvo no clientStorage.`);
-
              // Tenta enviar a mensagem (best effort, a UI vai usar o clientStorage para isLoading)
              figma.ui.postMessage({ type: 'generation-success', message: 'Fluxo gerado com sucesso!' });
-             console.log(">>> PLUGIN: Mensagem 'generation-success' ENVIADA para UI (UI usará clientStorage para estado de loading).");
-
              figma.notify("Fluxo gerado com sucesso!", { timeout: 3000 });
-             console.log(`[Flow ID: ${generationId}] Geração COMPLETA.`);
 
         } catch (error: any) {
              // --- ERRO GERAL ---
@@ -639,13 +615,11 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              // <<< Define status ERRO no clientStorage >>>
              try {
                  await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'error', id: generationId, message: errorMessage, timestamp: Date.now() }));
-                 console.log(`[Flow ID: ${generationId}] Status 'error' salvo no clientStorage.`);
              } catch (storageError) {
                   console.error(`[Flow ID: ${generationId}] Erro ao salvar status de ERRO no clientStorage:`, storageError);
              }
              // Tenta enviar a mensagem de erro (best effort)
              figma.ui.postMessage({ type: 'generation-error', message: `Erro durante geração: ${errorMessage}` });
-             console.log(">>> PLUGIN: Mensagem 'generation-error' ENVIADA para UI (UI usará clientStorage para estado de loading).");
              figma.notify(`Erro na geração: ${errorMessage}`, { error: true, timeout: 5000 });
         }
     }

@@ -6,6 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useTheme } from "@/components/providers/theme-provider";
 import { dispatchTS, listenTS } from "@/utils/utils";
+import { Logger } from "@/utils/logger";
 import type { EventTS } from "@shared/types/messaging.types";
 import type { HistoryEntry } from "@shared/types/flow.types";
 import {
@@ -109,7 +110,7 @@ export function App() {
     if (isInitialLoad.current) return;
 
     const timer = setTimeout(() => {
-      console.log("[App] Saving UI preferences:", { accentColor, nodeMode, uiTheme });
+      Logger.info("App", "Saving UI preferences:", { accentColor, nodeMode, uiTheme });
       dispatchTS("save-ui-preferences", {
         preferences: {
           accentColor,
@@ -125,14 +126,14 @@ export function App() {
   // Effect for listeners and initial history fetch
   useEffect(() => {
     yamlTextareaRef.current?.focus();
-    console.log("[App Effect] Mounted. Requesting initial history and preferences...");
+    Logger.info("App Effect", "Mounted. Requesting initial history and preferences...");
     dispatchTS("get-history");
     dispatchTS("get-ui-preferences");
 
     // Handlers for specific messages
     const handleDebug = (payload: EventTS["debug"]) => {
       const parsedData = payload.data ? JSON.parse(payload.data) : "";
-      console.debug(`[Plugin Debug via UI]: ${payload.message}`, parsedData);
+      Logger.debug("Plugin Debug via UI", payload.message, parsedData);
     };
 
     const handleUiPreferencesUpdated = (payload: EventTS["ui-preferences-updated"]) => {
@@ -153,13 +154,13 @@ export function App() {
       if (Array.isArray(payload.history)) {
         setHistory(payload.history);
       } else {
-        console.error("UI: Invalid history format received:", payload);
+        Logger.error("App Handler", "Invalid history format received:", payload);
         setHistory([]);
       }
     };
 
     const handleParseError = (payload: EventTS["parse-error"]) => {
-      console.error("[App Handler] Received 'parse-error'. Payload:", payload);
+      Logger.error("App Handler", "Received 'parse-error'. Payload:", payload);
       setError(
         `Syntax error ${payload.lineNumber ? `(line ${payload.lineNumber})` : ""}: ${payload.message}`
       );
@@ -167,8 +168,9 @@ export function App() {
     };
 
     // Setup listeners
-    console.log(
-      "[App Effect] Adding listeners (Debug, History, ParseError, UiPrefs)..."
+    Logger.info(
+      "App Effect",
+      "Adding listeners (Debug, History, ParseError, UiPrefs)..."
     );
     const cleanupDebug = listenTS("debug", handleDebug);
     const cleanupHistory = listenTS("history-updated", handleHistoryUpdate); // << MUDANÇA: Novo listener
@@ -181,7 +183,7 @@ export function App() {
       cleanupHistory();
       cleanupParseError();
       cleanupUiPrefs();
-      console.log("[App Effect] Listeners cleared.");
+      Logger.info("App Effect", "Listeners cleared.");
     };
   }, []); // Runs only once
 
@@ -192,7 +194,7 @@ export function App() {
     const maxAttempts = 30;
 
     if (isLoading) {
-      console.log("[App Polling Effect] Starting status check...");
+      Logger.info("App Polling Effect", "Starting status check...");
       intervalId = setInterval(async () => {
         attempts++;
         try {
@@ -200,8 +202,9 @@ export function App() {
             typeof figma === "undefined" ||
             typeof figma.clientStorage === "undefined"
           ) {
-            console.warn(
-              "[App Polling Effect] Figma API or clientStorage not available in UI. Stopping polling."
+            Logger.warn(
+              "App Polling Effect",
+              "Figma API or clientStorage not available in UI. Stopping polling."
             );
             setError(
               "Unable to verify generation status (Figma API unavailable)."
@@ -227,8 +230,9 @@ export function App() {
                   statusData.status === "error") &&
                 isRecent
               ) {
-                console.log(
-                  `[App Polling Effect] Final status (${statusData.status}) detected. Stopping polling.`
+                Logger.info(
+                  "App Polling Effect",
+                  `Final status (${statusData.status}) detected. Stopping polling.`
                 );
                 if (statusData.status === "error") {
                   setError(
@@ -247,19 +251,19 @@ export function App() {
                 (statusData.status === "success" ||
                   statusData.status === "error")
               ) {
-                console.warn(
-                  "[App Polling Effect] Final status found, but it is old. Cleaning up and stopping polling."
+                Logger.warn(
+                  "App Polling Effect",
+                  "Final status found, but it is old. Cleaning up and stopping polling."
                 );
                 if (intervalId) clearInterval(intervalId);
                 setIsLoading(false);
                 await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
               }
             } catch (parseError) {
-              console.error(
-                "[App Polling Effect] Error parsing statusRaw:",
-                parseError,
-                "Raw value:",
-                statusRaw
+              Logger.error(
+                "App Polling Effect",
+                "Error parsing statusRaw:",
+                parseError
               );
               setError("Internal error reading generation status (parse).");
               setIsLoading(false);
@@ -271,8 +275,9 @@ export function App() {
           }
 
           if (attempts >= maxAttempts && isLoading) {
-            console.warn(
-              "[App Polling Effect] Maximum attempts reached. Stopping polling."
+            Logger.warn(
+              "App Polling Effect",
+              "Maximum attempts reached. Stopping polling."
             );
             setError(
               "Generation took too long or status was not updated. Check the Figma console."
@@ -284,8 +289,9 @@ export function App() {
             } catch {}
           }
         } catch (storageError) {
-          console.error(
-            "[App Polling Effect] Error READING clientStorage:",
+          Logger.error(
+            "App Polling Effect",
+            "Error READING clientStorage:",
             storageError
           );
           setError("Error verifying generation status (storage).");
@@ -297,7 +303,7 @@ export function App() {
 
     return () => {
       if (intervalId) {
-        console.log("[App Polling Effect] Cleaning up verification interval.");
+        Logger.info("App Polling Effect", "Cleaning up verification interval.");
         clearInterval(intervalId);
       }
     };
@@ -339,7 +345,7 @@ export function App() {
 
   // --- Handlers ---
   const handleSubmit = async () => {
-    console.log("[handleSubmit] Started.");
+    Logger.info("handleSubmit", "Started.");
     setError(null);
     setIsLoading(true);
 
@@ -356,7 +362,7 @@ export function App() {
     const finalAccentColor = accentColor;
 
     try {
-      console.log("[handleSubmit] Sending to plugin:", {
+      Logger.info("handleSubmit", "Sending to plugin:", {
         yaml: yamlContent,
         mode: nodeMode,
         accentColor: finalAccentColor,
@@ -366,10 +372,11 @@ export function App() {
         mode: nodeMode,
         accentColor: finalAccentColor,
       });
-      console.log("[handleSubmit] 'generate-flow' message sent.");
+      Logger.info("handleSubmit", "'generate-flow' message sent.");
     } catch (error: any) {
-      console.error(
-        "[handleSubmit] Error dispatching 'generate-flow' message:",
+      Logger.error(
+        "handleSubmit",
+        "Error dispatching 'generate-flow' message:",
         error
       );
       setError(`Internal error sending request: ${error.message}`);

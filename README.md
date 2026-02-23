@@ -79,3 +79,13 @@ The Copilot suggests a complete flow and validates each step with you:
 3. Paste the generated code
 4. Choose your theme and accent color
 5. Click "Create Flow" - your visual diagram is ready!
+
+---
+
+## Recent Changes (2026-02-23)
+* Added cycle-safe positioning for bifurcated layout to avoid crashes when the flow has loops.
+* Added guide YAML `docs/guides/login-flow-sem-loop.yaml` (no loop, stable layout).
+* Added guide YAML `docs/guides/login-flow-com-loop-anchors.yaml` (loop supported via anchors/offsets).
+* Reduced noisy logs and kept only warnings/errors for specific tags (HistoryStorage, App Handler/Render, Smart Layout, UserPreferences, Vertical Management, Bifurcated Connectors, and plugin message traces).
+* Standardized logging by environment: `info/debug/success` only in dev/test, `warn/error` always on.
+* Added shared loggers for plugin and UI code to enforce the policy.

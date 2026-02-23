@@ -1,6 +1,7 @@
 // src/utils/utils.ts
 
 import type { EventTS } from '@shared/types/messaging.types';
+import { Logger } from '@/utils/logger';
 
 export type Message<K extends keyof EventTS = keyof EventTS> = {
   type: K;
@@ -11,7 +12,7 @@ export const dispatchTS = <Key extends keyof EventTS>(
   event: Key,
   ...payload: EventTS[Key] extends Record<string, never> ? [] : [EventTS[Key]]
 ) => {
-  console.log('UI dispatchTS chamado:', { event, payload });
+  Logger.info('UI dispatchTS', 'chamado:', { event, payload });
 
   const messagePayload = payload.length > 0 ? payload[0] : {};
   const messageData: Message<Key> = {
@@ -20,7 +21,7 @@ export const dispatchTS = <Key extends keyof EventTS>(
   };
 
   // <<< GARANTIR QUE ESTA LINHA ESTÁ CORRETA >>>
-  console.log('UI Enviando mensagem final (COM wrapper):', { pluginMessage: messageData });
+  Logger.info('UI dispatchTS', 'Enviando mensagem final (COM wrapper):', { pluginMessage: messageData });
   parent.postMessage({ pluginMessage: messageData }, "*"); // <<< ENVOLVER AQUI
 };
 
@@ -46,16 +47,16 @@ export const listenTS = <Key extends keyof EventTS>(
       callback(payload as EventTS[Key]);
       if (listenOnce) {
         window.removeEventListener("message", func);
-        console.log(`UI: Listener removido para ${eventName} (listenOnce)`);
+        Logger.info('UI listenTS', `Listener removido para ${eventName} (listenOnce)`);
       }
     }
   };
 
   window.addEventListener("message", func);
-  console.log(`UI: Listener adicionado para ${eventName}`);
+  Logger.info('UI listenTS', `Listener adicionado para ${eventName}`);
 
   return () => {
     window.removeEventListener("message", func);
-    console.log(`UI: Listener removido para ${eventName} (cleanup)`);
+    Logger.info('UI listenTS', `Listener removido para ${eventName} (cleanup)`);
   };
 };

@@ -13,6 +13,7 @@ import type { RGB } from '../config/theme.config'; // Importa tipo RGB
 import * as LayoutConfig from '../config/layout.config'; // Configurações de layout (sem tipos problemáticos agora)
 import * as StyleConfig from '../config/styles.config'; // Configurações de estilo (sem tipos problemáticos agora)
 import { nodeCache } from '../utils/nodeCache';
+import { Logger } from '../utils/logger';
 import { calculateExitEntryPoints } from './positionCalculator';
 
 // --- Interfaces Internas (Tipos Removidos/Alterados para string) ---
@@ -225,14 +226,14 @@ export namespace Connectors {
                 );
             } else if (labelText && fromNodeData.type !== 'DECISION') {
                  // Log para debug se label for ignorado
-                 console.log(`[Connectors] Debug: Ignorando label '${labelText}' para conexão ${conn.from} -> ${conn.to} (não é de Decision).`);
+                 Logger.debug('Connectors', `Ignorando label '${labelText}' para conexão ${conn.from} -> ${conn.to} (não é de Decision).`);
             }
         } // Fim do loop de conexões
 
         // Espera todas as criações de label terminarem
         try {
             await Promise.all(labelCreationPromises);
-            console.log("[Connectors] Criação de conectores e etiquetas concluída.");
+            Logger.debug('Connectors', 'Criação de conectores e etiquetas concluída.');
         } catch (overallError: any) {
              console.error("[Connectors] Erro inesperado durante criação das etiquetas:", overallError);
              figma.notify(`Ocorreu um erro durante a criação das etiquetas: ${overallError?.message || overallError}`, { error: true });
@@ -800,7 +801,7 @@ export async function createCurvedConvergenceConnector(
     toNodeId: string,
     finalColors: Record<string, RGB>
 ): Promise<ConnectorNode> {
-    console.log(`[Curved Convergence] Criando conector curvo ${config.isUpperBranch ? 'superior' : 'inferior'} (${fromNodeId} -> ${toNodeId})`);
+    Logger.debug('Curved Convergence', `Criando conector curvo ${config.isUpperBranch ? 'superior' : 'inferior'} (${fromNodeId} -> ${toNodeId})`);
     
     const connector = figma.createConnector();
     connector.name = `Curved Convergence: ${fromNodeId} -> ${toNodeId} (${config.isUpperBranch ? 'Upper' : 'Lower'})`;
@@ -816,7 +817,7 @@ export async function createCurvedConvergenceConnector(
         // Aplicar estilo de convergência
         applyConvergenceStyle(connector, finalColors);
         
-        console.log(`[Curved Convergence] Conector curvo criado com sucesso`);
+        Logger.debug('Curved Convergence', 'Conector curvo criado com sucesso');
         return connector;
         
     } catch (error: any) {
@@ -865,7 +866,7 @@ async function applyMultiSegmentCurve(
         connector.connectorLineType = "STRAIGHT"; // Mais direto
     }
     
-    console.log(`[Curved Convergence] Aplicada curva de ${points.length} segmentos`);
+    Logger.debug('Curved Convergence', `Aplicada curva de ${points.length} segmentos`);
 }
 
 /**
@@ -934,7 +935,7 @@ function applyConvergenceStyle(connector: ConnectorNode, finalColors: Record<str
             }];
         }
         
-        console.log(`[Curved Convergence] Estilo de convergência aplicado`);
+        Logger.debug('Curved Convergence', 'Estilo de convergência aplicado');
         
     } catch (error: any) {
         console.error(`[Curved Convergence] Erro ao aplicar estilo:`, error);
@@ -954,7 +955,7 @@ export async function createConvergenceConnectors(
 ): Promise<ConnectorNode[]> {
     const connectors: ConnectorNode[] = [];
     
-    console.log(`[Curved Convergence] Criando ${configs.length} conectores de convergência para ${toNodeId}`);
+    Logger.debug('Curved Convergence', `Criando ${configs.length} conectores de convergência para ${toNodeId}`);
     
     for (let i = 0; i < configs.length; i++) {
         const config = configs[i];
@@ -981,7 +982,7 @@ export async function createConvergenceConnectors(
         }
     }
     
-    console.log(`[Curved Convergence] ${connectors.length} conectores de convergência criados`);
+    Logger.debug('Curved Convergence', `${connectors.length} conectores de convergência criados`);
     return connectors;
 }
 

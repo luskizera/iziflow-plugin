@@ -11,6 +11,7 @@ import type {
   ConvergenceGeometry,
   CurvedConnectorConfig
 } from '../../shared/types/flow.types';
+import { Logger } from '../utils/logger';
 
 export namespace Layout {
   export function buildGraph(nodes: any[], connections: any[]) {
@@ -539,7 +540,7 @@ export namespace Layout {
     lowerBranchEndNode: LayoutPosition,
     convergenceNode: LayoutPosition
   ): ConvergenceGeometry {
-    console.log(`[Convergence] Calculando geometria de convergência`);
+    Logger.debug('Convergence', 'Calculando geometria de convergência');
     
     // Calcular pontos de controle para curvas suaves
     const distanceToConvergence = convergenceNode.x - Math.max(upperBranchEndNode.x, lowerBranchEndNode.x);
@@ -583,7 +584,7 @@ export namespace Layout {
       tension: 0.6
     };
     
-    console.log(`[Convergence] Geometria calculada - Ângulo: ${convergenceAngle.toFixed(2)}°`);
+    Logger.debug('Convergence', `Geometria calculada - Ângulo: ${convergenceAngle.toFixed(2)}°`);
     
     return {
       upperPath,
@@ -730,7 +731,7 @@ export namespace Layout {
         controlPoint: adjustedGeometry.lowerControlPoint
       };
       
-      console.log(`[Convergence] Geometria ajustada - pontos de controle afastados`);
+      Logger.debug('Convergence', 'Geometria ajustada - pontos de controle afastados');
     }
     
     return adjustedGeometry;
@@ -747,7 +748,7 @@ export namespace Layout {
     positions: Map<string, LayoutPosition>
   ): CurvedConnectorConfig[] | null {
     if (!bifurcation.convergenceNodeId) {
-      console.log(`[Convergence] Nenhum ponto de convergência encontrado para decisão ${bifurcation.decisionNodeId}`);
+      Logger.debug('Convergence', `Nenhum ponto de convergência encontrado para decisão ${bifurcation.decisionNodeId}`);
       return null;
     }
     
@@ -790,7 +791,7 @@ export namespace Layout {
       }
     ];
     
-    console.log(`[Convergence] Configurações de convergência preparadas para ${bifurcation.decisionNodeId}`);
+    Logger.debug('Convergence', `Configurações de convergência preparadas para ${bifurcation.decisionNodeId}`);
     return configs;
   }
 
@@ -801,7 +802,7 @@ export namespace Layout {
    * Esta função serve para validar a implementação durante desenvolvimento
    */
   export function testConvergenceGeometry(): void {
-    console.log(`[Convergence Test] Iniciando testes de geometria de convergência`);
+    Logger.debug('Convergence Test', 'Iniciando testes de geometria de convergência');
     
     // Cenário de teste 1: Convergência próxima
     const upperPos1: LayoutPosition = { x: 100, y: 50, laneIndex: 1 };
@@ -809,7 +810,7 @@ export namespace Layout {
     const convergencePos1: LayoutPosition = { x: 300, y: 100, laneIndex: 0 };
     
     const geometry1 = calculateConvergenceGeometry(upperPos1, lowerPos1, convergencePos1);
-    console.log(`[Convergence Test] Cenário 1 - Ângulo: ${geometry1.convergenceAngle.toFixed(2)}°`);
+    Logger.debug('Convergence Test', `Cenário 1 - Ângulo: ${geometry1.convergenceAngle.toFixed(2)}°`);
     
     // Cenário de teste 2: Convergência distante
     const upperPos2: LayoutPosition = { x: 100, y: 0, laneIndex: 1 };
@@ -817,7 +818,7 @@ export namespace Layout {
     const convergencePos2: LayoutPosition = { x: 500, y: 100, laneIndex: 0 };
     
     const geometry2 = calculateConvergenceGeometry(upperPos2, lowerPos2, convergencePos2);
-    console.log(`[Convergence Test] Cenário 2 - Ângulo: ${geometry2.convergenceAngle.toFixed(2)}°`);
+    Logger.debug('Convergence Test', `Cenário 2 - Ângulo: ${geometry2.convergenceAngle.toFixed(2)}°`);
     
     // Cenário de teste 3: Convergência muito aguda
     const upperPos3: LayoutPosition = { x: 100, y: 90, laneIndex: 1 };
@@ -825,7 +826,7 @@ export namespace Layout {
     const convergencePos3: LayoutPosition = { x: 150, y: 100, laneIndex: 0 };
     
     const geometry3 = calculateConvergenceGeometry(upperPos3, lowerPos3, convergencePos3);
-    console.log(`[Convergence Test] Cenário 3 - Ângulo: ${geometry3.convergenceAngle.toFixed(2)}°`);
+    Logger.debug('Convergence Test', `Cenário 3 - Ângulo: ${geometry3.convergenceAngle.toFixed(2)}°`);
     
     // Teste de validação
     const mockPositions = new Map<string, LayoutPosition>();
@@ -836,22 +837,22 @@ export namespace Layout {
     const isValid2 = validateConvergenceGeometry(geometry2, mockPositions);
     const isValid3 = validateConvergenceGeometry(geometry3, mockPositions);
     
-    console.log(`[Convergence Test] Validação - Cenário 1: ${isValid1}, Cenário 2: ${isValid2}, Cenário 3: ${isValid3}`);
+    Logger.debug('Convergence Test', `Validação - Cenário 1: ${isValid1}, Cenário 2: ${isValid2}, Cenário 3: ${isValid3}`);
     
     // Teste de ajuste automático
     if (!isValid3) {
       const adjustedGeometry3 = adjustConvergenceGeometry(geometry3, mockPositions);
-      console.log(`[Convergence Test] Cenário 3 ajustado - Novo ângulo: ${adjustedGeometry3.convergenceAngle.toFixed(2)}°`);
+      Logger.debug('Convergence Test', `Cenário 3 ajustado - Novo ângulo: ${adjustedGeometry3.convergenceAngle.toFixed(2)}°`);
     }
     
-    console.log(`[Convergence Test] Testes concluídos`);
+    Logger.debug('Convergence Test', 'Testes concluídos');
   }
 
   /**
    * Testa o cálculo de curvas Bézier com diferentes tensões
    */
   export function testBezierCalculation(): void {
-    console.log(`[Bezier Test] Testando cálculo de curvas Bézier`);
+    Logger.debug('Bezier Test', 'Testando cálculo de curvas Bézier');
     
     const testPath: BezierPathConfig = {
       startPoint: { x: 0, y: 0 },
@@ -865,9 +866,9 @@ export namespace Layout {
     const segments8 = calculateBezierPath(testPath, 8);
     const segments16 = calculateBezierPath(testPath, 16);
     
-    console.log(`[Bezier Test] 4 segmentos: ${segments4.length} pontos`);
-    console.log(`[Bezier Test] 8 segmentos: ${segments8.length} pontos`);
-    console.log(`[Bezier Test] 16 segmentos: ${segments16.length} pontos`);
+    Logger.debug('Bezier Test', `4 segmentos: ${segments4.length} pontos`);
+    Logger.debug('Bezier Test', `8 segmentos: ${segments8.length} pontos`);
+    Logger.debug('Bezier Test', `16 segmentos: ${segments16.length} pontos`);
     
     // Validar se os pontos inicial e final estão corretos
     const firstPoint = segments8[0];
@@ -876,10 +877,10 @@ export namespace Layout {
     const startCorrect = firstPoint.x === testPath.startPoint.x && firstPoint.y === testPath.startPoint.y;
     const endCorrect = lastPoint.x === testPath.endPoint.x && lastPoint.y === testPath.endPoint.y;
     
-    console.log(`[Bezier Test] Ponto inicial correto: ${startCorrect}, Ponto final correto: ${endCorrect}`);
+    Logger.debug('Bezier Test', `Ponto inicial correto: ${startCorrect}, Ponto final correto: ${endCorrect}`);
     
     if (startCorrect && endCorrect) {
-      console.log(`[Bezier Test] ✅ Cálculo de Bézier funcionando corretamente`);
+      Logger.debug('Bezier Test', 'Cálculo de Bézier funcionando corretamente');
     } else {
       console.warn(`[Bezier Test] ⚠️ Possível problema no cálculo de Bézier`);
     }
@@ -889,12 +890,12 @@ export namespace Layout {
    * Função de teste abrangente para todo o sistema de convergência
    */
   export function runConvergenceTests(): void {
-    console.log(`[Convergence System] Executando suite completa de testes`);
+    Logger.debug('Convergence System', 'Executando suite completa de testes');
     
     try {
       testConvergenceGeometry();
       testBezierCalculation();
-      console.log(`[Convergence System] ✅ Todos os testes passaram`);
+      Logger.debug('Convergence System', 'Todos os testes passaram');
     } catch (error: any) {
       console.error(`[Convergence System] ❌ Falha nos testes:`, error);
     }

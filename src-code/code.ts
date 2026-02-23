@@ -15,6 +15,7 @@ import { Frames } from './lib/frames';
 import { Connectors } from './lib/connectors';
 import { getHistory, addHistoryEntry, clearHistory, removeHistoryEntry } from './utils/historyStorage';
 import { calculateAbsolutePositions, type LayoutSpacingConfig } from './lib/positionCalculator';
+import { Logger } from './utils/logger';
 
 // Chave para o clientStorage (deve ser a mesma na UI)
 const GENERATION_STATUS_KEY = 'iziflow_generation_status';
@@ -78,7 +79,7 @@ async function processFlowInput(input: string): Promise<FlowParseResult> {
         throw new Error('Entrada YAML inválida ou vazia.');
     }
 
-    console.log('[Flow Parser] Formato forçado: yaml');
+    Logger.info('Flow Parser', 'Formato forçado: yaml');
     return parseYAMLToFlow(sanitized);
 }
 
@@ -99,8 +100,8 @@ async function generateFlowWithBifurcatedLayout(
     const bifurcations = Layout.detectBinaryDecisions(flowNodes, flowConnections);
     const nodeLaneMap = Layout.calculateVerticalLanes(bifurcations, flowNodes);
     
-    console.log(`[Bifurcated Layout] Detectadas ${bifurcations.length} bifurcações`);
-    console.log(`[Bifurcated Layout] Mapa de lanes:`, Object.fromEntries(nodeLaneMap));
+    Logger.info('Bifurcated Layout', `Detectadas ${bifurcations.length} bifurcações`);
+    Logger.info('Bifurcated Layout', 'Mapa de lanes:', Object.fromEntries(nodeLaneMap));
     
     // 2. Calcular posições para todos os nós
     const nodePositions = calculateBifurcatedPositions(
@@ -197,7 +198,6 @@ function calculateBifurcatedPositions(
     let currentX = viewportCenter.x;
     const centerY = viewportCenter.y;
     const sortedNodes = Layout.topologicalSort(nodes, connections);
-    const sortedNodeIds = new Set(sortedNodes.map(node => node.id));
     
     for (const node of sortedNodes) {
         const laneIndex = nodeLaneMap.get(node.id) || 0;
@@ -241,7 +241,7 @@ function calculateBifurcatedPositions(
     }
     
     // Aplicar gerenciamento vertical para resolver conflitos
-    console.log(`[Bifurcated Layout] Aplicando gerenciamento vertical...`);
+    Logger.info('Bifurcated Layout', 'Aplicando gerenciamento vertical...');
     
     // Criar mapas de dimensões dos nós (estimativas)
     const nodeWidths = new Map<string, number>();
@@ -290,7 +290,7 @@ function calculateBifurcatedPositions(
         }
     });
     
-    console.log(`[Bifurcated Layout] Posições finais calculadas para ${managedPositions.size} nós`);
+    Logger.info('Bifurcated Layout', `Posições finais calculadas para ${managedPositions.size} nós`);
     return managedPositions;
 }
 
@@ -463,12 +463,12 @@ figma.showUI(__html__, { width: 680, height: 500, themeColors: true, title: 'Izi
 
 // Listener principal
 figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pelo Figma
-    console.log('[Plugin] Mensagem RAW recebida da UI:', msg);
+    Logger.info('Plugin', 'Mensagem RAW recebida da UI:', msg);
 
     // Verifica se a mensagem vem encapsulada em pluginMessage
     let actualMessage = msg;
     if (msg && msg.pluginMessage && typeof msg.pluginMessage === 'object') {
-        console.log('[Plugin] Mensagem tem wrapper pluginMessage, extraindo...');
+        Logger.info('Plugin', 'Mensagem tem wrapper pluginMessage, extraindo...');
         actualMessage = msg.pluginMessage;
     }
 
@@ -481,7 +481,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
     const messageType = actualMessage.type as keyof EventTS;
     const payload = actualMessage; // actualMessage é o payload desembrulhado { type: ..., data... }
 
-    console.log(`[Plugin] Mensagem da UI recebida: ${messageType}`); // Log principal mantido
+    Logger.info('Plugin', `Mensagem da UI recebida: ${messageType}`);
 
     // --- Handler para 'generate-flow' ---
     if (messageType === 'generate-flow') {
@@ -625,13 +625,13 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
     }
     // --- Handlers para o Histórico ---
     else if (messageType === 'get-history') {
-        console.log("[Plugin] Recebido pedido 'get-history'.");
+        Logger.info('Plugin', "Recebido pedido 'get-history'.");
         const history = await getHistory();
-        console.log(`[Plugin] Enviando 'history-updated' com ${history.length} itens.`);
+        Logger.info('Plugin', `Enviando 'history-updated' com ${history.length} itens.`);
         figma.ui.postMessage({ type: 'history-updated', history: history });
    }
    else if (messageType === 'clear-history-request') {
-        console.log("[Plugin] Recebido pedido 'clear-history-request'.");
+        Logger.info('Plugin', "Recebido pedido 'clear-history-request'.");
         await clearHistory();
         const updatedHistory = await getHistory(); // Deve retornar []
         figma.ui.postMessage({ type: 'history-updated', history: updatedHistory });
@@ -640,7 +640,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
    else if (messageType === 'remove-history-entry') {
         const { id: idToRemove } = payload;
         if (typeof idToRemove === 'string') {
-            console.log(`[Plugin] Recebido pedido para remover item com ID: ${idToRemove}`);
+            Logger.info('Plugin', `Recebido pedido para remover item com ID: ${idToRemove}`);
             await removeHistoryEntry(idToRemove);
             const updatedHistory = await getHistory();
             figma.ui.postMessage({ type: 'history-updated', history: updatedHistory });
@@ -650,7 +650,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
    }
    // --- Handlers para Configurações de Layout (Fase 7) ---
    else if (messageType === 'get-layout-preferences') {
-       console.log("[Plugin] Recebido pedido 'get-layout-preferences'.");
+       Logger.info('Plugin', "Recebido pedido 'get-layout-preferences'.");
        try {
            const preferences = await LayoutConfig.UserPreferences.load();
            figma.ui.postMessage({ type: 'layout-preferences-updated', preferences: preferences });
@@ -660,7 +660,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
        }
    }
    else if (messageType === 'set-layout-preferences') {
-       console.log("[Plugin] Recebido pedido 'set-layout-preferences'.");
+       Logger.info('Plugin', "Recebido pedido 'set-layout-preferences'.");
        const { preferences } = payload;
        if (preferences && typeof preferences === 'object') {
            try {
@@ -679,7 +679,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
        }
    }
    else if (messageType === 'reset-layout-preferences') {
-       console.log("[Plugin] Recebido pedido 'reset-layout-preferences'.");
+       Logger.info('Plugin', "Recebido pedido 'reset-layout-preferences'.");
        try {
            const resetPreferences = await LayoutConfig.UserPreferences.reset();
            figma.ui.postMessage({ type: 'layout-preferences-updated', preferences: resetPreferences });
@@ -695,7 +695,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
    }
    // --- Handlers para Preferências de UI ---
    else if (messageType === 'get-ui-preferences') {
-       console.log("[Plugin] Recebido pedido 'get-ui-preferences'.");
+       Logger.info('Plugin', "Recebido pedido 'get-ui-preferences'.");
        try {
            const prefsStr = await figma.clientStorage.getAsync('iziflow_ui_prefs');
            const preferences = prefsStr ? JSON.parse(prefsStr) : {};
@@ -709,7 +709,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
    else if (messageType === 'save-ui-preferences') {
        const { preferences } = payload;
        if (preferences) {
-           console.log("[Plugin] Salvando preferências de UI:", preferences);
+           Logger.info('Plugin', 'Salvando preferências de UI:', preferences);
            try {
                await figma.clientStorage.setAsync('iziflow_ui_prefs', JSON.stringify(preferences));
            } catch (error) {

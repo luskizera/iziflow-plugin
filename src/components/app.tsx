@@ -699,6 +699,7 @@ export function App() {
                   Clear
                 </Button>
                 <Button
+                variant="brand"
                   size="sm"
                   onClick={handleSubmit}
                   disabled={

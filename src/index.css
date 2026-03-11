@@ -85,7 +85,7 @@
   --muted: var(--brand-neutral-100);
   --muted-foreground: var(--brand-neutral-600);
 
-  --accent: var(--brand-400);
+  --accent: var(--brand-neutral-100);
   --accent-foreground: var(--brand-neutral-950);
 
   --destructive: var(--color-error-500);
@@ -93,7 +93,7 @@
 
   --border: var(--brand-neutral-200);
   --input: var(--brand-neutral-200);
-  --ring: var(--brand-400);
+  --ring: var(--brand-neutral-400);
 
   --chart-1: var(--brand-400);
   --chart-2: var(--brand-300);

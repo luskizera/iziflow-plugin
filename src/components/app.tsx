@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import yaml from "js-yaml";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTheme } from "@/components/providers/theme-provider";
 import { dispatchTS, listenTS } from "@/utils/utils";
@@ -13,10 +14,10 @@ import {
   MoonIcon,
   InfoIcon,
   Trash2Icon,
-  MoreHorizontalIcon,
   PlayIcon,
   CheckCircle2Icon,
   AlertCircleIcon,
+  CodeXml,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -84,8 +85,11 @@ export function App() {
   // --- States ---
   const [yamlContent, setYamlContent] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [validationStatus, setValidationStatus] = useState<ValidationStatus>("idle");
-  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [validationStatus, setValidationStatus] =
+    useState<ValidationStatus>("idle");
+  const [validationMessage, setValidationMessage] = useState<string | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const { theme: uiTheme, setTheme: setUiTheme } = useTheme();
   const yamlTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -107,14 +111,19 @@ export function App() {
   // Effect to save UI preferences when they change (debounced)
   useEffect(() => {
     if (isInitialLoad.current) return;
+    if (!isValidHex(accentColor)) return;
 
     const timer = setTimeout(() => {
-      console.log("[App] Saving UI preferences:", { accentColor, nodeMode, uiTheme });
+      console.log("[App] Saving UI preferences:", {
+        accentColor,
+        nodeMode,
+        uiTheme,
+      });
       dispatchTS("save-ui-preferences", {
         preferences: {
           accentColor,
           nodeMode,
-          uiTheme: uiTheme as 'light' | 'dark',
+          uiTheme: uiTheme as "light" | "dark",
         },
       });
     }, 500);
@@ -125,7 +134,9 @@ export function App() {
   // Effect for listeners and initial history fetch
   useEffect(() => {
     yamlTextareaRef.current?.focus();
-    console.log("[App Effect] Mounted. Requesting initial history and preferences...");
+    console.log(
+      "[App Effect] Mounted. Requesting initial history and preferences...",
+    );
     dispatchTS("get-history");
     dispatchTS("get-ui-preferences");
 
@@ -135,17 +146,25 @@ export function App() {
       console.debug(`[Plugin Debug via UI]: ${payload.message}`, parsedData);
     };
 
-    const handleUiPreferencesUpdated = (payload: EventTS["ui-preferences-updated"]) => {
-      const { accentColor: loadedAccent, nodeMode: loadedNodeMode, uiTheme: loadedUiTheme } = payload.preferences;
-      
+    const handleUiPreferencesUpdated = (
+      payload: EventTS["ui-preferences-updated"],
+    ) => {
+      const {
+        accentColor: loadedAccent,
+        nodeMode: loadedNodeMode,
+        uiTheme: loadedUiTheme,
+      } = payload.preferences;
+
       if (loadedAccent && isValidHex(loadedAccent)) {
         setAccentColor(loadedAccent);
       }
       if (loadedNodeMode) setNodeMode(loadedNodeMode);
       if (loadedUiTheme) setUiTheme(loadedUiTheme);
-      
+
       // Mark initial load as complete after setting state
-      setTimeout(() => { isInitialLoad.current = false; }, 100);
+      setTimeout(() => {
+        isInitialLoad.current = false;
+      }, 100);
     };
 
     // << MUDANÇA: Ouve 'history-updated' e atualiza o estado
@@ -161,19 +180,22 @@ export function App() {
     const handleParseError = (payload: EventTS["parse-error"]) => {
       console.error("[App Handler] Received 'parse-error'. Payload:", payload);
       setError(
-        `Syntax error ${payload.lineNumber ? `(line ${payload.lineNumber})` : ""}: ${payload.message}`
+        `Syntax error ${payload.lineNumber ? `(line ${payload.lineNumber})` : ""}: ${payload.message}`,
       );
       setIsLoading(false);
     };
 
     // Setup listeners
     console.log(
-      "[App Effect] Adding listeners (Debug, History, ParseError, UiPrefs)..."
+      "[App Effect] Adding listeners (Debug, History, ParseError, UiPrefs)...",
     );
     const cleanupDebug = listenTS("debug", handleDebug);
     const cleanupHistory = listenTS("history-updated", handleHistoryUpdate); // << MUDANÇA: Novo listener
     const cleanupParseError = listenTS("parse-error", handleParseError);
-    const cleanupUiPrefs = listenTS("ui-preferences-updated", handleUiPreferencesUpdated);
+    const cleanupUiPrefs = listenTS(
+      "ui-preferences-updated",
+      handleUiPreferencesUpdated,
+    );
 
     // Cleanup function
     return () => {
@@ -201,10 +223,10 @@ export function App() {
             typeof figma.clientStorage === "undefined"
           ) {
             console.warn(
-              "[App Polling Effect] Figma API or clientStorage not available in UI. Stopping polling."
+              "[App Polling Effect] Figma API or clientStorage not available in UI. Stopping polling.",
             );
             setError(
-              "Unable to verify generation status (Figma API unavailable)."
+              "Unable to verify generation status (Figma API unavailable).",
             );
             setIsLoading(false);
             if (intervalId) clearInterval(intervalId);
@@ -212,7 +234,7 @@ export function App() {
           }
 
           const statusRaw = await figma.clientStorage.getAsync(
-            GENERATION_STATUS_KEY
+            GENERATION_STATUS_KEY,
           );
           if (statusRaw) {
             let statusData;
@@ -228,12 +250,12 @@ export function App() {
                 isRecent
               ) {
                 console.log(
-                  `[App Polling Effect] Final status (${statusData.status}) detected. Stopping polling.`
+                  `[App Polling Effect] Final status (${statusData.status}) detected. Stopping polling.`,
                 );
                 if (statusData.status === "error") {
                   setError(
                     statusData.message ||
-                      "Generation error (details in plugin console)."
+                      "Generation error (details in plugin console).",
                   );
                 } else {
                   setError(null);
@@ -248,7 +270,7 @@ export function App() {
                   statusData.status === "error")
               ) {
                 console.warn(
-                  "[App Polling Effect] Final status found, but it is old. Cleaning up and stopping polling."
+                  "[App Polling Effect] Final status found, but it is old. Cleaning up and stopping polling.",
                 );
                 if (intervalId) clearInterval(intervalId);
                 setIsLoading(false);
@@ -259,7 +281,7 @@ export function App() {
                 "[App Polling Effect] Error parsing statusRaw:",
                 parseError,
                 "Raw value:",
-                statusRaw
+                statusRaw,
               );
               setError("Internal error reading generation status (parse).");
               setIsLoading(false);
@@ -272,10 +294,10 @@ export function App() {
 
           if (attempts >= maxAttempts && isLoading) {
             console.warn(
-              "[App Polling Effect] Maximum attempts reached. Stopping polling."
+              "[App Polling Effect] Maximum attempts reached. Stopping polling.",
             );
             setError(
-              "Generation took too long or status was not updated. Check the Figma console."
+              "Generation took too long or status was not updated. Check the Figma console.",
             );
             setIsLoading(false);
             if (intervalId) clearInterval(intervalId);
@@ -286,7 +308,7 @@ export function App() {
         } catch (storageError) {
           console.error(
             "[App Polling Effect] Error READING clientStorage:",
-            storageError
+            storageError,
           );
           setError("Error verifying generation status (storage).");
           setIsLoading(false);
@@ -314,12 +336,12 @@ export function App() {
     const timer = setTimeout(() => {
       try {
         const parsed = yaml.load(yamlContent);
-        
-        if (typeof parsed !== 'object' || parsed === null) {
+
+        if (typeof parsed !== "object" || parsed === null) {
           throw new Error("YAML must be a valid object.");
         }
 
-        if (!('nodes' in (parsed as object))) {
+        if (!("nodes" in (parsed as object))) {
           setValidationStatus("invalid");
           setValidationMessage("Missing 'nodes' property in YAML.");
         } else {
@@ -329,7 +351,7 @@ export function App() {
       } catch (e: any) {
         setValidationStatus("invalid");
         // Captura apenas a primeira linha do erro do js-yaml que costuma ser a mais relevante
-        const firstLine = e.message?.split('\n')[0] || "Invalid YAML syntax";
+        const firstLine = e.message?.split("\n")[0] || "Invalid YAML syntax";
         setValidationMessage(firstLine);
       }
     }, 500);
@@ -370,7 +392,7 @@ export function App() {
     } catch (error: any) {
       console.error(
         "[handleSubmit] Error dispatching 'generate-flow' message:",
-        error
+        error,
       );
       setError(`Internal error sending request: ${error.message}`);
       setIsLoading(false);
@@ -388,12 +410,38 @@ export function App() {
     }
   };
 
-  const handleAccentColorChange = (color: { toString: (format: string) => string }) => {
+  const handleAccentColorChange = (color: {
+    toString: (format: string) => string;
+  }) => {
     const nextColor = color.toString("hex").toUpperCase();
     setAccentColor(nextColor);
     if (
       error === "Invalid Accent color." ||
       error === "Invalid Accent color. Use HEX format (e.g. #3860FF)."
+    ) {
+      setError(null);
+    }
+  };
+
+  const handleAccentColorInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    let nextValue = event.target.value.toUpperCase().replace(/[^#0-9A-F]/g, "");
+
+    if (nextValue && !nextValue.startsWith("#")) {
+      nextValue = `#${nextValue.replace(/#/g, "")}`;
+    } else if (nextValue.startsWith("#")) {
+      nextValue = `#${nextValue.slice(1).replace(/#/g, "")}`;
+    }
+
+    nextValue = nextValue.slice(0, 7);
+
+    setAccentColor(nextValue);
+
+    if (
+      isValidHex(nextValue) &&
+      (error === "Invalid Accent color." ||
+        error === "Invalid Accent color. Use HEX format (e.g. #3860FF).")
     ) {
       setError(null);
     }
@@ -435,13 +483,13 @@ export function App() {
     <TooltipProvider delayDuration={100}>
       <div
         className={cn(
-          "flex flex-col h-125 bg-background text-foreground pt-4 pb-1 px-4 gap-5",
-          uiTheme
+          "flex flex-col h-125 bg-background text-foreground p-6 gap-5",
+          uiTheme,
         )}
       >
         {/* Header */}
         <header className="flex items-center justify-between w-full shrink-0">
-          <div className="h-6 w-auto text-foreground">
+          <div className="h-5 w-auto">
             {/* IziFlow Logo SVG */}
             <svg
               width="107"
@@ -449,7 +497,7 @@ export function App() {
               viewBox="0 0 107 22"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="h-full w-full"
+              className="h-5 w-auto text-muted-foreground"
               aria-label="IziFlow Logo"
               role="img"
             >
@@ -496,22 +544,18 @@ export function App() {
           </div>
           {/* Header Buttons */}
           <div className="flex items-center gap-1.5">
-                        <Button
-              variant="secondary"
-              size="sm"
-              className=""
-              asChild
-            >
+            <Button variant="secondary" size="sm" className="" asChild>
               <a
                 href="https://chatgpt.com/g/g-68f197c021088191a6571b78ac38482d-iziflow-assistant"
                 target="_blank"
                 rel="noopener noreferrer"
               >
+                <CodeXml />
                 Get iziFlow YAML here
               </a>
             </Button>
             <Button
-              variant="ghost"
+              variant="secondary"
               size="icon"
               className="p-0 w-8 h-8"
               onClick={() => setUiTheme(uiTheme === "dark" ? "light" : "dark")}
@@ -536,17 +580,11 @@ export function App() {
           onValueChange={setActiveTab}
           className="flex flex-col grow min-h-0"
         >
-          <TabsList className="shrink-0 h-9 w-auto justify-start rounded-lg bg-muted text-muted-foreground">
-            <TabsTrigger
-              value="generator"
-              className="flex-1 px-3 py-1 h-7 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-            >
+          <TabsList className="shrink-0 w-auto h-auto">
+            <TabsTrigger value="generator" className="flex-1">
               Create Flow
             </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              className="flex-1 px-3 py-1 h-7 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-            >
+            <TabsTrigger value="history" className="flex-1">
               History
             </TabsTrigger>
           </TabsList>
@@ -554,7 +592,7 @@ export function App() {
           {/* --- Generator Tab Content --- */}
           <TabsContent
             value="generator"
-            className="mt-5 flex flex-1 flex-col gap-5 data-[state=inactive]:hidden"
+            className="mt-6 flex flex-1 flex-col gap-5 data-[state=inactive]:hidden"
           >
             {/* Textarea */}
             <div className="flex flex-col gap-1.5 flex-1 min-h-0">
@@ -563,15 +601,19 @@ export function App() {
                 value={yamlContent}
                 onChange={(e) => setYamlContent(e.target.value)}
                 placeholder="Paste your IziFlow YAML here..."
-                className="flex-1 w-full resize-none font-mono text-xs bg-muted/30 dark:bg-muted/10 border-border"
+                className="flex-1 w-full resize-none font-mono text-sm bg-card"
               />
-              
+
               {/* Real-time Validation Indicator */}
               {validationStatus !== "idle" && (
-                <div className={cn(
-                  "flex items-center gap-1.5 text-xs px-1 transition-all duration-200",
-                  validationStatus === "valid" ? "text-green-600 dark:text-green-400" : "text-destructive"
-                )}>
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs px-1 font-bold transition-all duration-200",
+                    validationStatus === "valid"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-destructive",
+                  )}
+                >
                   {validationStatus === "valid" ? (
                     <CheckCircle2Icon className="w-3 h-3" />
                   ) : (
@@ -585,13 +627,13 @@ export function App() {
             </div>
             {/* Customization Section */}
             <div className="flex flex-col gap-2 w-full shrink-0">
-              <h3 className="text-xl font-medium">Customize nodes</h3>
-              <div className="flex flex-row items-end gap-2">
+              <h3 className="text-sm font-semibolds">Customize nodes</h3>
+              <div className="flex flex-row items-end gap-4">
                 {/* Accent Color Input */}
                 <div className="flex flex-1 flex-col items-start gap-1">
                   <Label
                     htmlFor="accent-color-input"
-                    className="text-sm font-semibold flex items-center gap-1"
+                    className="text-xs font-medium"
                   >
                     Accent Color
                     <Tooltip>
@@ -599,28 +641,52 @@ export function App() {
                         <InfoIcon className="w-3 h-3 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent side="top" align="center">
-                        <p className="text-sm font-semibold">Define accent color (HEX).</p>
+                        <p className="text-sm font-semibold">
+                          Define accent color (HEX).
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                   </Label>
                   <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
+                    <div className="flex w-full items-center gap-2">
+                      
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="bg-card h-9 w-9 shrink-0"
+                          aria-label="Open accent color picker"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="inline-flex h-5 w-5 rounded-sm border"
+                            style={{
+                              backgroundColor: isValidHex(accentColor)
+                                ? accentColor
+                                : "#FFFFFF",
+                            }}
+                          />
+                        </Button>
+                      </PopoverTrigger>
+                                        <Input
                         id="accent-color-input"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-full justify-start gap-2 px-2 text-xs font-mono"
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="inline-flex h-4 w-4 rounded-sm border border-input"
-                          style={{ backgroundColor: accentColor }}
-                        />
-                        {accentColor}
-                      </Button>
-                    </PopoverTrigger>
+                        value={accentColor}
+                        onChange={handleAccentColorInputChange}
+                        placeholder="#3860FF"
+                        maxLength={7}
+                        spellCheck={false}
+                        className="h-9 font-mono text-sm"
+                        aria-invalid={
+                          accentColor.length > 0 && !isValidHex(accentColor)
+                        }
+                      />
+                    </div>
                     <PopoverContent className="w-55 p-3">
-                      <ColorPicker value={accentColor} onChange={handleAccentColorChange}>
+                      <ColorPicker
+                        value={isValidHex(accentColor) ? accentColor : "#3860FF"}
+                        onChange={handleAccentColorChange}
+                      >
                         <div className="flex flex-col items-center gap-2">
                           <ColorArea
                             colorSpace="hsb"
@@ -636,7 +702,11 @@ export function App() {
                           </ColorSlider>
                           <div className="flex items-center gap-2 text-xs font-mono">
                             <ColorSwatch className="h-4 w-4 rounded-sm border border-input" />
-                            <span>{accentColor}</span>
+                            <span>
+                              {isValidHex(accentColor)
+                                ? accentColor
+                                : "Invalid HEX"}
+                            </span>
                           </div>
                         </div>
                       </ColorPicker>
@@ -647,7 +717,7 @@ export function App() {
                 <div className="flex flex-1 flex-col items-start gap-1">
                   <Label
                     htmlFor="node-theme-tabs"
-                    className="text-sm font-semibold flex items-center gap-1"
+                    className="text-xs font-medium"
                   >
                     Node Theme
                     <Tooltip>
@@ -665,31 +735,74 @@ export function App() {
                     id="node-theme-tabs"
                     value={nodeMode}
                     onValueChange={handleNodeModeChange}
-                    className="w-full"
+                    className="flex-1 w-full"
                   >
-                    <TabsList className="grid w-full grid-cols-2 p-0.5 bg-secondary border border-border rounded-md h-8">
+                    <TabsList className="flex w-full">
                       <TabsTrigger
                         value="dark"
-                        className="flex items-center gap-1 px-1 py-0.5 text-xs h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=inactive]:opacity-70"
+                        className=" flex-1"
                         aria-label="Generate in Dark mode"
                       >
-                        <MoonIcon className="w-3 h-3" /> Dark Nodes
+                        Dark Nodes
                       </TabsTrigger>
                       <TabsTrigger
                         value="light"
-                        className="flex items-center gap-1 px-1 py-0.5 text-xs h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=inactive]:opacity-70"
+                        className="flex-1"
                         aria-label="Generate in Light mode"
                       >
-                        <SunIcon className="w-3 h-3" /> Light Nodes
+                        Light Nodes
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>
                 </div>
               </div>
             </div>
-            {/* Error Area & Action Buttons */}
+            {/* Action Buttons */}
             <div className="w-full mt-auto shrink-0 space-y-1.5 pt-1.5">
               <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground font-medium h-8 px-3"
+                  asChild
+                >
+                  <a
+                    href="https://chatgpt.com/g/g-68f197c021088191a6571b78ac38482d-iziflow-assistant"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    IziFlow Copilot
+                  </a>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground font-medium h-8 px-3"
+                  asChild
+                >
+                  <a
+                    href="https://github.com/luskizera/iziflow-plugin"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GitHub
+                  </a>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground font-medium h-8 px-3"
+                  asChild
+                >
+                  <a
+                    href="https://www.izitools.xyz/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    iziFlow Website
+                  </a>
+                </Button>
+                <div className="flex w-full justify-end gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -699,7 +812,7 @@ export function App() {
                   Clear
                 </Button>
                 <Button
-                variant="brand"
+                  variant="brand"
                   size="sm"
                   onClick={handleSubmit}
                   disabled={
@@ -708,6 +821,7 @@ export function App() {
                 >
                   {isLoading ? "Generating..." : "Create Flow"}
                 </Button>
+                </div>
               </div>
             </div>
           </TabsContent>
@@ -715,16 +829,12 @@ export function App() {
           {/* --- History Tab Content (Table View) --- */}
           <TabsContent
             value="history"
-            className="flex flex-col grow p-3 gap-6 overflow-hidden data-[state=inactive]:hidden"
-          >
-            <div className="flex flex-col grow w-full items-start gap-2">
-              <h2 className="text-xl font-medium shrink-0">
-                Flows History
-              </h2>
-              <div className="grow w-full min-h-0 border max-h-50 rounded-md">
+            className="flex flex-col grow gap-6 data-[state=inactive]:hidden">
+            <div className="border rounded-md flex flex-col grow w-full items-start gap-2">
+              <div className="grow w-full min-h-0 max-h-full">
                 <ScrollArea className="h-full">
                   <Table className="text-xs">
-                    <TableHeader className="top-0 bg-muted/80 backdrop-blur-sm">
+                    <TableHeader>
                       <TableRow>
                         <TableHead className="w-[50%] h-8 px-3 font-medium">
                           Flow name
@@ -764,9 +874,7 @@ export function App() {
                                       title="Load Flow"
                                     >
                                       <PlayIcon className="h-3.5 w-3.5" />
-                                      <span className="sr-only">
-                                        Load Flow
-                                      </span>
+                                      <span className="sr-only">Load Flow</span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -800,7 +908,7 @@ export function App() {
                         <TableRow>
                           <TableCell
                             colSpan={3}
-                            className="h-24 text-center text-muted-foreground"
+                            className="h-50 text-center text-muted-foreground"
                           >
                             No history saved yet.
                           </TableCell>
@@ -814,6 +922,49 @@ export function App() {
             {/* Clean History Button */}
             <div className="flex justify-end mt-auto shrink-0">
               <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground font-medium h-8 px-3"
+                  asChild
+                >
+                  <a
+                    href="https://chatgpt.com/g/g-68f197c021088191a6571b78ac38482d-iziflow-assistant"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    IziFlow Copilot
+                  </a>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground font-medium h-8 px-3"
+                  asChild
+                >
+                  <a
+                    href="https://github.com/luskizera/iziflow-plugin"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GitHub
+                  </a>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground font-medium h-8 px-3"
+                  asChild
+                >
+                  <a
+                    href="https://www.izitools.xyz/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    iziFlow Website
+                  </a>
+                </Button>
+              <div className="flex w-full justify-end gap-2">
+              <Button
                 variant="destructive"
                 size="sm"
                 onClick={handleClearHistoryClick}
@@ -822,58 +973,10 @@ export function App() {
                 <Trash2Icon className="w-3.5 h-3.5 mr-1.5" />
                 Clean History
               </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
-        <footer className="flex flex-row sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
-            Made with ❤️
-          </p>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground font-medium h-8 px-3"
-              asChild
-            >
-              <a
-                href="https://chatgpt.com/g/g-68f197c021088191a6571b78ac38482d-iziflow-assistant"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                IziFlow Copilot
-              </a>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground font-medium h-8 px-3"
-              asChild
-            >
-              <a
-                href="https://github.com/luskizera/iziflow-plugin"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                GitHub
-              </a>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground font-medium h-8 px-3"
-              asChild
-            >
-              <a
-                href="https://www.izitools.xyz/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                iziFlow Website
-              </a>
-            </Button>
-          </div>
-        </footer>
 
         <AlertDialog
           open={isConfirmDialogOpen}
@@ -901,7 +1004,9 @@ export function App() {
                   }
                 }}
                 className={cn(
-                  actionToConfirm?.icon ? "bg-destructive text-white hover:bg-destructive/90" : ""
+                  actionToConfirm?.icon
+                    ? "bg-destructive text-white hover:bg-destructive/90"
+                    : "",
                 )}
               >
                 Confirm

@@ -649,6 +649,7 @@ export function App() {
                   </Label>
                   <Popover>
                     <div className="flex w-full items-center gap-2">
+<<<<<<< HEAD
                       
                       <PopoverTrigger asChild>
                         <Button
@@ -670,6 +671,9 @@ export function App() {
                         </Button>
                       </PopoverTrigger>
                                         <Input
+=======
+                      <Input
+>>>>>>> 5281f33c73cbaa6e02ee4576251409e635ce5005
                         id="accent-color-input"
                         value={accentColor}
                         onChange={handleAccentColorInputChange}
@@ -681,6 +685,28 @@ export function App() {
                           accentColor.length > 0 && !isValidHex(accentColor)
                         }
                       />
+<<<<<<< HEAD
+=======
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="bg-card h-9 w-9 shrink-0"
+                          aria-label="Open accent color picker"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="inline-flex h-5 w-5 rounded-sm border"
+                            style={{
+                              backgroundColor: isValidHex(accentColor)
+                                ? accentColor
+                                : "#FFFFFF",
+                            }}
+                          />
+                        </Button>
+                      </PopoverTrigger>
+>>>>>>> 5281f33c73cbaa6e02ee4576251409e635ce5005
                     </div>
                     <PopoverContent className="w-55 p-3">
                       <ColorPicker

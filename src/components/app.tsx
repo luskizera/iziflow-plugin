@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import yaml from "js-yaml";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTheme } from "@/components/providers/theme-provider";
 import { dispatchTS, listenTS } from "@/utils/utils";
@@ -36,6 +35,7 @@ import {
   ColorThumb,
   SliderTrack,
 } from "@/components/ui/color";
+import type { Color } from "react-aria-components";
 import {
   Popover,
   PopoverContent,
@@ -94,7 +94,7 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const { theme: uiTheme, setTheme: setUiTheme } = useTheme();
   const yamlTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const [accentColor, setAccentColor] = useState<string>("#3860FF");
+  const [accentColor, setAccentColor] = useState<string>("#F960EA");
   const [nodeMode, setNodeMode] = useState<NodeGenerationMode>("light");
   const [history, setHistory] = useState<HistoryEntry[]>([]); // << MUDANÇA: Usa HistoryEntry[]
   const [activeTab, setActiveTab] = useState<string>("generator");
@@ -372,7 +372,7 @@ export function App() {
       return;
     }
     if (!isValidHex(accentColor)) {
-      setError("Invalid Accent color. Use HEX format (e.g. #3860FF).");
+      setError("Invalid Accent color. Use HEX format (e.g. #F960EA).");
       setIsLoading(false);
       return;
     }
@@ -411,14 +411,12 @@ export function App() {
     }
   };
 
-  const handleAccentColorChange = (color: {
-    toString: (format: string) => string;
-  }) => {
+  const handleAccentColorChange = (color: Color) => {
     const nextColor = color.toString("hex").toUpperCase();
     setAccentColor(nextColor);
     if (
       error === "Invalid Accent color." ||
-      error === "Invalid Accent color. Use HEX format (e.g. #3860FF)."
+      error === "Invalid Accent color. Use HEX format (e.g. #F960EA)."
     ) {
       setError(null);
     }
@@ -442,7 +440,7 @@ export function App() {
     if (
       isValidHex(nextValue) &&
       (error === "Invalid Accent color." ||
-        error === "Invalid Accent color. Use HEX format (e.g. #3860FF).")
+        error === "Invalid Accent color. Use HEX format (e.g. #F960EA).")
     ) {
       setError(null);
     }
@@ -628,7 +626,7 @@ export function App() {
             </div>
             {/* Customization Section */}
             <div className="flex flex-col gap-2 w-full shrink-0">
-              <h3 className="text-sm font-semibolds">Customize nodes</h3>
+              <h3 className="text-md font-semibold">Customize nodes</h3>
               <div className="flex flex-row items-end gap-4">
                 {/* Accent Color Input */}
                 <div className="flex flex-1 flex-col items-start gap-1">
@@ -654,7 +652,7 @@ export function App() {
                         id="accent-color-input"
                         value={accentColor}
                         onChange={handleAccentColorInputChange}
-                        placeholder="#3860FF"
+                        placeholder="#F960EA"
                         maxLength={7}
                         spellCheck={false}
                         className="h-9 font-mono text-sm"
@@ -684,7 +682,7 @@ export function App() {
                     </div>
                     <PopoverContent className="w-55 p-3">
                       <ColorPicker
-                        value={isValidHex(accentColor) ? accentColor : "#3860FF"}
+                        value={isValidHex(accentColor) ? accentColor : "#F960EA"}
                         onChange={handleAccentColorChange}
                       >
                         <div className="flex flex-col items-center gap-2">

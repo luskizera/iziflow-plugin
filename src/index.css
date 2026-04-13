@@ -9,7 +9,7 @@
    ========================================================= */
 
 @theme {
-  /* Brand Luski */
+  /* Brand Color */
   --brand-50: oklch(97.66% 0.02 328.38deg);
   --brand-100: oklch(95.19% 0.04 331.64deg);
   --brand-200: oklch(90.3% 0.08 331.82deg);
@@ -22,7 +22,7 @@
   --brand-900: oklch(40.09% 0.17 331.92deg);
   --brand-950: oklch(29.65% 0.13 331.54deg);
 
-  /* Paleta neutra - Luski Brand Neutral */
+  /* Brand Neutral */
   --brand-neutral-50: oklch(98.51% 0 none);
   --brand-neutral-100: oklch(97.02% 0 none);
   --brand-neutral-200: oklch(92.19% 0 none);
@@ -35,7 +35,7 @@
   --brand-neutral-900: oklch(20.46% 0 none);
   --brand-neutral-950: oklch(13.97% 0.01 196.28deg);
 
-  /* Error */
+  /* Error Color */
   --color-error-50: oklch(96.05% 0.02 24.59deg);
   --color-error-100: oklch(93.02% 0.04 23.09deg);
   --color-error-200: oklch(87.41% 0.08 22.3deg);
@@ -48,10 +48,6 @@
   --color-error-900: oklch(37.08% 0.11 17.36deg);
   --color-error-950: oklch(24.48% 0.08 16.59deg);
 }
-
-/* =========================================================
-   TEMA CLARO (DEFAULT)
-   ========================================================= */
 
 :root {
   --font-dmsans: "DM Sans";
@@ -101,9 +97,44 @@
   --chart-5: var(--brand-700);
 }
 
-/* =========================================================
-   TAILWIND V4 INLINE THEME MAPPING
-   ========================================================= */
+.dark {
+  --background: var(--brand-neutral-950);
+  --foreground: var(--brand-neutral-50);
+
+  --card: var(--brand-neutral-900);
+  --card-foreground: var(--brand-neutral-50);
+
+  --popover: var(--brand-neutral-900);
+  --popover-foreground: var(--brand-neutral-50);
+
+  --primary: var(--brand-neutral-50);
+  --primary-foreground: var(--brand-neutral-900);
+
+  --secondary: var(--brand-neutral-800);
+  --secondary-foreground: var(--brand-neutral-50);
+
+  --brand-primary: var(--brand-400);
+  --brand-primary-foreground: var(--brand-neutral-950);
+
+  --muted: var(--brand-neutral-900);
+  --muted-foreground: var(--brand-neutral-400);
+
+  --accent: var(--brand-500);
+  --accent-foreground: var(--brand-neutral-950);
+
+  --destructive: var(--color-error-400);
+  --destructive-foreground: var(--brand-neutral-950);
+
+  --border: var(--brand-neutral-800);
+  --input: var(--brand-neutral-900);
+  --ring: var(--brand-500);
+
+  --chart-1: var(--brand-400);
+  --chart-2: var(--brand-300);
+  --chart-3: var(--brand-500);
+  --chart-4: var(--brand-600);
+  --chart-5: var(--brand-700);
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -176,23 +207,6 @@
   --color-brand-neutral-900: oklch(20.46% 0 none);
   --color-brand-neutral-950: oklch(13.97% 0.01 196.28deg);
 }
-
-        .dark {
-          --background: var(--brand-neutral-950);
-          --foreground: var(--brand-neutral-50);
-          --card: var(--brand-neutral-950);
-          --card-foreground: var(--brand-neutral-50);
-          --primary: var(--brand-neutral-50);
-          --primary-foreground: var(--brand-neutral-900);
-          --secondary: var(--brand-neutral-900);
-          --secondary-foreground: var(--brand-neutral-50);
-          --brand-primary: var(--brand-500);
-          --muted: var(--brand-neutral-900);
-          --muted-foreground: var(--brand-neutral-400);
-          --border: var(--brand-neutral-800);
-          --input: var(--brand-neutral-800);
-          --ring: var(--brand-400);
-        }   
 
 @layer base {
   * {

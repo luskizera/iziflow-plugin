@@ -482,7 +482,7 @@ export function App() {
     <TooltipProvider delayDuration={100}>
       <div
         className={cn(
-          "flex flex-col h-125 bg-background text-foreground p-6 gap-5",
+          "flex flex-col h-125 text-foreground p-6 gap-5",
           uiTheme,
         )}
       >
@@ -682,7 +682,9 @@ export function App() {
                     </div>
                     <PopoverContent className="w-55 p-3">
                       <ColorPicker
-                        value={isValidHex(accentColor) ? accentColor : "#F960EA"}
+                        value={
+                          isValidHex(accentColor) ? accentColor : "#F960EA"
+                        }
                         onChange={handleAccentColorChange}
                       >
                         <div className="flex flex-col items-center gap-2">
@@ -801,24 +803,26 @@ export function App() {
                   </a>
                 </Button>
                 <div className="flex w-full justify-end gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCleanText}
-                  title="Clear text area"
-                >
-                  Clear
-                </Button>
-                <Button
-                  variant="brand"
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={
-                    isLoading || !yamlContent.trim() || !isValidHex(accentColor)
-                  }
-                >
-                  {isLoading ? "Generating..." : "Create Flow"}
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCleanText}
+                    title="Clear text area"
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    variant="brand"
+                    size="sm"
+                    onClick={handleSubmit}
+                    disabled={
+                      isLoading ||
+                      !yamlContent.trim() ||
+                      !isValidHex(accentColor)
+                    }
+                  >
+                    {isLoading ? "Generating..." : "Create Flow"}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -827,7 +831,8 @@ export function App() {
           {/* --- History Tab Content (Table View) --- */}
           <TabsContent
             value="history"
-            className="flex flex-col grow gap-6 data-[state=inactive]:hidden">
+            className="flex flex-col grow gap-6 data-[state=inactive]:hidden"
+          >
             <div className="border rounded-md flex flex-col grow w-full items-start gap-2">
               <div className="grow w-full min-h-0 max-h-full">
                 <ScrollArea className="h-full">
@@ -920,57 +925,57 @@ export function App() {
             {/* Clean History Button */}
             <div className="flex justify-end mt-auto shrink-0">
               <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground font-medium h-8 px-3"
-                  asChild
-                >
-                  <a
-                    href="https://chatgpt.com/g/g-68f197c021088191a6571b78ac38482d-iziflow-assistant"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    IziFlow Copilot
-                  </a>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground font-medium h-8 px-3"
-                  asChild
-                >
-                  <a
-                    href="https://github.com/luskizera/iziflow-plugin"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    GitHub
-                  </a>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground font-medium h-8 px-3"
-                  asChild
-                >
-                  <a
-                    href="https://www.izitools.xyz/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    iziFlow Website
-                  </a>
-                </Button>
-              <div className="flex w-full justify-end gap-2">
-              <Button
-                variant="destructive"
+                variant="ghost"
                 size="sm"
-                onClick={handleClearHistoryClick}
-                disabled={history.length === 0}
+                className="text-xs text-muted-foreground font-medium h-8 px-3"
+                asChild
               >
-                <Trash2Icon className="w-3.5 h-3.5 mr-1.5" />
-                Clean History
+                <a
+                  href="https://chatgpt.com/g/g-68f197c021088191a6571b78ac38482d-iziflow-assistant"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  IziFlow Copilot
+                </a>
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground font-medium h-8 px-3"
+                asChild
+              >
+                <a
+                  href="https://github.com/luskizera/iziflow-plugin"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GitHub
+                </a>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground font-medium h-8 px-3"
+                asChild
+              >
+                <a
+                  href="https://www.izitools.xyz/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  iziFlow Website
+                </a>
+              </Button>
+              <div className="flex w-full justify-end gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleClearHistoryClick}
+                  disabled={history.length === 0}
+                >
+                  <Trash2Icon className="w-3.5 h-3.5 mr-1.5" />
+                  Clean History
+                </Button>
               </div>
             </div>
           </TabsContent>

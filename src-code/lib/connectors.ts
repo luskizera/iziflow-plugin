@@ -116,7 +116,7 @@ export namespace Connectors {
             attachConnectorEndpoints(connector, fromNode.id, toNode.id, config.startConnection, config.endMagnet);
 
             // Aplicar estilos
-            applyConnectorStyle(connector, config.styleBase, config.isSecondary);
+            applyConnectorStyle(connector, config.styleBase, config.isSecondary, finalColors);
 
             // Criar labels para decisões
             const labelText = conn.conditionLabel || conn.condition;
@@ -209,8 +209,8 @@ export namespace Connectors {
             // Anexa os pontos de início e fim do conector
             attachConnectorEndpoints(connector, fromNode.id, toNode.id, config.startConnection, config.endMagnet);
 
-            // Aplica os estilos (peso, traço, cor fixa)
-            applyConnectorStyle(connector, config.styleBase, config.isSecondary);
+            // Aplica os estilos (peso, traço, cor do tema)
+            applyConnectorStyle(connector, config.styleBase, config.isSecondary, finalColors);
 
             // Cria a etiqueta (label) apenas se for de uma decisão e tiver texto
             const labelText = conn.conditionLabel || conn.condition;
@@ -360,7 +360,8 @@ function determineConnectorConfig(
 function applyConnectorStyle(
     connector: ConnectorNode,
     styleBase: ConnectorStyleBaseConfig,
-    isSecondary: boolean // Usado para dashPattern e endCap do styleBase
+    isSecondary: boolean, // Usado para dashPattern e endCap do styleBase
+    finalColors?: Record<string, RGB>
 ): void {
     try {
         // A API do Figma espera os tipos corretos aqui. Usamos 'as' para garantir.
@@ -368,8 +369,12 @@ function applyConnectorStyle(
         connector.dashPattern = styleBase.DASH_PATTERN;
         connector.strokeWeight = styleBase.STROKE_WEIGHT;
 
-        // Define a cor fixa como preto (RGB 0,0,0)
-        connector.strokes = [{ type: "SOLID", color: {r:0, g:0, b:0} }];
+        // Aplica a cor definida pelo tema (modo claro ou escuro)
+        const strokeColor = isSecondary
+            ? finalColors?.['connector_secondary']
+            : finalColors?.['connector_primary'];
+
+        connector.strokes = [{ type: "SOLID", color: strokeColor ?? { r: 0, g: 0, b: 0 } }];
 
     } catch(e: any) {
         console.error(`[Connectors] Erro ao aplicar estilo ao conector ${connector.name || connector.id}: ${e?.message || e}`);
@@ -921,18 +926,11 @@ function applyConvergenceStyle(connector: ConnectorNode, finalColors: Record<str
         
         // Cor específica para convergência (pode usar uma cor diferenciada)
         const convergenceColorToken = 'connectors_convergence';
-        if (finalColors[convergenceColorToken]) {
-            connector.strokes = [{ 
-                type: "SOLID", 
-                color: finalColors[convergenceColorToken] 
-            }];
-        } else {
-            // Fallback: usar cor primária com transparência reduzida
-            connector.strokes = [{ 
-                type: "SOLID", 
-                color: { r: 0.2, g: 0.2, b: 0.2 } // Cinza escuro
-            }];
-        }
+        const strokeColor = finalColors[convergenceColorToken] ?? finalColors['connector_primary'] ?? { r: 0.2, g: 0.2, b: 0.2 };
+        connector.strokes = [{ 
+            type: "SOLID", 
+            color: strokeColor 
+        }];
         
         console.log(`[Curved Convergence] Estilo de convergência aplicado`);
         

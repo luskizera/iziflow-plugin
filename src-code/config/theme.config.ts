@@ -42,6 +42,15 @@ export const semanticTokenDefinitions = {
     info:       {fill:"{cyan.4}",     text:"{cyan.12}"},
     input:      {fill:"{neutral.4}",  text:"{neutral.12}"},
   },
+  node_startend: {
+    "start-fill": "{grass.3}",
+    "start-text": "{grass.12}",
+    "end-fill": "{ruby.3}",
+    "end-text": "{ruby.12}",
+    border: "{neutral.6}",
+    fill: "{neutral.2}",
+    text: "{neutral.12}"
+  },
   connector: {primary:"{neutral.12}", secondary:"{neutral.8}"},
   // ADICIONADO: Token para a cor do divisor
   divider_line: "{neutral.6}" // Conforme a especificação de Layout (border do neutral.6)

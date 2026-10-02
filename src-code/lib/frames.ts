@@ -450,7 +450,8 @@ export namespace Frames {
         await nodeCache.loadFont(StyleConfig.Nodes.START_END.FONT.family, StyleConfig.Nodes.START_END.FONT.style);
         const frame = figma.createFrame();
         const style = StyleConfig.Nodes.START_END;
-        frame.name = nodeData.name || "Start";
+        const text = nodeData.name || "Start";
+        frame.name = text;
         frame.resize(style.SIZE, style.SIZE);
         frame.cornerRadius = style.CORNER_RADIUS;
         frame.layoutMode = "VERTICAL";
@@ -458,6 +459,8 @@ export namespace Frames {
         frame.counterAxisSizingMode = "FIXED";
         frame.primaryAxisAlignItems = "CENTER";
         frame.counterAxisAlignItems = "CENTER";
+        frame.paddingLeft = frame.paddingRight = 16;
+        frame.paddingTop = frame.paddingBottom = 16;
         frame.itemSpacing = 0;
         // Busca cor de fill específica para Start, depois fallback geral, depois transparente
         const fillToken = 'node_startend_start-fill'; // Nome específico sugerido
@@ -473,11 +476,13 @@ export namespace Frames {
 
         const titleText = figma.createText();
         titleText.name = "Node Name Text";
-        titleText.characters = "Start"; // Texto Fixo
         titleText.fontName = style.FONT;
-        titleText.fontSize = style.FONT_SIZE;
+        const fontSize = text.length > 15 ? 16 : text.length > 8 ? 20 : style.FONT_SIZE;
+        titleText.fontSize = fontSize;
+        titleText.textAlignHorizontal = "CENTER";
+        titleText.characters = text;
+        titleText.layoutAlign = "STRETCH";
         titleText.textAutoResize = "HEIGHT";
-        titleText.layoutAlign = "INHERIT";
         const textColorToken = 'node_startend_start-text';
         const textFallbackToken = 'node_startend_text';
         const textColor = finalColors[textColorToken] ?? finalColors[textFallbackToken] ?? {r:0,g:0,b:0}; // Fallback preto
@@ -492,7 +497,8 @@ export namespace Frames {
         await nodeCache.loadFont(StyleConfig.Nodes.START_END.FONT.family, StyleConfig.Nodes.START_END.FONT.style);
         const frame = figma.createFrame();
         const style = StyleConfig.Nodes.START_END;
-        frame.name = nodeData.name || "End";
+        const text = nodeData.name || "End";
+        frame.name = text;
         frame.resize(style.SIZE, style.SIZE);
         frame.cornerRadius = style.CORNER_RADIUS;
         frame.layoutMode = "VERTICAL";
@@ -500,6 +506,8 @@ export namespace Frames {
         frame.counterAxisSizingMode = "FIXED";
         frame.primaryAxisAlignItems = "CENTER";
         frame.counterAxisAlignItems = "CENTER";
+        frame.paddingLeft = frame.paddingRight = 16;
+        frame.paddingTop = frame.paddingBottom = 16;
         frame.itemSpacing = 0;
         // Busca cor de fill específica para End, depois fallback geral, depois transparente
         const fillToken = 'node_startend_end-fill'; // Nome específico sugerido
@@ -515,11 +523,13 @@ export namespace Frames {
 
         const titleText = figma.createText();
         titleText.name = "Node Name Text";
-        titleText.characters = "End"; // Texto Fixo
         titleText.fontName = style.FONT;
-        titleText.fontSize = style.FONT_SIZE;
+        const fontSize = text.length > 15 ? 16 : text.length > 8 ? 20 : style.FONT_SIZE;
+        titleText.fontSize = fontSize;
+        titleText.textAlignHorizontal = "CENTER";
+        titleText.characters = text;
+        titleText.layoutAlign = "STRETCH";
         titleText.textAutoResize = "HEIGHT";
-        titleText.layoutAlign = "INHERIT";
         const textColorToken = 'node_startend_end-text';
         const textFallbackToken = 'node_startend_text';
         const textColor = finalColors[textColorToken] ?? finalColors[textFallbackToken] ?? {r:0,g:0,b:0}; // Fallback preto

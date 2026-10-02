@@ -17,7 +17,12 @@ import {
   PlayIcon,
   CheckCircle2Icon,
   AlertCircleIcon,
+  CopyIcon,
+  CheckIcon,
+  XIcon,
+  Loader2Icon,
 } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -82,6 +87,7 @@ export function App() {
   const [accentColor, setAccentColor] = useState<string>("#3860FF");
   const [nodeMode, setNodeMode] = useState<NodeGenerationMode>("light");
   const [history, setHistory] = useState<HistoryEntry[]>([]); // << MUDANÇA: Usa HistoryEntry[]
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("generator");
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [actionToConfirm, setActionToConfirm] = useState<{
@@ -202,25 +208,87 @@ export function App() {
     const timer = setTimeout(() => {
       try {
         const parsed = yaml.load(yamlContent);
-        
-        if (typeof parsed !== 'object' || parsed === null) {
-          throw new Error("YAML must be a valid object.");
+
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+          setValidationStatus("invalid");
+          setValidationMessage("YAML root must be an object.");
+          return;
         }
 
-        if (!('nodes' in (parsed as object))) {
+        const doc = parsed as Record<string, any>;
+
+        if (!doc.nodes || typeof doc.nodes !== "object" || Array.isArray(doc.nodes)) {
           setValidationStatus("invalid");
-          setValidationMessage("Missing 'nodes' property in YAML.");
-        } else {
-          setValidationStatus("valid");
-          setValidationMessage("Valid YAML structure");
+          setValidationMessage("Missing or invalid 'nodes' mapping in YAML.");
+          return;
         }
+
+        const nodeKeys = Object.keys(doc.nodes);
+        if (nodeKeys.length === 0) {
+          setValidationStatus("invalid");
+          setValidationMessage("'nodes' must contain at least one node definition.");
+          return;
+        }
+
+        // Validate node declarations
+        for (const [id, node] of Object.entries(doc.nodes)) {
+          if (!node || typeof node !== "object") {
+            setValidationStatus("invalid");
+            setValidationMessage(`Node "${id}" must be an object with name and type.`);
+            return;
+          }
+          const n = node as Record<string, any>;
+          if (!n.name || typeof n.name !== "string") {
+            setValidationStatus("invalid");
+            setValidationMessage(`Node "${id}" is missing a valid 'name'.`);
+            return;
+          }
+          if (!n.type || typeof n.type !== "string") {
+            setValidationStatus("invalid");
+            setValidationMessage(`Node "${id}" is missing a valid 'type'.`);
+            return;
+          }
+        }
+
+        // Validate connections if present
+        let connCount = 0;
+        if (doc.connections !== undefined) {
+          if (!Array.isArray(doc.connections)) {
+            setValidationStatus("invalid");
+            setValidationMessage("'connections' must be a list.");
+            return;
+          }
+          connCount = doc.connections.length;
+          for (let i = 0; i < doc.connections.length; i++) {
+            const conn = doc.connections[i];
+            if (!conn || typeof conn !== "object") {
+              setValidationStatus("invalid");
+              setValidationMessage(`Connection at index ${i + 1} must be an object.`);
+              return;
+            }
+            if (!conn.from || !doc.nodes[conn.from]) {
+              setValidationStatus("invalid");
+              setValidationMessage(`Connection #${i + 1}: 'from: ${conn.from || "empty"}' is not defined in nodes.`);
+              return;
+            }
+            if (!conn.to || !doc.nodes[conn.to]) {
+              setValidationStatus("invalid");
+              setValidationMessage(`Connection #${i + 1}: 'to: ${conn.to || "empty"}' is not defined in nodes.`);
+              return;
+            }
+          }
+        }
+
+        setValidationStatus("valid");
+        setValidationMessage(
+          `Valid structure (${nodeKeys.length} nodes${connCount > 0 ? `, ${connCount} connections` : ""})`
+        );
       } catch (e: any) {
         setValidationStatus("invalid");
-        // Captura apenas a primeira linha do erro do js-yaml que costuma ser a mais relevante
-        const firstLine = e.message?.split('\n')[0] || "Invalid YAML syntax";
+        const firstLine = e.message?.split("\n")[0] || "Invalid YAML syntax";
         setValidationMessage(firstLine);
       }
-    }, 500);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [yamlContent]);
@@ -294,6 +362,18 @@ export function App() {
     setError(null);
     setActiveTab("generator");
     setTimeout(() => yamlTextareaRef.current?.focus(), 0);
+  };
+
+  const handleCopyYaml = async (entry: HistoryEntry) => {
+    try {
+      await navigator.clipboard.writeText(entry.yaml);
+      setCopiedId(entry.id);
+      setTimeout(() => {
+        setCopiedId((prev) => (prev === entry.id ? null : prev));
+      }, 1500);
+    } catch (err) {
+      console.error("Failed to copy YAML to clipboard:", err);
+    }
   };
 
   const handleRemoveItemClick = (entry: HistoryEntry) => {
@@ -576,7 +656,32 @@ export function App() {
               </div>
             </div>
             {/* Error Area & Action Buttons */}
-            <div className="w-full mt-auto shrink-0 space-y-1.5 pt-1.5">
+            <div className="w-full mt-auto shrink-0 space-y-2 pt-1.5">
+              {error && (
+                <Alert variant="destructive" className="py-2.5 px-3 text-xs flex items-start justify-between border-destructive/50 bg-destructive/10">
+                  <div className="flex items-start gap-2 min-w-0 pr-2">
+                    <AlertCircleIcon className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+                    <div className="space-y-0.5 min-w-0">
+                      <AlertTitle className="text-xs font-semibold leading-tight text-destructive">
+                        Generation Error
+                      </AlertTitle>
+                      <AlertDescription className="text-xs leading-normal text-destructive/90 break-words">
+                        {error}
+                      </AlertDescription>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 shrink-0 -mr-1 -mt-0.5 text-destructive hover:bg-destructive/20 hover:text-destructive"
+                    onClick={() => setError(null)}
+                    title="Dismiss error"
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </Button>
+                </Alert>
+              )}
+
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
@@ -587,14 +692,21 @@ export function App() {
                   Clear
                 </Button>
                 <Button
-                variant="brand"
+                  variant="brand"
                   size="sm"
                   onClick={handleSubmit}
                   disabled={
                     isLoading || !yamlContent.trim() || !isValidHex(accentColor)
                   }
                 >
-                  {isLoading ? "Generating..." : "Create Flow"}
+                  {isLoading ? (
+                    <>
+                      <Loader2Icon className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Create Flow"
+                  )}
                 </Button>
               </div>
             </div>
@@ -639,7 +751,30 @@ export function App() {
                               {new Date(entry.createdAt).toLocaleDateString()}
                             </TableCell>
                             <TableCell className="py-1 px-3 text-right">
-                              <div className="flex items-center justify-end gap-2">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => handleCopyYaml(entry)}
+                                      title={copiedId === entry.id ? "Copied!" : "Copy YAML"}
+                                    >
+                                      {copiedId === entry.id ? (
+                                        <CheckIcon className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                                      ) : (
+                                        <CopyIcon className="h-3.5 w-3.5" />
+                                      )}
+                                      <span className="sr-only">
+                                        {copiedId === entry.id ? "Copied" : "Copy YAML"}
+                                      </span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{copiedId === entry.id ? "Copied to clipboard!" : "Copy YAML"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button

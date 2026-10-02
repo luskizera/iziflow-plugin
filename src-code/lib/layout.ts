@@ -23,8 +23,14 @@ export namespace Layout {
     });
 
     connections.forEach(conn => {
-      adjacencyList[conn.from].push(conn.to);
-      inDegree[conn.to] = (inDegree[conn.to] || 0) + 1;
+      if (!conn.secondary) {
+        if (adjacencyList[conn.from]) {
+          adjacencyList[conn.from].push(conn.to);
+        }
+        if (inDegree[conn.to] !== undefined) {
+          inDegree[conn.to] = (inDegree[conn.to] || 0) + 1;
+        }
+      }
     });
 
     return { adjacencyList, inDegree };
@@ -99,6 +105,7 @@ export namespace Layout {
    */
   function traceBranchPath(startConnection: Connection, allConnections: Connection[]): string[] {
     const path: string[] = [startConnection.to];
+    const visited = new Set<string>([startConnection.from, startConnection.to]);
     let currentNodeId = startConnection.to;
     
     while (true) {
@@ -111,10 +118,16 @@ export namespace Layout {
       }
       
       currentNodeId = nextConnection.to;
+
+      // Evita loops infinitos ou repetições dentro do mesmo ramo
+      if (visited.has(currentNodeId)) {
+        break;
+      }
+      visited.add(currentNodeId);
       path.push(currentNodeId);
       
-      // Verificar se chegamos a um ponto onde outro ramo também chega
-      const incomingConnections = allConnections.filter(conn => conn.to === currentNodeId);
+      // Verificar se chegamos a um ponto onde outro ramo também chega (apenas conexões primárias)
+      const incomingConnections = allConnections.filter(conn => conn.to === currentNodeId && !conn.secondary);
       if (incomingConnections.length > 1) {
         break; // Possível ponto de convergência
       }
@@ -182,37 +195,82 @@ export namespace Layout {
   }
 
   /**
-   * Realiza ordenação topológica considerando as bifurcações
+   * Realiza ordenação topológica resiliente a ciclos considerando as conexões primárias.
+   * Se houver ciclos no grafo, seleciona iterativamente candidatos conectados a nós
+   * já processados para garantir ordenação completa de todos os nós.
    */
   export function topologicalSort(nodes: FlowNode[], connections: Connection[]): FlowNode[] {
     const { adjacencyList, inDegree } = buildGraph(nodes, connections);
     const queue: string[] = [];
     const result: FlowNode[] = [];
+    const processed = new Set<string>();
     const nodeMap = new Map(nodes.map(node => [node.id, node]));
     
-    // Encontrar nós sem dependências
+    // Encontrar nós sem dependências iniciais
     Object.keys(inDegree).forEach(nodeId => {
       if (inDegree[nodeId] === 0) {
         queue.push(nodeId);
       }
     });
     
-    // Processar fila
-    while (queue.length > 0) {
-      const currentId = queue.shift()!;
-      const currentNode = nodeMap.get(currentId);
-      
-      if (currentNode) {
-        result.push(currentNode);
-      }
-      
-      // Processar vizinhos
-      adjacencyList[currentId].forEach(neighborId => {
-        inDegree[neighborId]--;
-        if (inDegree[neighborId] === 0) {
-          queue.push(neighborId);
+    while (processed.size < nodes.length) {
+      // Se a fila esvaziar mas ainda restarem nós (presença de ciclo)
+      if (queue.length === 0) {
+        let bestCandidate: string | null = null;
+        let minInDegree = Infinity;
+        let isConnectedToProcessed = false;
+
+        for (const node of nodes) {
+          if (processed.has(node.id)) continue;
+          const currentInDegree = inDegree[node.id] ?? 0;
+          const connectedToProcessed = connections.some(
+            c => !c.secondary && processed.has(c.from) && c.to === node.id
+          );
+
+          if (!bestCandidate) {
+            bestCandidate = node.id;
+            minInDegree = currentInDegree;
+            isConnectedToProcessed = connectedToProcessed;
+          } else if (connectedToProcessed && !isConnectedToProcessed) {
+            bestCandidate = node.id;
+            minInDegree = currentInDegree;
+            isConnectedToProcessed = true;
+          } else if (connectedToProcessed === isConnectedToProcessed && currentInDegree < minInDegree) {
+            bestCandidate = node.id;
+            minInDegree = currentInDegree;
+          }
         }
-      });
+
+        if (bestCandidate) {
+          queue.push(bestCandidate);
+        } else {
+          // Fallback final de segurança
+          for (const node of nodes) {
+            if (!processed.has(node.id)) {
+              queue.push(node.id);
+            }
+          }
+        }
+      }
+
+      while (queue.length > 0) {
+        const currentId = queue.shift()!;
+        if (processed.has(currentId)) continue;
+        processed.add(currentId);
+
+        const currentNode = nodeMap.get(currentId);
+        if (currentNode) {
+          result.push(currentNode);
+        }
+        
+        // Processar vizinhos
+        (adjacencyList[currentId] || []).forEach(neighborId => {
+          inDegree[neighborId]--;
+          if (inDegree[neighborId] === 0 && !processed.has(neighborId)) {
+            queue.push(neighborId);
+          }
+        });
+      }
     }
     
     return result;

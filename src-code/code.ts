@@ -194,30 +194,42 @@ function calculateBifurcatedPositions(
     let currentX = viewportCenter.x;
     const centerY = viewportCenter.y;
     const sortedNodes = Layout.topologicalSort(nodes, connections);
-    const sortedNodeIds = new Set(sortedNodes.map(node => node.id));
+    const laneLastX = new Map<number, number>();
     
     for (const node of sortedNodes) {
         const laneIndex = nodeLaneMap.get(node.id) || 0;
         if (manualNodeIds.has(node.id)) {
             const manualPos = positions.get(node.id);
-            if (manualPos && laneIndex === 0) {
-                currentX = manualPos.x + typicalNodeWidth + horizontalSpacing;
+            if (manualPos) {
+                laneLastX.set(laneIndex, manualPos.x + typicalNodeWidth + horizontalSpacing);
+                if (laneIndex === 0) {
+                    currentX = Math.max(currentX, manualPos.x + typicalNodeWidth + horizontalSpacing);
+                }
             }
             continue;
         }
 
         const y = centerY + (laneIndex * laneHeight);
-        const x = calculateXPosition(node, currentX, bifurcations, nodeLaneMap);
+        let x = calculateXPosition(node, currentX, bifurcations, nodeLaneMap);
+        
+        const prevLaneX = laneLastX.get(laneIndex);
+        if (prevLaneX !== undefined && x < prevLaneX) {
+            x = prevLaneX;
+        }
+
         positions.set(node.id, { x, y, laneIndex });
+        laneLastX.set(laneIndex, x + typicalNodeWidth + horizontalSpacing);
 
         if (laneIndex === 0) {
             currentX = x + typicalNodeWidth + horizontalSpacing;
+        } else {
+            currentX = Math.max(currentX, x + typicalNodeWidth + horizontalSpacing);
         }
     }
 
     if (sortedNodes.length < nodes.length) {
         console.warn(
-            `[Bifurcated Layout] Ordenação topológica incompleta (${sortedNodes.length}/${nodes.length}). Possível ciclo detectado; posicionando nós restantes em modo de segurança.`
+            `[Bifurcated Layout] Ordenação topológica incompleta (${sortedNodes.length}/${nodes.length}). Posicionando nós restantes em modo de segurança.`
         );
     }
 
@@ -228,13 +240,15 @@ function calculateBifurcatedPositions(
 
         const laneIndex = nodeLaneMap.get(node.id) || 0;
         const y = centerY + (laneIndex * laneHeight);
-        const x = calculateXPosition(node, currentX, bifurcations, nodeLaneMap);
+        let x = calculateXPosition(node, currentX, bifurcations, nodeLaneMap);
+        const prevLaneX = laneLastX.get(laneIndex);
+        if (prevLaneX !== undefined && x < prevLaneX) {
+            x = prevLaneX;
+        }
 
         positions.set(node.id, { x, y, laneIndex });
-
-        if (laneIndex === 0) {
-            currentX = x + typicalNodeWidth + horizontalSpacing;
-        }
+        laneLastX.set(laneIndex, x + typicalNodeWidth + horizontalSpacing);
+        currentX = Math.max(currentX, x + typicalNodeWidth + horizontalSpacing);
     }
     
     // Aplicar gerenciamento vertical para resolver conflitos

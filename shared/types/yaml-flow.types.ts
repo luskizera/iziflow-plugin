@@ -50,6 +50,7 @@ export interface YAMLConnection {
   from: string;
   to: string;
   label?: string;
+  secondary?: boolean;
   style?: ConnectionStyle;
 }
 

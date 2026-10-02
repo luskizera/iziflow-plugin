@@ -157,6 +157,9 @@ function validateYAMLDocument(doc: YAMLFlowDocument | undefined): asserts doc is
     if (!nodeIds.includes(conn.to)) {
       throw new Error(`Connection ${index} referencia nó inexistente: ${conn.to}.`);
     }
+    if (conn.secondary !== undefined && typeof conn.secondary !== 'boolean') {
+      throw new Error(`Connection ${index} possui campo secondary inválido (deve ser boolean).`);
+    }
   });
 
   detectCircularAnchors(doc.nodes);
@@ -332,6 +335,7 @@ function convertYAMLConnectionsToFlowConnections(yamlConnections: YAMLConnection
     to: yamlConn.to,
     label: yamlConn.label,
     conditionLabel: yamlConn.label,
+    secondary: yamlConn.secondary,
     exitMagnet: yamlConn.style?.exit,
     entryMagnet: yamlConn.style?.entry,
     lineType: yamlConn.style?.line_type,

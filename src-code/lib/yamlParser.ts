@@ -87,82 +87,15 @@ export function parseUnit(value: UnitValue, baseUnit: number): number {
   throw new Error(`Formato de unidade inválido: ${value}. Use "2u", "1.5u" ou "400px"`);
 }
 
-function validateYAMLDocument(doc: YAMLFlowDocument | undefined): asserts doc is YAMLFlowDocument {
-  if (!doc || typeof doc !== 'object') {
-    throw new Error('Documento YAML inválido. Certifique-se de que metadata, nodes e connections estejam definidos.');
+import { YAMLFlowDocumentSchema } from '@shared/schemas/yaml-flow.schema';
+
+function validateYAMLDocument(doc: unknown): asserts doc is YAMLFlowDocument {
+  const result = YAMLFlowDocumentSchema.safeParse(doc);
+  if (!result.success) {
+    const firstIssue = result.error.issues[0];
+    const pathStr = firstIssue.path.length > 0 ? ` [${firstIssue.path.join('.')}]` : '';
+    throw new Error(`YAML validation error${pathStr}: ${firstIssue.message}`);
   }
-
-  const layout = doc.metadata?.layout;
-  if (!layout) {
-    throw new Error('metadata.layout é obrigatório.');
-  }
-
-  if (doc.metadata?.name && typeof doc.metadata.name !== 'string') {
-    throw new Error('metadata.name deve ser uma string quando definido.');
-  }
-
-  if (layout.algorithm !== 'auto') {
-    throw new Error(`Algoritmo de layout não suportado: ${layout.algorithm}. Use "auto".`);
-  }
-
-  if (typeof layout.unit !== 'number' || Number.isNaN(layout.unit)) {
-    throw new Error('metadata.layout.unit deve ser um número.');
-  }
-
-  if (!doc.nodes || typeof doc.nodes !== 'object' || Array.isArray(doc.nodes)) {
-    throw new Error('A seção nodes é obrigatória e deve ser um objeto.');
-  }
-
-  const nodeIds = Object.keys(doc.nodes);
-  if (nodeIds.length === 0) {
-    throw new Error('Defina pelo menos um nó em nodes.');
-  }
-
-  for (const [nodeId, node] of Object.entries(doc.nodes)) {
-    if (!node || typeof node !== 'object') {
-      throw new Error(`Nó "${nodeId}" inválido.`);
-    }
-
-    if (!node.type) {
-      throw new Error(`Node "${nodeId}" precisa do campo type.`);
-    }
-
-    if (!['ENTRYPOINT', 'STEP', 'DECISION', 'END'].includes(node.type)) {
-      throw new Error(`Node "${nodeId}" possui type inválido: ${node.type}.`);
-    }
-
-    if (!node.name || typeof node.name !== 'string') {
-      throw new Error(`Node "${nodeId}" precisa do campo name.`);
-    }
-
-    if (node.position?.anchor && !nodeIds.includes(node.position.anchor)) {
-      throw new Error(`Node "${nodeId}" referencia anchor inexistente: ${node.position.anchor}.`);
-    }
-  }
-
-  if (!Array.isArray(doc.connections)) {
-    throw new Error('A seção connections é obrigatória e deve ser um array.');
-  }
-
-  doc.connections.forEach((conn, index) => {
-    if (!conn.from) {
-      throw new Error(`Connection ${index} precisa do campo from.`);
-    }
-    if (!conn.to) {
-      throw new Error(`Connection ${index} precisa do campo to.`);
-    }
-    if (!nodeIds.includes(conn.from)) {
-      throw new Error(`Connection ${index} referencia nó inexistente: ${conn.from}.`);
-    }
-    if (!nodeIds.includes(conn.to)) {
-      throw new Error(`Connection ${index} referencia nó inexistente: ${conn.to}.`);
-    }
-    if (conn.secondary !== undefined && typeof conn.secondary !== 'boolean') {
-      throw new Error(`Connection ${index} possui campo secondary inválido (deve ser boolean).`);
-    }
-  });
-
-  detectCircularAnchors(doc.nodes);
 }
 
 function sanitizeFlowName(name: string | undefined): string | undefined {
@@ -171,34 +104,6 @@ function sanitizeFlowName(name: string | undefined): string | undefined {
   }
   const trimmed = name.trim();
   return trimmed.length > 0 ? trimmed : undefined;
-}
-
-function detectCircularAnchors(nodes: Record<string, YAMLNode>): void {
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-
-  function dfs(nodeId: string): void {
-    if (visiting.has(nodeId)) {
-      throw new Error(`Referência circular detectada envolvendo o nó "${nodeId}".`);
-    }
-    if (visited.has(nodeId)) {
-      return;
-    }
-
-    visiting.add(nodeId);
-    const anchor = nodes[nodeId]?.position?.anchor;
-    if (anchor) {
-      dfs(anchor);
-    }
-    visiting.delete(nodeId);
-    visited.add(nodeId);
-  }
-
-  Object.keys(nodes).forEach((nodeId) => {
-    if (!visited.has(nodeId)) {
-      dfs(nodeId);
-    }
-  });
 }
 
 function convertYAMLNodesToFlowNodes(

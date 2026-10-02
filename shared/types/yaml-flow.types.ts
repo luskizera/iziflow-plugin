@@ -25,7 +25,7 @@ export interface YAMLLayoutConfig {
 export type UnitValue = string | number; // '2u' | '1.5u' | '400px' | 400
 
 export interface YAMLNode {
-  type: 'ENTRYPOINT' | 'STEP' | 'DECISION' | 'END';
+  type: 'ENTRYPOINT' | 'STEP' | 'DECISION' | 'END' | 'START';
   name: string;
   description?: string;
   content?: string;

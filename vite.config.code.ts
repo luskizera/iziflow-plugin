@@ -1,9 +1,16 @@
+import path from "path";
 import { defineConfig } from "vite";
 import { figmaCodePlugin } from "vite-figma-plugin";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [figmaCodePlugin()],
+  resolve: {
+    alias: {
+      "@shared": path.resolve(__dirname, "./shared"),
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   build: {
     emptyOutDir: false,
     outDir: ".tmp",

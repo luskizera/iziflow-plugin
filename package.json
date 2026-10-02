@@ -11,6 +11,7 @@
     "build": "vite build && vite build --config vite.config.code.ts",
     "buildcode": "vite build --config vite.config.code.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "preview": "vite preview",
     "hmr": "vite"
   },
@@ -61,7 +62,8 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-figma-plugin": "^0.0.24",
-    "vite-plugin-singlefile": "^2.3.0"
+    "vite-plugin-singlefile": "^2.3.0",
+    "vitest": "^5.0.3"
   },
   "eslintConfig": {
     "extends": [

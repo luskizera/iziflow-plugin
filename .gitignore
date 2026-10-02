@@ -17,7 +17,6 @@ iziflow-repomix.xml
 GEMINI.md
 CLAUDE.md
 .claude/
-tests/
 .codellm/
 AGENTS.md
 iziflow-plugin.code-workspace

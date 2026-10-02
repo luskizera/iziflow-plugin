@@ -58,10 +58,15 @@ export async function getHistory(): Promise<HistoryEntry[]> {
         }
 
         const parsed = JSON.parse(historyJson);
-        if (Array.isArray(parsed) && parsed.every(isValidHistoryEntry)) {
-            return parsed;
+        if (Array.isArray(parsed)) {
+            const validEntries = parsed.filter(isValidHistoryEntry);
+            if (validEntries.length !== parsed.length) {
+                console.warn(`[HistoryStorage] Descartadas ${parsed.length - validEntries.length} entradas inválidas do histórico.`);
+                await figma.clientStorage.setAsync(HISTORY_STORAGE_KEY, JSON.stringify(validEntries));
+            }
+            return validEntries;
         } else {
-            console.warn('[HistoryStorage] Dados de histórico corrompidos encontrados. Limpando.');
+            console.warn('[HistoryStorage] Formato de histórico corrompido (não é array). Limpando.');
             await clearHistory();
             return [];
         }

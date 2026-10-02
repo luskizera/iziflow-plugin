@@ -15,7 +15,6 @@
     "jsx": "react-jsx",
     "checkJs": false,
     "isolatedModules": true,
-    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"], // Para UI

@@ -60,25 +60,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import type { Color } from "react-aria-components";
+
 type NodeGenerationMode = "light" | "dark";
 type ValidationStatus = "idle" | "valid" | "invalid";
-
-// Chave para o clientStorage (deve ser a mesma no plugin)
-const GENERATION_STATUS_KEY = "iziflow_generation_status";
 
 // Helper to check for valid HEX color
 function isValidHex(color: string): boolean {
   return /^#[0-9A-F]{6}$/i.test(color);
 }
-
-// Declaração explícita da API do Figma para clientStorage na UI
-declare const figma: {
-  clientStorage: {
-    getAsync(key: string): Promise<string | undefined>;
-    setAsync(key: string, value: string): Promise<void>;
-    deleteAsync(key: string): Promise<void>;
-  };
-};
 
 export function App() {
   // --- States ---
@@ -166,14 +156,28 @@ export function App() {
       setIsLoading(false);
     };
 
+    const handleGenerationSuccess = (payload: EventTS["generation-success"]) => {
+      console.log("[App Handler] Received 'generation-success':", payload.message);
+      setIsLoading(false);
+      setError(null);
+    };
+
+    const handleGenerationError = (payload: EventTS["generation-error"]) => {
+      console.error("[App Handler] Received 'generation-error':", payload.message);
+      setIsLoading(false);
+      setError(payload.message || "Generation error occurred.");
+    };
+
     // Setup listeners
     console.log(
-      "[App Effect] Adding listeners (Debug, History, ParseError, UiPrefs)..."
+      "[App Effect] Adding listeners (Debug, History, ParseError, UiPrefs, Generation)..."
     );
     const cleanupDebug = listenTS("debug", handleDebug);
-    const cleanupHistory = listenTS("history-updated", handleHistoryUpdate); // << MUDANÇA: Novo listener
+    const cleanupHistory = listenTS("history-updated", handleHistoryUpdate);
     const cleanupParseError = listenTS("parse-error", handleParseError);
     const cleanupUiPrefs = listenTS("ui-preferences-updated", handleUiPreferencesUpdated);
+    const cleanupGenSuccess = listenTS("generation-success", handleGenerationSuccess);
+    const cleanupGenError = listenTS("generation-error", handleGenerationError);
 
     // Cleanup function
     return () => {
@@ -181,127 +185,11 @@ export function App() {
       cleanupHistory();
       cleanupParseError();
       cleanupUiPrefs();
+      cleanupGenSuccess();
+      cleanupGenError();
       console.log("[App Effect] Listeners cleared.");
     };
   }, []); // Runs only once
-
-  // Effect for polling generation status via clientStorage when isLoading is true
-  useEffect(() => {
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-    let attempts = 0;
-    const maxAttempts = 30;
-
-    if (isLoading) {
-      console.log("[App Polling Effect] Starting status check...");
-      intervalId = setInterval(async () => {
-        attempts++;
-        try {
-          if (
-            typeof figma === "undefined" ||
-            typeof figma.clientStorage === "undefined"
-          ) {
-            console.warn(
-              "[App Polling Effect] Figma API or clientStorage not available in UI. Stopping polling."
-            );
-            setError(
-              "Unable to verify generation status (Figma API unavailable)."
-            );
-            setIsLoading(false);
-            if (intervalId) clearInterval(intervalId);
-            return;
-          }
-
-          const statusRaw = await figma.clientStorage.getAsync(
-            GENERATION_STATUS_KEY
-          );
-          if (statusRaw) {
-            let statusData;
-            try {
-              statusData = JSON.parse(statusRaw);
-              const isRecent =
-                statusData.timestamp &&
-                Date.now() - statusData.timestamp < 45000;
-
-              if (
-                (statusData.status === "success" ||
-                  statusData.status === "error") &&
-                isRecent
-              ) {
-                console.log(
-                  `[App Polling Effect] Final status (${statusData.status}) detected. Stopping polling.`
-                );
-                if (statusData.status === "error") {
-                  setError(
-                    statusData.message ||
-                      "Generation error (details in plugin console)."
-                  );
-                } else {
-                  setError(null);
-                  // A atualização do histórico já é feita pelo backend no sucesso
-                }
-                setIsLoading(false);
-                if (intervalId) clearInterval(intervalId);
-                await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
-              } else if (
-                !isRecent &&
-                (statusData.status === "success" ||
-                  statusData.status === "error")
-              ) {
-                console.warn(
-                  "[App Polling Effect] Final status found, but it is old. Cleaning up and stopping polling."
-                );
-                if (intervalId) clearInterval(intervalId);
-                setIsLoading(false);
-                await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
-              }
-            } catch (parseError) {
-              console.error(
-                "[App Polling Effect] Error parsing statusRaw:",
-                parseError,
-                "Raw value:",
-                statusRaw
-              );
-              setError("Internal error reading generation status (parse).");
-              setIsLoading(false);
-              if (intervalId) clearInterval(intervalId);
-              try {
-                await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
-              } catch {}
-            }
-          }
-
-          if (attempts >= maxAttempts && isLoading) {
-            console.warn(
-              "[App Polling Effect] Maximum attempts reached. Stopping polling."
-            );
-            setError(
-              "Generation took too long or status was not updated. Check the Figma console."
-            );
-            setIsLoading(false);
-            if (intervalId) clearInterval(intervalId);
-            try {
-              await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
-            } catch {}
-          }
-        } catch (storageError) {
-          console.error(
-            "[App Polling Effect] Error READING clientStorage:",
-            storageError
-          );
-          setError("Error verifying generation status (storage).");
-          setIsLoading(false);
-          if (intervalId) clearInterval(intervalId);
-        }
-      }, 1000);
-    }
-
-    return () => {
-      if (intervalId) {
-        console.log("[App Polling Effect] Cleaning up verification interval.");
-        clearInterval(intervalId);
-      }
-    };
-  }, [isLoading]);
 
   // Effect for real-time YAML validation
   useEffect(() => {
@@ -388,7 +276,7 @@ export function App() {
     }
   };
 
-  const handleAccentColorChange = (color: { toString: (format: string) => string }) => {
+  const handleAccentColorChange = (color: Color) => {
     const nextColor = color.toString("hex").toUpperCase();
     setAccentColor(nextColor);
     if (

@@ -16,9 +16,6 @@ import { Connectors } from './lib/connectors';
 import { getHistory, addHistoryEntry, clearHistory, removeHistoryEntry } from './utils/historyStorage';
 import { calculateAbsolutePositions, type LayoutSpacingConfig } from './lib/positionCalculator';
 
-// Chave para o clientStorage (deve ser a mesma na UI)
-const GENERATION_STATUS_KEY = 'iziflow_generation_status';
-
 type FlowParseResult = {
     nodes: FlowNode[];
     connections: Connection[];
@@ -486,19 +483,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
     // --- Handler para 'generate-flow' ---
     if (messageType === 'generate-flow') {
         const { yaml: rawInput, mode, accentColor } = payload;
-        const generationId = Date.now(); // Usado para associar status
-        try {
-            // <<< Limpa o status antigo ANTES de definir como loading >>>
-            await figma.clientStorage.deleteAsync(GENERATION_STATUS_KEY);
-            // <<< Define status inicial como 'loading' no clientStorage >>>
-            await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'loading', id: generationId, timestamp: Date.now() }));
-        } catch(storageError) {
-            console.error(`[Flow ID: ${generationId}] Erro ao inicializar status no clientStorage:`, storageError);
-            // Notifica a UI sobre o erro de storage inicial (pode não chegar, mas tentamos)
-            figma.ui.postMessage({ type: 'generation-error', message: `Erro interno ao preparar geração (storage).` });
-            figma.notify("Erro interno ao preparar geração.", { error: true });
-            return; // Para a execução se não puder definir o status inicial
-        }
+        const generationId = Date.now(); // Usado para associar logs
 
         let flowDataResult: FlowParseResult | null = null;
         let nodeMap: { [id: string]: SceneNode } = {};
@@ -521,9 +506,6 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
                  console.error(`[Flow ID: ${generationId}] ${errorMessage}`, parseError);
                  const lineNumberMatch = parseError.message?.match(/linha (\d+)/);
                  const lineNumber = lineNumberMatch ? parseInt(lineNumberMatch[1], 10) : undefined;
-                 // <<< Define status ERRO (parse) no clientStorage >>>
-                 await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'error', id: generationId, message: errorMessage, timestamp: Date.now() }));
-                 // Tenta enviar a mensagem de erro de parse para UI
                  figma.ui.postMessage({ type: 'parse-error', message: `${parseError.message}`, lineNumber });
                  return; // Para a execução
             }
@@ -602,9 +584,7 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              const updatedHistory = await getHistory();
              figma.ui.postMessage({ type: 'history-updated', history: updatedHistory });
 
-             // <<< Define status SUCESSO no clientStorage >>>
-             await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'success', id: generationId, timestamp: Date.now() }));
-             // Tenta enviar a mensagem (best effort, a UI vai usar o clientStorage para isLoading)
+             // <<< SUCESSO >>>
              figma.ui.postMessage({ type: 'generation-success', message: 'Fluxo gerado com sucesso!' });
              figma.notify("Fluxo gerado com sucesso!", { timeout: 3000 });
 
@@ -612,13 +592,6 @@ figma.ui.onmessage = async (msg: any) => { // Recebe a mensagem DESEMBRULHADA pe
              // --- ERRO GERAL ---
              console.error(`[Flow ID: ${generationId}] Erro GERAL na geração:`, error);
              const errorMessage = (error instanceof Error) ? error.message : String(error);
-             // <<< Define status ERRO no clientStorage >>>
-             try {
-                 await figma.clientStorage.setAsync(GENERATION_STATUS_KEY, JSON.stringify({ status: 'error', id: generationId, message: errorMessage, timestamp: Date.now() }));
-             } catch (storageError) {
-                  console.error(`[Flow ID: ${generationId}] Erro ao salvar status de ERRO no clientStorage:`, storageError);
-             }
-             // Tenta enviar a mensagem de erro (best effort)
              figma.ui.postMessage({ type: 'generation-error', message: `Erro durante geração: ${errorMessage}` });
              figma.notify(`Erro na geração: ${errorMessage}`, { error: true, timeout: 5000 });
         }

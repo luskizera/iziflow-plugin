@@ -888,7 +888,7 @@ export function App() {
               asChild
             >
               <a
-                href="https://www.izitools.xyz/"
+                href="https://www.luski.studio/iziflow/"
                 target="_blank"
                 rel="noopener noreferrer"
               >
